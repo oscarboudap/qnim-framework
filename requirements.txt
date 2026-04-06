@@ -1,0 +1,8 @@
+qiskit>=1.0.0
+qiskit-ibm-runtime
+qiskit-aer
+pandas
+matplotlib
+python-dotenv
+h5py
+numpy
