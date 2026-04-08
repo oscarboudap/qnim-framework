@@ -1,38 +1,40 @@
 import numpy as np
-from scipy.signal import butter, filtfilt, iirnotch
-from scipy.interpolate import interp1d
+from scipy import signal as sig
 from src.domain.astrophysics.entities import GWSignal
-from src.domain.astrophysics.value_objects import GPSTime
 
 class SignalPreprocessingService:
-    def __init__(self, lowcut: float = 35.0, highcut: float = 350.0):
-        self.lowcut = lowcut
-        self.highcut = highcut
+    def __init__(self, sample_rate: int = 4096):
+        self.sample_rate = sample_rate
 
-    def clean_signal(self, signal: GWSignal) -> GWSignal:
-        """Flujo completo de limpieza: Whitening -> Bandpass."""
-        # 1. Whitening (Blanqueo)
-        # Estimamos la densidad espectral de potencia (PSD)
-        strain_f = np.fft.rfft(signal.strain)
-        psd = np.abs(strain_f)**2
-        # Suavizamos y normalizamos en frecuencia
-        whitened_f = strain_f / np.sqrt(psd + 1e-20) 
-        whitened_strain = np.fft.irfft(whitened_f, n=len(signal.strain))
-
-        # 2. Bandpass Filter (Filtro de banda)
-        clean_strain = self._apply_bandpass(whitened_strain, signal.sample_rate)
-
-        # Retornamos una NUEVA entidad (Inmutabilidad)
+    def whitening(self, gw_signal: GWSignal) -> GWSignal:
+        """
+        Aplica Blanqueo (Whitening) espectral para eliminar el color del ruido de LIGO.
+        Esencial para que el VQC identifique modos cuasinormales (QNM).
+        """
+        data = gw_signal.strain
+        
+        # 1. Calculamos la PSD (Power Spectral Density) mediante el método de Welch
+        frequencies, psd = sig.welch(data, self.sample_rate, nperseg=self.sample_rate)
+        
+        # 2. Interpolamos para que coincida con la longitud de la señal
+        interp_psd = np.interp(np.fft.rfftfreq(len(data), 1/self.sample_rate), frequencies, psd)
+        
+        # 3. Transformada de Fourier, blanqueo en frecuencia y vuelta al tiempo
+        hf = np.fft.rfft(data)
+        white_hf = hf / np.sqrt(interp_psd)
+        white_data = np.fft.irfft(white_hf, n=len(data))
+        
         return GWSignal(
-            strain=clean_strain,
-            detector=signal.detector,
-            sample_rate=signal.sample_rate,
-            gps_start=signal.gps_start
+            strain=white_data,
+            detector=gw_signal.detector,
+            sample_rate=self.sample_rate,
+            gps_start=gw_signal.gps_start
         )
 
-    def _apply_bandpass(self, data: np.ndarray, fs: int) -> np.ndarray:
-        nyquist = 0.5 * fs
-        low = self.lowcut / nyquist
-        high = self.highcut / nyquist
-        b, a = butter(4, [low, high], btype='band')
-        return filtfilt(b, a, data)
+    def bandpass_filter(self, gw_signal: GWSignal, low: float = 30.0, high: float = 500.0) -> GWSignal:
+        """Filtro de Butterworth para limpiar artefactos fuera de la banda de interés."""
+        nyq = 0.5 * self.sample_rate
+        b, a = sig.butter(4, [low / nyq, high / nyq], btype='band')
+        filtered_strain = sig.filtfilt(b, a, gw_signal.strain)
+        
+        return GWSignal(filtered_strain, gw_signal.detector, self.sample_rate, gw_signal.gps_start)

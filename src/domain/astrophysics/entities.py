@@ -21,3 +21,21 @@ class GWSignal:
 
     def __repr__(self):
         return f"<GWSignal {self.detector.name} | {self.duration:.2f}s | {self.sample_rate}Hz>"
+    
+@dataclass
+class PlanckEventTechnicalSheet:
+    # A. Módulo de Estructura (Kerr vs Exotic)
+    kerr_violation_parameter: float  # Desviación del momento cuadrupolar (No-Hair)
+    tidal_deformability: float       # Lambda (Estrellas de Neutrones)
+    
+    # B. Módulo de Cosmología
+    luminosity_distance: float       # Sirena estándar
+    hubble_contribution: float       # H0 inference
+    
+    # C. Módulo de Gravedad Cuántica
+    lqg_confidence: float            # Discretización R y rebote epsilon
+    string_fuzzball_echoes: float    # Parámetro de reflectividad de la superficie
+    
+    # D. Robustez
+    snr_instrumental: float          # SNR real post-whitening
+    sigma_confidence: float          # Nivel de significancia (1-sigma a 5-sigma)

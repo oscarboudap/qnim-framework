@@ -1,30 +1,42 @@
 import numpy as np
+from qiskit.circuit.library import ZZFeatureMap
 from src.domain.astrophysics.entities import GWSignal
 
 class QuantumMappingService:
-    def __init__(self, target_qubits: int = 4):
+    def __init__(self, target_qubits: int = 8, reps: int = 1):
         self.target_qubits = target_qubits
+        self.reps = reps
+        # Definimos el mapa de características con entrelazamiento lineal
+        # Esto mimetiza la propagación temporal de la onda gravitacional
+        self._feature_map = ZZFeatureMap(
+            feature_dimension=target_qubits, 
+            reps=reps, 
+            entanglement='linear'
+        )
 
     def prepare_for_embedding(self, signal: GWSignal) -> np.ndarray:
         """
-        Localiza el evento y extrae los puntos para los qubits.
-        Normaliza a [0, pi] para la rotación de puertas cuánticas.
+        Extrae los momentos clave del ringdown y los prepara para el mapa ZZ.
+        Foco: Resolución espectral de la escala de Planck (Anexo C).
         """
-        # Buscamos el pico de amplitud (el choque de los agujeros negros)
-        # En una señal blanqueada, el pico es muy claro
-        peak_idx = np.argmax(np.abs(signal.strain))
+        strain = signal.strain
+        # Foco en el 'Merger-Ringdown': los últimos N puntos de la señal blanqueada
+        # Aquí es donde la curvatura es máxima y los efectos cuánticos emergen
+        window = strain[-self.target_qubits:]
         
-        # Tomamos una ventana alrededor del pico
-        half_qubits = self.target_qubits // 2
-        chunk = signal.strain[peak_idx - half_qubits : peak_idx + half_qubits]
+        # Normalización estadística para evitar la saturación de las puertas ZZ
+        # Escalamos a [0, 2*pi] para aprovechar todo el círculo de Bloch
+        angles = np.interp(window, (window.min(), window.max()), (0, 2 * np.pi))
         
-        # Si el recorte falla por bordes, forzamos el tamaño
-        if len(chunk) != self.target_qubits:
-            chunk = signal.strain[:self.target_qubits]
+        return angles
 
-        # Escalado para la Esfera de Bloch (Imprescindible para Qiskit)
-        # Mapeamos el rango de la señal a [0, np.pi]
-        min_val, max_val = np.min(chunk), np.max(chunk)
-        normalized = (chunk - min_val) / (max_val - min_val) * np.pi
+    def get_feature_map(self):
+        return self._feature_map
+    def prepare_multitask_embedding(self, signal: GWSignal):
+        # Aseguramos que tomamos target_qubits puntos de cada zona
+        inspiral = signal.strain[:self.target_qubits]
+        ringdown = signal.strain[-self.target_qubits:]
         
-        return normalized
+        combined = np.concatenate([inspiral, ringdown])
+        # Re-escalado a rango de fase cuántica [0, 2pi]
+        return np.interp(combined, (combined.min(), combined.max()), (0, 2*np.pi))
