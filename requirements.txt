@@ -16,6 +16,7 @@ dwave-cloud-client==0.14.4
 dwave-gate==0.3.5
 dwave-hybrid==0.6.15
 dwave-inspector==0.5.5
+dwave-neal==0.6.0
 dwave-ocean-sdk==9.3.0
 dwave-optimization==0.6.11
 dwave-preprocessing==0.6.11
@@ -72,6 +73,7 @@ rustworkx==0.17.1
 samplomatic==0.17.1
 scikit-learn==1.7.2
 scipy==1.15.3
+seaborn==0.13.2
 six==1.17.0
 stevedore==5.7.0
 threadpoolctl==3.6.0
