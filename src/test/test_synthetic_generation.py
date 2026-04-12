@@ -22,7 +22,6 @@ except ModuleNotFoundError as e:
     print(f"Ruta de búsqueda actual: {sys.path[0]}")
     sys.exit(1)
 
-# ... resto del código ...
 def run_audit():
     print("🔬 Iniciando Auditoría del Generador de Universos QNIM...")
     
@@ -30,12 +29,20 @@ def run_audit():
     service = SSTGService()
     exporter = HDF5Exporter()
     
-    # 2. Generamos una pequeña muestra estadística (Población Realista)
-    n_test = 5
-    print(f"Generating {n_test} synthetic events with realistic priors...")
-    samples = [service.generate_training_sample() for _ in range(n_test)]
+    # 2. Generamos una muestra masiva con LOGS EN TIEMPO REAL
+    n_test = 200
+    print(f"🌌 Iniciando simulación estocástica de {n_test} eventos masivos...")
+    
+    samples = []
+    for i in range(n_test):
+        # El \r reescribe la línea actual. flush=True fuerza a la terminal a mostrarlo.
+        print(f"\r⏳ [SSTG] Sintetizando agujero negro {i+1}/{n_test} ({(i+1)/n_test*100:.1f}%)... ", end="", flush=True)
+        samples.append(service.generate_training_sample())
+        
+    print("\n✅ Dataset cuántico generado con éxito.")
     
     # 3. Exportamos a HDF5 (Creará la carpeta con timestamp)
+    print("💾 Guardando tensores en formato HDF5...")
     output_path = exporter.save_batch(samples)
     print(f"✅ Archivos exportados a: {output_path}")
 
@@ -48,8 +55,8 @@ def run_audit():
         strain = f["strain"][:]
         
         # El QML NO debe ver esto (solo nosotros para validar)
-        label = f.attrs["target_label"]
-        dist = f.attrs["true_distance"]
+        label = f.attrs.get("true_theory", f.attrs.get("target_label", "Unknown"))
+        dist = f.attrs.get("true_distance", 0.0)
         
         print(f"Archivo auditado: {test_file.name}")
         print(f"Etiqueta oculta detectada: {label}")
@@ -65,19 +72,18 @@ def run_audit():
 
 def visualize_comparison(service):
     """Genera dos teorías opuestas para ver si la física se inyecta correctamente."""
-    # Cambiamos 'generate_blind_challenge' por 'generate_training_sample'
-    # O bien, si quieres forzar la categoría, asegúrate de que el método lo permita
-    
     print("📊 Generando comparativa visual...")
     
-    # Si tu SSTGService.generate_training_sample no acepta 'category', 
-    # simplemente genera dos muestras aleatorias:
     event_1 = service.generate_training_sample()
     event_2 = service.generate_training_sample()
     
+    # Extraemos etiquetas de forma segura dependiento de cómo lo devuelva tu servicio
+    label_1 = event_1.get('metadata', {}).get('theory', 'Unknown A')
+    label_2 = event_2.get('metadata', {}).get('theory', 'Unknown B')
+    
     plt.figure(figsize=(12, 6))
-    plt.plot(event_1['strain'][:1000], label=f"Evento A: {event_1['label']}", alpha=0.7)
-    plt.plot(event_2['strain'][:1000], label=f"Evento B: {event_2['label']}", alpha=0.7)
+    plt.plot(event_1['strain'][:1000], label=f"Evento A: {label_1}", alpha=0.7)
+    plt.plot(event_2['strain'][:1000], label=f"Evento B: {label_2}", alpha=0.7)
     
     plt.title("Comparativa de Firmas Sintéticas QNIM")
     plt.xlabel("Samples")
@@ -85,10 +91,8 @@ def visualize_comparison(service):
     plt.legend()
     plt.grid(True, alpha=0.3)
     
-    # Si estás en WSL sin entorno gráfico, guarda la imagen:
     plt.savefig('audit_comparison.png')
     print("✅ Gráfico guardado en 'audit_comparison.png'")
-    # plt.show() # Descomenta si tienes X-Server
 
 if __name__ == "__main__":
     run_audit()
