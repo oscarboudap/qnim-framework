@@ -5,31 +5,37 @@ from .anomaly_generator_service import AnomalyGeneratorService
 
 class ProcessEventUseCase:
     def __init__(self, repository, classifier, preprocessor, mapper, anomaly_generator):
-        self._repo = repository
-        self._classifier = classifier
-        self._preprocessor = preprocessor # Ahora con Whitening
-        self._mapper = mapper
-        self._anomaly_generator = anomaly_generator
+        # Vinculamos las dependencias a la instancia (self)
+        self.repository = repository
+        self.classifier = classifier
+        self.preprocessor = preprocessor
+        self.mapper = mapper
+        self.anomaly_generator = anomaly_generator
 
-    def execute_comparison(self, detector_name: str, epsilon: float = 0.1):
-        # 1. EXTRACCIÓN Y LIMPIEZA (Foco en el Punto 4.3 de tu índice)
-        raw_signal = self._repo.get_signal_by_detector(detector_name)
+    def execute_comparison(self, detector_name: str):
+        # 1. Obtención de datos crudos desde el repositorio
+        # Aquí es donde fallaba: ahora self.repository existe
+        raw_signal = self.repository.get_signal_by_detector(detector_name)
         
-        # Primero blanqueamos para eliminar el ruido de color de LIGO
-        white_signal = self._preprocessor.whitening(raw_signal)
-        # Luego filtramos para quedarnos con la banda de los QNM (30-500Hz)
-        clean_signal = self._preprocessor.bandpass_filter(white_signal)
-        
-        # 2. GENERACIÓN DE HIPÓTESIS (Punto 2.2.2.1)
-        # La anomalía se inyecta sobre la señal limpia para simular correcciones de Planck
-        anomalous_signal = self._anomaly_generator.apply_quantum_drift(clean_signal, epsilon)
-        
-        # 3. MAPPING Y EMBEDDING CUÁNTICO (Punto 3.3)
-        data_rg = self._mapper.prepare_for_embedding(clean_signal)
-        data_lqg = self._mapper.prepare_for_embedding(anomalous_signal)
-        
-        # 4. INFERENCIA NATIVA (Punto 6.1)
-        res_rg = self._classifier.predict(data_rg)
-        res_lqg = self._classifier.predict(data_lqg)
-        
+        # 2. Preprocesamiento (Whitening + Bandpass)
+        white_signal = self.preprocessor.whitening(raw_signal)
+        clean_rg = self.preprocessor.bandpass_filter(white_signal)
+
+        # 3. Inyección de Física de Campo Fuerte (Cuerdas/LQG)
+        # Usamos el nuevo método de teoría que definimos
+        clean_lqg = self.anomaly_generator.apply_theory_drift(
+            clean_rg, 
+            theory="STRING_FUZZBALL", 
+            epsilon=0.25
+        )
+
+        # 4. Quantum Embedding (Mapping Multitarea: Inspiral + Ringdown)
+        data_rg = self.mapper.prepare_multitask_embedding(clean_rg)
+        data_lqg = self.mapper.prepare_multitask_embedding(clean_lqg)
+
+        # 5. Inferencia Cuántica (Envío a IBM Quantum si está activo)
+        print(f"📡 [QNIM] Enviando circuitos al backend para inferencia...")
+        res_rg = self.classifier.predict(data_rg)
+        res_lqg = self.classifier.predict(data_lqg)
+
         return res_rg, res_lqg
