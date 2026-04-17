@@ -1,22 +1,20 @@
 # src/domain/quantum/interfaces.py
 from abc import ABC, abstractmethod
-from ..astrophysics.entities import GWSignal
-from .entities import InferenceResult
+import numpy as np
 
-class IGWRepository(ABC):
-    """Contrato para la carga de datos de ondas gravitacionales."""
+class IQuantumAnnealer(ABC):
+    """
+    Puerto para el Recocido Cuántico (D-Wave).
+    Garantiza el diseño Hot-Swap: puede inyectarse un simulador local o la QPU real.
+    """
     @abstractmethod
-    def get_signal_by_detector(self, detector_name: str) -> GWSignal:
+    def sample_qubo(self, Q: dict, num_reads: int) -> dict:
         pass
 
-class IQuantumEmbedder(ABC):
-    """Contrato para transformar señales físicas en circuitos cuánticos."""
+class IGateBasedQuantumComputer(ABC):
+    """
+    Puerto para Computación basada en Puertas (IBM/Qiskit).
+    """
     @abstractmethod
-    def encode(self, signal: GWSignal) -> any: # 'any' porque el circuito depende de la librería
-        pass
-
-class IQuantumClassifier(ABC):
-    """Contrato para la inferencia cuántica."""
-    @abstractmethod
-    def predict(self, encoded_data: any) -> InferenceResult:
+    def execute_circuit(self, circuit_data, backend_name: str) -> np.ndarray:
         pass

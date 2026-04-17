@@ -1,13 +1,30 @@
+# src/domain/metrology/planck_error_bounds.py
+import scipy.stats as stats
+
 class PlanckErrorBounds:
     """
-    Define los límites de exclusión para Gravedad Cuántica (LQG y Cuerdas).
+    Validador de la Capa 7 (Física Cuántica Profunda).
+    Evalúa si la desviación anómala supera el umbral de descubrimiento en física de partículas.
     """
-    def get_exclusion_limit(self, snr: float):
-        # A mayor SNR, podemos detectar granos de espacio (R) más pequeños
-        # R_planck ~ 1e-35 metros. 
-        # Tu software acota el 'R' efectivo.
-        detectable_r = 1.0 / (snr**2) 
+    DISCOVERY_THRESHOLD_SIGMA = 5.0
+
+    @classmethod
+    def calculate_discovery_significance(cls, background_noise_level: float, quantum_signal_strength: float) -> dict:
+        """
+        Calcula a cuántas 'sigmas' de la Relatividad General estamos.
+        """
+        if background_noise_level <= 0:
+            return {"sigma": 0.0, "is_discovery": False}
+            
+        # Cálculo de la significancia estadística (Z-score)
+        sigma_value = quantum_signal_strength / background_noise_level
+        p_value = stats.norm.sf(sigma_value)
+        
+        is_discovery = sigma_value >= cls.DISCOVERY_THRESHOLD_SIGMA
+        
         return {
-            "min_detectable_r": detectable_r,
-            "unit": "Planck Length Units"
+            "sigma": round(sigma_value, 2),
+            "p_value": p_value,
+            "is_discovery": is_discovery,
+            "conclusion": "Nueva Física Confirmada (5-Sigma)" if is_discovery else "Fluctuación Estadística"
         }

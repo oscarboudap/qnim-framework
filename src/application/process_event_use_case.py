@@ -1,41 +1,57 @@
-from src.domain.quantum.interfaces import IGWRepository, IQuantumClassifier
-from .signal_preprocessing_service import SignalPreprocessingService
-from .quantum_mapping_service import QuantumMappingService
-from .anomaly_generator_service import AnomalyGeneratorService
+import numpy as np
+from src.domain.astrophysics.entities import QuantumDecodedEvent, GWSignal
+from src.domain.astrophysics.layers import IntrinsicGeometry, QuantumHorizonTopology
+from src.domain.astrophysics.value_objects import SolarMass
+from src.domain.metrology.multipole_validator import MultipoleValidator
+from src.application.hybrid_orchestrator import HybridInferenceOrchestrator
 
-class ProcessEventUseCase:
-    def __init__(self, repository, classifier, preprocessor, mapper, anomaly_generator):
-        # Vinculamos las dependencias a la instancia (self)
-        self.repository = repository
-        self.classifier = classifier
-        self.preprocessor = preprocessor
-        self.mapper = mapper
-        self.anomaly_generator = anomaly_generator
+class DecodeGravitationalWaveUseCase:
+    """
+    Caso de Uso Principal: "Decodificar las Capas de Realidad de una Onda Gravitacional".
+    Aquí es donde las 7 Capas de tu Marco Teórico cobran vida.
+    """
+    
+    def __init__(self, orchestrator: HybridInferenceOrchestrator, pipeline_compressor):
+        self.orchestrator = orchestrator
+        self.compressor = pipeline_compressor # El StandardScaler+PCA+MinMax
+        self.validator = MultipoleValidator(tolerance_threshold=0.05)
 
-    def execute_comparison(self, detector_name: str):
-        # 1. Obtención de datos crudos desde el repositorio
-        # Aquí es donde fallaba: ahora self.repository existe
-        raw_signal = self.repository.get_signal_by_detector(detector_name)
+    def execute(self, event: QuantumDecodedEvent, search_space_templates: list) -> QuantumDecodedEvent:
+        print(f"\n🚀 Iniciando Inferencia Cuántica QNIM para evento: {event.event_id}")
         
-        # 2. Preprocesamiento (Whitening + Bandpass)
-        white_signal = self.preprocessor.whitening(raw_signal)
-        clean_rg = self.preprocessor.bandpass_filter(white_signal)
-
-        # 3. Inyección de Física de Campo Fuerte (Cuerdas/LQG)
-        # Usamos el nuevo método de teoría que definimos
-        clean_lqg = self.anomaly_generator.apply_theory_drift(
-            clean_rg, 
-            theory="STRING_FUZZBALL", 
-            epsilon=0.25
+        # --- CAPA 2: GEOMETRÍA INTRÍNSECA (D-WAVE) ---
+        print("🟢 Ejecutando Rama D-Wave (Recocido Cuántico)...")
+        classical_params = self.orchestrator.execute_dwave_branch(event.signal.strain, search_space_templates)
+        
+        event.geometry = IntrinsicGeometry(
+            m1=SolarMass(classical_params['m1']),
+            m2=SolarMass(classical_params['m2']),
+            chirp_mass=SolarMass(classical_params.get('m_chirp', 30.0)),
+            effective_spin_chi=classical_params['spin']
         )
 
-        # 4. Quantum Embedding (Mapping Multitarea: Inspiral + Ringdown)
-        data_rg = self.mapper.prepare_multitask_embedding(clean_rg)
-        data_lqg = self.mapper.prepare_multitask_embedding(clean_lqg)
+        # --- PREPARACIÓN DIMENSIONAL ---
+        # Comprimimos los 16384 puntos a 12 características topológicas
+        features = self.compressor.transform([event.signal.strain])
 
-        # 5. Inferencia Cuántica (Envío a IBM Quantum si está activo)
-        print(f"📡 [QNIM] Enviando circuitos al backend para inferencia...")
-        res_rg = self.classifier.predict(data_rg)
-        res_lqg = self.classifier.predict(data_lqg)
-
-        return res_rg, res_lqg
+        # --- CAPAS 5 y 6: FÍSICA MÁS ALLÁ DE GR (IBM) ---
+        print("🔵 Ejecutando Rama IBM (VQC 12-Cúbits)...")
+        quantum_results = self.orchestrator.execute_ibm_branch(features)
+        
+        # --- EL JUEZ (METROLOGÍA) ---
+        print("⚖️ Auditando Teorema de No-Cabello...")
+        audit_report = self.validator.evaluate_no_hair_theorem(
+            classical_mass=classical_params['m1'], 
+            classical_spin=classical_params['spin'], 
+            quantum_anomaly_confidence=quantum_results['anomaly_confidence']
+        )
+        
+        event.topology = QuantumHorizonTopology(
+            no_hair_delta_q=audit_report['measured_delta_Q'],
+            horizon_reflectivity=0.3 if audit_report['no_hair_violation'] else 0.0,
+            detected_theory=quantum_results['detected_theory'],
+            quantum_confidence_sigma=quantum_results['anomaly_confidence'] * 5.0 # Mapeo a sigma
+        )
+        
+        print(f"✅ Decodificación completada. Veredicto: {audit_report['inferred_theory'].value}")
+        return event

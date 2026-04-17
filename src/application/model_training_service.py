@@ -1,95 +1,99 @@
 import os
+import sys
 import numpy as np
-from pathlib import Path
 import joblib
+from pathlib import Path
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.decomposition import PCA
 
-from qiskit.circuit.library import ZZFeatureMap, real_amplitudes
+from src.domain.quantum.vqc_architecture import QNIMQuantumCircuit
 from qiskit_algorithms.optimizers import SPSA
 from qiskit.primitives import StatevectorSampler
-
-from src.infrastructure.storage.quantum_dataloader import QuantumDatasetLoader
-from src.domain.quantum.vqc_classifier import VQCClassifier
+from qiskit_machine_learning.algorithms.classifiers import VQC
 
 class ModelTrainingService:
-    def __init__(self, project_root: str):
-        self.project_root = Path(project_root)
-        self.data_dir = self.project_root / "data" / "synthetic"
-        self.models_dir = self.project_root / "models"
-        self.loader = QuantumDatasetLoader(target_samples=16384) 
+    """
+    Caso de Uso: Entrenar el Cerebro Cuántico (VQC).
+    Implementa el pipeline de mitigación de la maldición de dimensionalidad.
+    """
+    def __init__(self, dataloader_port, models_dir: str):
+        self.loader = dataloader_port # Puerto de lectura de datos
+        self.models_dir = Path(models_dir)
+        self.topology = QNIMQuantumCircuit.get_standard_topology()
+        self.current_iter = 0 # Inicializamos el contador de iteraciones
 
-    def execute_training(self, max_events=200):
-        print("\n🧠 --- INICIANDO ENTRENAMIENTO QML (12 CÚBITS + PIPELINE RIGUROSO) ---")
-        
-        try:
-            latest_batch = sorted([d for d in self.data_dir.iterdir() if d.is_dir() and d.name.startswith("2026")])[-1]
-        except IndexError:
-            print("❌ Error: No se encontraron carpetas.")
-            return
-
-        print(f"📂 Cargando dataset de entrenamiento desde: {latest_batch.name}")
-        X_raw, y = self._prepare_dataset(latest_batch, max_events)
-        
-        if len(X_raw) == 0: return
-        print(f"📊 Dataset cargado: {len(X_raw)} muestras.")
-        
-        # --- EL PIPELINE DE MÁXIMO RIGOR ---
-        print("🗜️ Construyendo Pipeline Cuántico (StandardScaler -> PCA -> MinMax[-π, π])...")
+    def execute_training(self, dataset_path: Path, max_events: int = 200):
+        print("🗜️ Construyendo Pipeline Cuántico (StandardScaler -> PCA -> MinMax)...")
         quantum_pipeline = Pipeline([
-            ('scaler', StandardScaler()), # Normaliza el ruido gravitacional
-            ('pca', PCA(n_components=12)), # Extrae los 12 tensores principales
-            ('angle_mapper', MinMaxScaler(feature_range=(-np.pi, np.pi))) # Mapea a rotaciones de cúbits
+            ('scaler', StandardScaler()), 
+            ('pca', PCA(n_components=self.topology.num_qubits)), 
+            ('angle_mapper', MinMaxScaler(feature_range=(-np.pi, np.pi))) 
         ])
         
-        X = quantum_pipeline.fit_transform(X_raw)
+        # 1. Cargar datos (Infraestructura)
+        X_raw, y = self._load_data(dataset_path, max_events)
         
+        # 2. Comprimir datos
+        X_compressed = quantum_pipeline.fit_transform(X_raw)
+        
+        # Guardamos el pipeline clásico
         os.makedirs(self.models_dir, exist_ok=True)
-        # Guardamos el pipeline completo, no solo el PCA
         joblib.dump(quantum_pipeline, self.models_dir / "qnim_preprocessing_pipeline.pkl")
-        print("💾 Pipeline de preprocesamiento guardado correctamente.")
-        # -----------------------------------
 
-        print("⚙️ Configurando topología a 12 Cúbits con Angle Encoding...")
-        fmap = ZZFeatureMap(12, reps=1)
-        ansatz = real_amplitudes(num_qubits=12, reps=2)
+        # 3. Configurar y Entrenar la Red Cuántica
+        from qiskit.circuit.library import ZZFeatureMap, RealAmplitudes
+        fmap = ZZFeatureMap(self.topology.num_qubits, reps=self.topology.feature_map_reps)
+        ansatz = RealAmplitudes(num_qubits=self.topology.num_qubits, reps=self.topology.ansatz_reps, entanglement=self.topology.entanglement_strategy)
         
-        def training_callback(nfev, params, obj_func, stepsize, accepted):
-            print(f"\r🚀 [SPSA] Evaluaciones: {nfev} | Función de Coste (Pérdida): {obj_func:.4f} ", end="", flush=True)
+        max_iter = 100
+        self.current_iter = 0
+        
+        # --- EL TRACKER DE PROGRESO ---
+        def training_callback(*args):
+            self.current_iter += 1
             
-        from qiskit_machine_learning.algorithms.classifiers import VQC
+            # Qiskit manda 2 o 5 parámetros dependiendo del optimizador/versión
+            if len(args) == 5:
+                # SPSA manda: (evaluaciones, parametros, coste, stepsize, aceptado)
+                obj_func_eval = args[2] 
+            elif len(args) == 2:
+                # VQC estándar manda: (pesos, coste)
+                obj_func_eval = args[1]
+            else:
+                obj_func_eval = 0.0 # Seguridad
+                
+            progress = (self.current_iter / max_iter) * 100
+            # El \r sobrescribe la línea
+            sys.stdout.write(f"\r⏳ [QML Training] Progreso: {progress:5.1f}% | Iteración: {self.current_iter}/{max_iter} | Función de Coste: {obj_func_eval:.4f}")
+            sys.stdout.flush()
+            if self.current_iter == max_iter:
+                print() # Salto de línea limpio al terminar
+        # ------------------------------
         vqc_engine = VQC(
             feature_map=fmap,
             ansatz=ansatz,
-            optimizer=SPSA(maxiter=100),
+            optimizer=SPSA(maxiter=max_iter),
             sampler=StatevectorSampler(),
-            callback=training_callback
+            callback=training_callback # Inyectamos el callback
         )
 
-        print(f"\n🛰️  Optimizando parámetros cuánticos (SPSA)...")
-        vqc_engine.fit(X, y)
+        print(f"🛰️ Optimizando topología de {self.topology.num_qubits} cúbits en el Espacio de Hilbert...")
+        vqc_engine.fit(X_compressed, y)
         
-        weights_path = self.models_dir / "qnim_vqc_weights.npy"
-        np.save(weights_path, vqc_engine.weights)
-        
-        print("\n\n✅ ENTRENAMIENTO COMPLETADO.")
+        # 4. Guardar los pesos cuánticos
+        np.save(self.models_dir / "qnim_vqc_weights.npy", vqc_engine.weights)
+        print("✅ Entrenamiento Híbrido Completado.")
 
-    def _prepare_dataset(self, batch_path, max_events):
+    def _load_data(self, batch_path: Path, max_events: int):
         X, y = [], []
-        
-        for file in list(batch_path.glob("*.h5"))[:max_events]: 
+        files = list(batch_path.glob("*.h5"))[:max_events]
+        for idx, file in enumerate(files):
             signal = self.loader.prepare_for_quantum(str(file))
-            X.append(signal) 
-            
-            # --- EL TRUCO DEL NOMBRE DE ARCHIVO ---
-            # file.stem saca "event_00150", split('_')[1] saca "00150", int() lo hace 150
-            file_num = int(file.stem.split('_')[1])
-            
-            if file_num < 100:
-                y.append([1, 0]) # RG (Kerr)
+            X.append(signal)
+            # El orden del generador es 50% RG (idx < mitad), 50% LQG
+            if idx < (len(files) // 2):
+                y.append([1, 0]) # Relatividad General
             else:
-                y.append([0, 1]) # LQG (Anomalía)
-            # --------------------------------------
-                    
+                y.append([0, 1]) # Anomalía Cuántica
         return np.array(X), np.array(y)

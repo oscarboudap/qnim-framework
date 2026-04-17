@@ -2,14 +2,16 @@
 from dataclasses import dataclass
 import numpy as np
 from .value_objects import DetectorType, GPSTime
-
+from .layers import IntrinsicGeometry, CosmologicalFootprint, BeyondGRDeviations, QuantumHorizonTopology
+from typing import Optional
 @dataclass(frozen=True)
 class GWSignal:
-    """Entidad raíz del dominio de Astrofísica."""
+    """Capa 1: La señal pura detectada por el interferómetro."""
     strain: np.ndarray
     detector: DetectorType
     sample_rate: int
     gps_start: GPSTime
+    snr_instrumental: float # SNR post-whitening
 
     @property
     def duration(self) -> float:
@@ -19,23 +21,26 @@ class GWSignal:
     def time_vector(self) -> np.ndarray:
         return np.linspace(0, self.duration, len(self.strain))
 
-    def __repr__(self):
-        return f"<GWSignal {self.detector.name} | {self.duration:.2f}s | {self.sample_rate}Hz>"
-    
 @dataclass
-class PlanckEventTechnicalSheet:
-    # A. Módulo de Estructura (Kerr vs Exotic)
-    kerr_violation_parameter: float  # Desviación del momento cuadrupolar (No-Hair)
-    tidal_deformability: float       # Lambda (Estrellas de Neutrones)
+class QuantumDecodedEvent:
+    """
+    ENTIDAD RAÍZ (Aggregate Root).
+    Representa el resultado final de la Inferencia Cuántica QNIM.
+    """
+    event_id: str
+    signal: GWSignal # Capa 1
     
-    # B. Módulo de Cosmología
-    luminosity_distance: float       # Sirena estándar
-    hubble_contribution: float       # H0 inference
-    
-    # C. Módulo de Gravedad Cuántica
-    lqg_confidence: float            # Discretización R y rebote epsilon
-    string_fuzzball_echoes: float    # Parámetro de reflectividad de la superficie
-    
-    # D. Robustez
-    snr_instrumental: float          # SNR real post-whitening
-    sigma_confidence: float          # Nivel de significancia (1-sigma a 5-sigma)
+    # Capas de Realidad (Inicialmente vacías, se llenan por el Orquestador Híbrido)
+    geometry: Optional[IntrinsicGeometry] = None          # Llenado por D-Wave
+    cosmology: Optional[CosmologicalFootprint] = None     # Llenado por cálculos clásicos
+    beyond_gr: Optional[BeyondGRDeviations] = None        # Llenado por VQC (12-27 cúbits)
+    topology: Optional[QuantumHorizonTopology] = None     # Llenado por VQC (12-27 cúbits)
+
+    def is_standard_general_relativity(self) -> bool:
+        """Regla de Negocio del Dominio: Comprueba la invulnerabilidad de Kerr."""
+        if not self.topology: return True
+        return self.topology.detected_theory == TheoryFamily.GENERAL_RELATIVITY
+
+    def __repr__(self):
+        theory = self.topology.detected_theory.value if self.topology else "Processing..."
+        return f"<QuantumEvent {self.event_id} | SNR: {self.signal.snr_instrumental:.1f} | Theory: {theory}>"

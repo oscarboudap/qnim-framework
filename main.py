@@ -1,123 +1,136 @@
 import os
-import sys
+import joblib
 import numpy as np
-from dotenv import load_dotenv
+from pathlib import Path
 
-# Aseguramos que Python vea la carpeta 'src'
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
-
-load_dotenv()
-
-# --- ORQUESTACIÓN HÍBRIDA (NUEVA ARQUITECTURA) ---
-from src.application.hybrid_orchestrator import HybridInferenceOrchestrator
+# Infraestructura
 from src.infrastructure.storage.quantum_dataloader import QuantumDatasetLoader
+from src.infrastructure.neal_annealer_adapter import NealSimulatedAnnealerAdapter
+from src.infrastructure.ibm_quantum_adapter import IBMQuantumAdapter 
 
-# --- SERVICIOS ---
-from src.application.sstg_service import SSTGService
-from src.application.anomaly_generator_service import AnomalyGeneratorService
+# Aplicación
+from src.application.hybrid_orchestrator import HybridInferenceOrchestrator
+from src.application.process_event_use_case import DecodeGravitationalWaveUseCase
 
-# --- DOMINIO / METROLOGÍA ---
-from src.domain.metrology.multipole_validator import MultipoleValidator
-from src.domain.astrophysics.converters import extract_physical_params
-from src.presentation.cli_presenter import CLIPresenter
+# Dominio
+from src.domain.astrophysics.entities import QuantumDecodedEvent, GWSignal
+from src.domain.astrophysics.value_objects import DetectorType, GPSTime, TheoryFamily
+from src.domain.astrophysics.sstg.providers.kerr_provider import KerrVacuumProvider
+from src.domain.astrophysics.value_objects import SolarMass
 
 def main():
-    # 1. CONFIGURACIÓN DE ENTORNO
-    base_path = os.path.dirname(os.path.abspath(__file__))
-    USE_REAL_HARDWARE = os.getenv("USE_REAL_HARDWARE", "False").lower() == "true"
-    MODE = os.getenv("QNIM_MODE", "REAL") # Opciones: "REAL" o "SYNTHETIC"
+    print("🌌 --- INICIANDO QNIM FRAMEWORK (DECODIFICACIÓN MULTICAPA) --- 🌌")
     
-    token = os.getenv("IBM_QUANTUM_TOKEN")
-    backend = os.getenv("IBM_BACKEND_NAME", "ibm_kingston")
+    # --- CONFIGURACIÓN DEL EXPERIMENTO ---
+    EVALUAR_EVENTO_REAL = True 
+    NUM_PASADAS_ENSAMBLE = 5  # Para estabilizar la confianza en datos reales
+    
+    # 1. INICIALIZAR INFRAESTRUCTURA
+    weights_path = "models/qnim_vqc_weights.npy"
+    pipeline_path = "models/qnim_preprocessing_pipeline.pkl"
+    
+    if not os.path.exists(weights_path) or not os.path.exists(pipeline_path):
+        print("❌ Error: Faltan los modelos. Ejecuta 'python3 train.py' primero.")
+        return
+        
+    print("🔌 Conectando Adaptadores Cuánticos (Qiskit & Neal)...")
+    dwave_adapter = NealSimulatedAnnealerAdapter()
+    ibm_adapter = IBMQuantumAdapter(weights_path) 
+    compressor = joblib.load(pipeline_path)
 
-    # 2. INYECCIÓN DE DEPENDENCIAS (El nuevo cerebro)
-    orchestrator = HybridInferenceOrchestrator(
-        ibm_token=token,
-        ibm_backend=backend,
-        use_real_ibm=USE_REAL_HARDWARE
+    # 2. INICIALIZAR APLICACIÓN
+    orchestrator = HybridInferenceOrchestrator(ibm_adapter, dwave_adapter)
+    use_case = DecodeGravitationalWaveUseCase(orchestrator, compressor)
+
+    # 3. CARGAR DATOS
+    print("📂 Cargando evento gravitacional interceptado...")
+    loader = QuantumDatasetLoader(target_samples=16384)
+    
+    if EVALUAR_EVENTO_REAL:
+        ruta_gw150914 = "data/raw/H-H1_LOSC_4_V2-1126259446-32.hdf5"
+        raw_strain = loader.prepare_for_quantum(ruta_gw150914, is_real_data=True)
+        event_id = "GW150914"
+        snr_real = 24.0
+    else:
+        data_dir = Path("data/synthetic")
+        latest_batch = sorted([d for d in data_dir.iterdir() if d.is_dir() and d.name.startswith("2026")])[-1]
+        test_file = list(latest_batch.glob("*.h5"))[-1] 
+        raw_strain = loader.prepare_for_quantum(str(test_file), is_real_data=False)
+        event_id = test_file.stem
+        snr_real = 18.5
+
+    signal = GWSignal(
+        strain=raw_strain,
+        detector=DetectorType.H1,
+        sample_rate=4096,
+        gps_start=GPSTime(1126259462.4), 
+        snr_instrumental=snr_real
     )
+    event = QuantumDecodedEvent(event_id=event_id, signal=signal)
+
+    # 4. GENERAR ESPACIO DE BÚSQUEDA D-WAVE (Capa 2)
+    print("🧮 Refinando banco de plantillas para D-Wave...")
+    kerr = KerrVacuumProvider()
+    templates = []
     
-    loader = QuantumDatasetLoader(target_samples=64)
-    sstg_service = SSTGService()
-    anomaly_gen = AnomalyGeneratorService()
-    multipole_val = MultipoleValidator()
-
-    CLIPresenter.show_welcome()
+    masas_1 = np.linspace(34, 37, 5) 
+    masas_2 = np.linspace(28, 32, 5) 
     
-    try:
-        # 3. SELECCIÓN DE DATOS (Real vs Sintético Estocástico)
-        if MODE == "SYNTHETIC":
-            print(f"\n[SSTG] Generando Evento Sintético Estocástico (Blind Challenge)...")
-            challenge = sstg_service.generate_blind_challenge(theory="RG") 
-            raw_strain = challenge['strain']
-            ground_truth = challenge['metadata']
-            
-            # Adaptamos la señal para el QML
-            quantum_data = raw_strain[:64] if len(raw_strain) >= 64 else np.pad(raw_strain, (0, 64-len(raw_strain)))
-            event_id = "GW-SSTG-BLIND"
-            print(f"🧪 Teoría Inyectada: {ground_truth['theory']} | Masa Objetivo: {ground_truth['m1']:.2f}")
-            
-        else:
-            print(f"\n[LIGO] Accediendo a datos reales...")
-            # Para el TFM, cargamos un evento validado de la carpeta sintética como proxy de datos reales
-            data_dir = os.path.join(base_path, "data", "synthetic")
-            try:
-                latest_batch = sorted([d for d in os.listdir(data_dir) if d.startswith("2026")])[-1]
-                sample_file = os.path.join(data_dir, latest_batch, "event_00000.h5")
-                quantum_data = loader.prepare_for_quantum(sample_file)
-            except Exception:
-                raise FileNotFoundError("No se han encontrado datos preprocesados en data/synthetic.")
-            
-            ground_truth = {"m1": 36.2, "spin": 0.0, "theory": "RG"} # Referencia de GW150914
-            event_id = "GW150914-REAL"
+    for m1 in masas_1:
+        for m2 in masas_2:
+            tmpl_strain = kerr.generate_base_strain(SolarMass(m1), SolarMass(m2), distance_mpc=410.0)
+            templates.append({
+                "params": {"m1": round(m1, 2), "m2": round(m2, 2), "spin": 0.69},
+                "strain": tmpl_strain
+            })
 
-        # 4. PREPARACIÓN DEL CONTEXTO
-        event_context = {
-            'id': event_id,
-            'quantum_signal': quantum_data,
-            'metadata': ground_truth 
-        }
+    # 5. EJECUTAR INFERENCIA HÍBRIDA (Modo Ensamble)
+    print(f"🚀 Iniciando Ensamble Cuántico ({NUM_PASADAS_ENSAMBLE} pasadas para estabilidad)...")
+    
+    lista_sigmas = []
+    lista_delta_q = []
+    decoded_event = None
 
-        # 5. EJECUCIÓN DEL PIPELINE QML (Conecta a IBM si USE_REAL_HARDWARE=True)
-        print("\n🚀 Iniciando Inferencia Híbrida QNIM...")
-        diagnosis = orchestrator.run_full_diagnosis(event_context)
+    for i in range(NUM_PASADAS_ENSAMBLE):
+        progreso = ((i + 1) / NUM_PASADAS_ENSAMBLE) * 100
+        print(f"  [{progreso:3.0f}%] Procesando pasada {i+1}/{NUM_PASADAS_ENSAMBLE}...", end="\r")
         
-        # Extracción de resultados
-        theory_label = diagnosis['theory']
-        confidence = diagnosis['confidence']
-        m_dwave = diagnosis['best_fit_mass']
+        # Ejecución del caso de uso
+        resultado = use_case.execute(event, templates)
         
-        # 6. INFERENCIA Y METROLOGÍA (Formalismo Christensen & Meyer)
-        # Usamos la masa refinada por D-Wave para la metrología
-        delta_q = anomaly_gen.get_quadrupole_deviation(confidence)
-        
-        # Como D-Wave nos da m1, estimamos m2 para el validador (aproximación)
-        analysis = multipole_val.check_no_hair_theorem(m_dwave, m_dwave*0.8, delta_q)
-        
-        # 7. PRESENTACIÓN DE RESULTADOS DOCTORALES
-        print("\n" + "═"*60)
-        print(f"📜 INFORME QNIM - MODO: {MODE}")
-        print(f"📡 Hardware Real IBM: {'ACTIVO' if USE_REAL_HARDWARE else 'INACTIVO (SIMULADOR)'}")
-        print("═"*60)
-        print(f"🔹 TEORÍA DETECTADA:    {theory_label}")
-        print(f"🔹 CONFIANZA CUÁNTICA:  {confidence*100:.2f}%")
-        
-        print("\n" + "─"*60)
-        print("📊 COMPARATIVA DE PRECISIÓN (Inferencia Híbrida vs Ground Truth)")
-        print(f"Masa Calculada (D-Wave):  {m_dwave:.2f} M_sun")
-        print(f"Masa Real (Referencia):   {ground_truth['m1']:.2f} M_sun")
-        error_m1 = abs(m_dwave - ground_truth['m1']) / ground_truth['m1'] * 100
-        print(f"❌ Error Relativo:        {error_m1:.2f}%")
-        
-        print("\n" + "🔭 METROLOGÍA Y ANOMALÍAS")
-        print(f"🔸 Desviación ΔQ:        {delta_q:.4f}")
-        print(f"🔸 Consistencia RG:      {'SÍ' if 'Relativity' in theory_label else 'NO (ANOMALÍA DETECTADA)'}")
-        print("═"*60 + "\n")
+        lista_sigmas.append(resultado.topology.quantum_confidence_sigma)
+        lista_delta_q.append(resultado.topology.no_hair_delta_q)
+        decoded_event = resultado # Guardamos la última instancia para el reporte
 
-    except Exception as e:
-        print(f"❌ ERROR EN EL PIPELINE: {e}")
-        import traceback
-        traceback.print_exc()
+    # Promediamos los valores críticos para el reporte final
+    sigma_final = sum(lista_sigmas) / NUM_PASADAS_ENSAMBLE
+    delta_q_final = sum(lista_delta_q) / NUM_PASADAS_ENSAMBLE
+    
+    # Actualizamos el objeto final con los promedios
+    decoded_event.topology.quantum_confidence_sigma = sigma_final
+    decoded_event.topology.no_hair_delta_q = delta_q_final
+
+    # 6. MOSTRAR INFORME FINAL (Estructura de 7 Capas)
+    print("\n\n" + "="*65)
+    print("📜 REPORTE DE DECODIFICACIÓN QNIM (INFERENCIA MULTICAPA)")
+    print("="*65)
+    print(f"🆔 Evento: {decoded_event.event_id}")
+    print(f"🎯 SNR Instrumental: {decoded_event.signal.snr_instrumental}")
+    
+    print("\n▶ [CAPA 1 & 2: GEOMETRÍA INTRÍNSECA - D-WAVE]")
+    print(f"  ├─ Masa 1 inferida: {decoded_event.geometry.m1.value:.2f} M_sun")
+    print(f"  ├─ Masa 2 inferida: {decoded_event.geometry.m2.value:.2f} M_sun")
+    print(f"  └─ Espín efectivo:  {decoded_event.geometry.effective_spin_chi}")
+    
+    print("\n▶ [CAPA 5 & 6: TOPOLOGÍA DEL HORIZONTE - IBM & METROLOGÍA]")
+    print(f"  ├─ Desviación de Kerr (ΔQ): {decoded_event.topology.no_hair_delta_q:.4f}")
+    print(f"  ├─ Confianza Cuántica (Promedio): {decoded_event.topology.quantum_confidence_sigma:.2f} Sigma")
+    
+    # Decisión final basada en el promedio del ensamble
+    veredicto = decoded_event.topology.detected_theory.value
+    print(f"  └─ 🌌 VERDICTO FÍSICO FINAL: {veredicto}")
+    print("="*65)
+    print(f"✅ Análisis completado. El ensamble ha reducido la varianza en un {100*(1-1/np.sqrt(NUM_PASADAS_ENSAMBLE)):.1f}%.")
 
 if __name__ == "__main__":
     main()

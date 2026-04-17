@@ -1,33 +1,31 @@
+# src/domain/metrology/multipole_validator.py
+from src.domain.astrophysics.value_objects import TheoryFamily
+
 class MultipoleValidator:
     """
-    Estudia el Teorema de No-Cabello y clasifica el origen del evento
-    según el formalismo de Christensen & Meyer (2022).
+    Validador de la Capa 6 (Estructura del Horizonte).
+    Comprueba si el evento viola el Teorema de No-Cabello de Kerr.
     """
-    def check_no_hair_theorem(self, mass_1: float, mass_2: float, observed_m2: float):
-        total_mass = mass_1 + mass_2
-        # Asumimos un espín efectivo promediado para la métrica de Kerr
-        spin_eff = 0.7 
-        
-        # Valor teórico según la Relatividad General (Kerr)
-        # M2 = -a^2 * M^3
-        theoretical_m2 = -(spin_eff**2) * (total_mass**3)
-        
-        # Desviación (El "Cabello" cuántico)
-        delta_q = abs(observed_m2 - theoretical_m2) / abs(theoretical_m2) if theoretical_m2 != 0 else 0
-        
-        # Identificación positiva del objeto
-        if total_mass > 50 and delta_q < 0.05:
-            obj_type = "Binary Black Hole (BBH)"
-        elif 2.0 < total_mass < 5.0:
-            obj_type = "Binary Neutron Star (BNS)"
-        elif delta_q >= 0.05:
-            obj_type = "Exotic Compact Object (ECO) / Fuzzball"
-        else:
-            obj_type = "Compact Binary Candidate"
+    def __init__(self, tolerance_threshold: float = 0.05):
+        # Umbral de tolerancia al ruido del hardware cuántico (5%)
+        self.tolerance_threshold = tolerance_threshold
 
+    def evaluate_no_hair_theorem(self, classical_mass: float, classical_spin: float, quantum_anomaly_confidence: float) -> dict:
+        """
+        Cruza los datos base (M, a) con la predicción de la QPU.
+        En RG pura, Q = -a^2 * M^3. Si hay anomalía cuántica, Q sufre una desviación delta_Q.
+        """
+        # Predicción exacta de Relatividad General
+        expected_q_kerr = - (classical_spin**2) * (classical_mass**3)
+        
+        # Mapeamos la confianza de la red neuronal cuántica a una desviación física
+        delta_q_deviation = quantum_anomaly_confidence * 0.5 
+        
+        is_violated = delta_q_deviation > self.tolerance_threshold
+        
         return {
-            "delta_q": delta_q,
-            "is_pure_kerr": delta_q < 0.05,
-            "object_type": obj_type,
-            "total_mass": total_mass
+            "expected_kerr_Q": expected_q_kerr,
+            "measured_delta_Q": delta_q_deviation,
+            "no_hair_violation": is_violated,
+            "inferred_theory": TheoryFamily.LOOP_QUANTUM_GRAVITY if is_violated else TheoryFamily.GENERAL_RELATIVITY
         }

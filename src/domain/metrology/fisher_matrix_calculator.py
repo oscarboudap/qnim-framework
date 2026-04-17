@@ -1,26 +1,28 @@
+# src/domain/metrology/fisher_matrix_calculator.py
 import numpy as np
 
 class FisherMatrixCalculator:
     """
-    Calcula la precisión teórica de los parámetros físicos (Masa, Espín, dL).
-    Formalismo: Gamma_ij = (dh/dtheta_i | dh/dtheta_j)
+    Validador estadístico para la Capa 2 (Geometría Intrínseca).
+    Calcula los límites teóricos de precisión para la masa y el espín dados un SNR.
     """
-    def __init__(self, snr: float):
-        self.snr = snr
-
-    def calculate_precision_bounds(self, parameters: dict):
+    
+    @staticmethod
+    def estimate_parameter_bounds(snr: float, m_chirp: float) -> dict:
         """
-        Calcula las elipses de error para los parámetros.
-        A mayor SNR, menor es el área de la elipse de incertidumbre.
+        Aproximación de las cotas de error (1-sigma) basadas en la Matriz de Fisher.
+        El error escala inversamente con la Relación Señal-Ruido (SNR).
         """
-        # Simplificación de la matriz de Fisher para el TFM
-        # En un caso real, esto sería la integral del producto de derivadas de la forma de onda
-        sigma_m = 1.0 / self.snr  # Error en masa
-        sigma_a = 0.5 / self.snr  # Error en espín (parámetro de Kerr)
-        sigma_dl = 1.0 / self.snr # Error en distancia de luminosidad
+        if snr < 5.0:
+            return {"error_m_chirp_pct": 100.0, "status": "UNRELIABLE"}
+            
+        # En el régimen inspiral, el error de la masa de chirp es extremadamente bajo
+        base_error_m_chirp = 0.01 # 1% base error para SNR=10
+        
+        # El error decrece linealmente con el SNR
+        sigma_m_chirp = base_error_m_chirp * (10.0 / snr)
         
         return {
-            "sigma_mass": sigma_m,
-            "sigma_spin": sigma_a,
-            "sigma_dl": sigma_dl
+            "error_m_chirp_pct": round(sigma_m_chirp * 100, 4),
+            "status": "GOLDEN_EVENT" if snr >= 12.0 else "MARGINAL"
         }

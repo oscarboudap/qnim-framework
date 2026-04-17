@@ -1,22 +1,21 @@
-import numpy as np
+# src/domain/metrology/hubble_metrology.py
 
 class HubbleMetrology:
     """
-    Valida la constante de Hubble (H0) contra los modelos Planck (67.4) y SH0ES (73.0).
+    Validador de la Capa 4 (Cosmología).
+    Infiere la constante de Hubble (H0) usando la onda gravitacional como sirena estándar.
     """
-    def __init__(self):
-        self.h0_planck = 67.4
-        self.h0_shoes = 73.0
+    C_KM_S = 299792.458 # Velocidad de la luz en km/s
 
-    def evaluate_tension(self, h0_inferred: float, sigma_h0: float):
+    @classmethod
+    def infer_hubble_constant(cls, luminosity_distance_mpc: float, redshift_z: float) -> float:
         """
-        Determina con cuántas sigmas de confianza tu software apoya un modelo u otro.
+        Calcula H0 asumiendo la ley de Hubble-Lemaître para redshifts bajos/medios:
+        v = H0 * d_L  =>  c * z = H0 * d_L
         """
-        tension_planck = abs(h0_inferred - self.h0_planck) / sigma_h0
-        tension_shoes = abs(h0_inferred - self.h0_shoes) / sigma_h0
-        
-        return {
-            "p_value_planck": np.exp(-0.5 * tension_planck**2),
-            "p_value_shoes": np.exp(-0.5 * tension_shoes**2),
-            "preferred_model": "Planck" if tension_planck < tension_shoes else "SH0ES"
-        }
+        if luminosity_distance_mpc <= 0 or redshift_z <= 0:
+            return 0.0
+            
+        recession_velocity = cls.C_KM_S * redshift_z
+        h0_estimate = recession_velocity / luminosity_distance_mpc
+        return round(h0_estimate, 2)

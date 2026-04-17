@@ -1,62 +1,86 @@
-import h5py
 import numpy as np
-from scipy import signal
+import h5py
+import warnings
+
+try:
+    from gwpy.timeseries import TimeSeries
+except ImportError:
+    TimeSeries = None
 
 class QuantumDatasetLoader:
     """
-    Cargador y Preprocesador de Grado Cuántico.
-    Prepara la señal .h5 para Amplitude Encoding en la QPU.
+    Infraestructura para carga de datos de GW.
+    Soporta archivos sintéticos de QNIM y archivos reales HDF5 de LIGO (GWOSC).
     """
+    def __init__(self, target_samples: int = 16384):
+        self.target_samples = target_samples
 
-    def __init__(self, target_samples=64):
-        self.target_samples = target_samples  # 64 puntos = 6 cúbits (2^6)
+    def prepare_for_quantum(self, file_path: str, is_real_data: bool = False) -> np.ndarray:
+        """Carga y prepara la señal. Aplica Whitening si es un archivo de LIGO real."""
+        strain = self._load_strain(file_path)
 
-    def prepare_for_quantum(self, file_path):
-        """
-        Método principal: Carga desde disco y procesa.
-        """
+        if is_real_data:
+            strain = self._apply_ligo_whitening(strain, fs=4096)
+
+        return self._format_length(strain)
+
+    def _load_strain(self, file_path: str) -> np.ndarray:
+        """Extrae el array de datos adaptándose a la estructura del HDF5."""
         with h5py.File(file_path, 'r') as f:
-            strain = f['strain'][:]
-            # Creamos un formato compatible con el procesador interno
-            event_data = {'strain': strain}
-            
-        return self.prepare_for_quantum_event(event_data)
+            # 1. Comprobamos PRIMERO el formato oficial de LIGO GWOSC
+            if 'strain/Strain' in f: 
+                return f['strain/Strain'][:]
+            # 2. Comprobamos el formato sintético de QNIM
+            elif 'strain' in f:
+                return f['strain'][:]
+            # 3. Fallback genérico
+            else:
+                keys = list(f.keys())
+                return f[keys[0]][:]
 
-    def prepare_for_quantum_event(self, event_data):
+    def _apply_ligo_whitening(self, strain: np.ndarray, fs: int) -> np.ndarray:
         """
-        Procesa los datos (ya sea que vengan de disco o de memoria).
+        [Nivel de Robustez Investigadora]
+        Aplica blanqueo y filtrado usando el motor interno de GWPy.
+        Evita conflictos de argumentos entre Scipy y GWPy.
         """
-        strain = event_data['strain']
-        
-        # 1. Whitening (Eliminar el ruido de fondo coloreado)
-        strain_whiten = self._whiten(strain)
-        
-        # 2. Bandpass (Filtro 30-500Hz para centrarse en el evento)
-        strain_filter = self._bandpass(strain_whiten, 30, 500, fs=4096)
-        
-        # 3. Windowing (Centrado en el pico de la onda)
-        peak_idx = np.argmax(np.abs(strain_filter))
-        half_window = self.target_samples // 2
-        start = max(0, peak_idx - half_window)
-        end = start + self.target_samples
-        
-        quantum_ready_data = strain_filter[start:end]
-        
-        # Padding de seguridad
-        if len(quantum_ready_data) < self.target_samples:
-            quantum_ready_data = np.pad(quantum_ready_data, (0, self.target_samples - len(quantum_ready_data)))
+        if TimeSeries is None:
+            raise ImportError("❌ Falta la librería 'gwpy'. Ejecuta: pip install gwpy")
 
-        # 4. Normalización Unitaria (Obligatorio para amplitud cuántica)
-        norm = np.linalg.norm(quantum_ready_data)
-        if norm == 0: return quantum_ready_data
+        print("🧹 Iniciando proceso de Whitening (PSD interna Welch)...")
         
-        return quantum_ready_data / norm
+        # 1. Convertir a objeto TimeSeries de GWPY
+        ts = TimeSeries(strain, sample_rate=fs)
 
-    def _whiten(self, data):
-        f, psd = signal.welch(data, fs=4096, nperseg=max(256, len(data)//8))
-        interp_psd = np.interp(np.linspace(0, 0.5, len(data)), f/4096, psd)
-        return np.fft.ifft(np.fft.fft(data) / np.sqrt(interp_psd + 1e-10)).real
+        # 2. Blanqueo (Whitening)
+        # En lugar de pre-calcular la PSD, pasamos los parámetros de tiempo directamente.
+        # fftlength=4: usamos segmentos de 4 segundos para la PSD (resolución de 0.25Hz).
+        # overlap=2: 50% de solapamiento para reducir la varianza de la estimación.
+        whitened = ts.whiten(fftlength=4, overlap=2)
 
-    def _bandpass(self, data, low, high, fs):
-        sos = signal.butter(4, [low, high], btype='band', fs=fs, output='sos')
-        return signal.sosfilt(sos, data)
+        # 3. Filtro de paso de banda (Bandpass)
+        # Aislamos el rango 20-300Hz donde el detector es más sensible y está la señal.
+        bp_whitened = whitened.bandpass(20, 300)
+
+        # 4. Recorte de bordes (Crop)
+        # El proceso de blanqueo y filtrado ensucia los extremos de la señal.
+        # Recortamos 1 segundo de cada lado para asegurar que los datos sean puros.
+        crop_samples = int(1.0 * fs) 
+        if len(bp_whitened) > (2 * crop_samples):
+            clean_strain = bp_whitened.value[crop_samples:-crop_samples]
+        else:
+            clean_strain = bp_whitened.value
+
+        print(f"✅ Señal blanqueada y filtrada con éxito. Longitud final: {len(clean_strain)} muestras.")
+        return clean_strain
+
+    def _format_length(self, strain: np.ndarray) -> np.ndarray:
+        """Ajusta el vector a la dimensión exacta requerida por el Pipeline PCA."""
+        if len(strain) > self.target_samples:
+            # Extraemos el centro de la señal (donde suele estar el merger)
+            start = (len(strain) - self.target_samples) // 2
+            return strain[start:start + self.target_samples]
+        elif len(strain) < self.target_samples:
+            # Hacemos padding con ceros si la señal es más corta
+            return np.pad(strain, (0, self.target_samples - len(strain)), 'constant')
+        return strain
