@@ -1,11 +1,11 @@
 import numpy as np
 import os
+import joblib
 from src.domain.quantum.vqc_classifier import VQCClassifier, CloudTranspilerSampler
 from src.domain.quantum.annealing_optimizer import AnnealingParameterOptimizer
 
 class HybridInferenceOrchestrator:
     def __init__(self, ibm_token=None, ibm_backend="ibm_kingston", use_real_ibm=False):
-        # ESCALADO A 12 CÚBITS
         self.vqc_engine = VQCClassifier(
             n_qubits=12, token=ibm_token, backend_name=ibm_backend, use_real_hardware=use_real_ibm
         )
@@ -31,26 +31,33 @@ class HybridInferenceOrchestrator:
         # 2. INICIALIZACIÓN LOCAL
         self.vqc_engine.initialize_classifier(fmap, initial_weights=loaded_weights)
 
-        # 3. DUMMY FIT LOCAL (Adaptado a 12 variables)
+        # 3. DUMMY FIT LOCAL
         fake_X = np.zeros((1, 12))
         fake_y = np.array([[1, 0]])
         self.vqc_engine.vqc.fit(fake_X, fake_y) 
         
-        # 4. HOT-SWAP A HARDWARE REAL
-        features = np.array([quantum_ready_data[:12]]) 
+        # 4. COMPRESIÓN DE DATOS (PIPELINE)
+        pipeline_path = "models/qnim_preprocessing_pipeline.pkl"
+        if os.path.exists(pipeline_path):
+            print("🗜️ Comprimiendo señal astrofísica (Pipeline Cuántico)...")
+            quantum_pipeline = joblib.load(pipeline_path)
+            # Pasamos la onda entera (16384) y sale un array de 12 acotado entre -π y π
+            features = quantum_pipeline.transform(quantum_ready_data.reshape(1, -1))
+        else:
+            print("⚠️ No se encontró el pipeline. Usando truncado básico.")
+            features = np.array([quantum_ready_data[:12]])
         
+        # HOT-SWAP A HARDWARE REAL
         if self.vqc_engine.use_real_hardware and self.vqc_engine.real_backend:
             print("🔌 Conectando la red neuronal al hardware físico (Hot-Swap)...")
             real_sampler = CloudTranspilerSampler(self.vqc_engine.real_backend)
             self.vqc_engine.vqc.neural_network.sampler = real_sampler
 
-        # 5. EJECUCIÓN (Inferencia con Probabilidades Reales)
+        # 5. EJECUCIÓN 
         prediction = self.vqc_engine.vqc.predict(features)
         theory_idx = np.argmax(prediction[0])
         theory_label = "Quantum Anomaly (LQG/Fuzzball)" if theory_idx == 1 else "General Relativity (Kerr)"        
         
-        # Extraemos la probabilidad exacta de la clase ganadora
-        # forward() nos da el vector de estado/probabilidades [P(Kerr), P(Anomalía)]
         probabilities = self.vqc_engine.vqc.neural_network.forward(features, self.vqc_engine.vqc.weights)
         real_confidence = float(probabilities[0][theory_idx])
 
@@ -62,30 +69,21 @@ class HybridInferenceOrchestrator:
 
         return {
             "theory": theory_label,
-            "confidence": real_confidence, # Inferencia probabilística real
+            "confidence": real_confidence,
             "best_fit_mass": refined_params['m1'],
             "best_fit_spin": refined_params['spin'],
             "dwave_precision": "High (Quantum Tunneling search)"
         }
 
     def _generate_search_space(self, meta):
-        """
-        Genera un espacio de fases masivo para la rama de D-Wave.
-        Explora cientos de combinaciones de Masa y Espín simultáneamente.
-        """
         templates = []
         m_base = meta.get('m1') or 35.0
-        
         print(f"📊 D-WAVE: Mapeando espacio de fases masivo alrededor de M={m_base:.1f}...")
-
-        # Ampliamos drásticamente la búsqueda: 
-        # 20 valores de masa x 10 valores de espín = 200 hipótesis físicas
         for m in np.linspace(m_base - 15, m_base + 15, 20):
             for s in np.linspace(-0.9, 0.9, 10):
                 templates.append({
                     'params': {'m1': m, 'spin': s},
                     'strain': np.random.normal(0, 0.05, 64) 
                 })
-                
         print(f"🌌 Espacio QUBO generado con {len(templates)} plantillas de correlación.")
         return templates

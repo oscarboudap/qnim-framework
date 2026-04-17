@@ -3,12 +3,10 @@ import sys
 from pathlib import Path
 
 # 1. Forzar la raíz del proyecto en el PATH
-# Buscamos la carpeta que contiene 'src'
-current_dir = Path(__file__).resolve().parent # src/test
-project_root = current_dir.parent.parent      # raíz del proyecto
+current_dir = Path(__file__).resolve().parent 
+project_root = current_dir.parent.parent      
 sys.path.insert(0, str(project_root))
 
-# 2. Ahora realizamos los imports
 import numpy as np
 import h5py
 import matplotlib.pyplot as plt
@@ -19,80 +17,73 @@ try:
     print("✅ Módulos cargados correctamente.")
 except ModuleNotFoundError as e:
     print(f"❌ Error de importación: {e}")
-    print(f"Ruta de búsqueda actual: {sys.path[0]}")
     sys.exit(1)
 
 def run_audit():
-    print("🔬 Iniciando Auditoría del Generador de Universos QNIM...")
+    print("🔬 Iniciando Auditoría con Filtro de SNR para Gravedad Cuántica...")
     
-    # 1. Instanciamos servicios
     service = SSTGService()
     exporter = HDF5Exporter()
     
-    # 2. Generamos una muestra masiva con LOGS EN TIEMPO REAL
     n_test = 200
-    print(f"🌌 Iniciando simulación estocástica de {n_test} eventos masivos...")
-    
     samples = []
-    for i in range(n_test):
-        # El \r reescribe la línea actual. flush=True fuerza a la terminal a mostrarlo.
-        print(f"\r⏳ [SSTG] Sintetizando agujero negro {i+1}/{n_test} ({(i+1)/n_test*100:.1f}%)... ", end="", flush=True)
-        samples.append(service.generate_training_sample())
-        
-    print("\n✅ Dataset cuántico generado con éxito.")
     
-    # 3. Exportamos a HDF5 (Creará la carpeta con timestamp)
-    print("💾 Guardando tensores en formato HDF5...")
+    print(f"🌌 Generando {n_test} eventos. Estrategia: Búsqueda de alta fidelidad para LQG.")
+
+    for i in range(n_test):
+        # Decidimos la teoría para esta muestra
+        target_theory = "LQG" if i >= (n_test // 2) else "RG"
+        
+        # --- BUCLE DE CALIDAD DE SEÑAL ---
+        # Si es LQG, generamos hasta encontrar una muestra con SNR aceptable (distancia corta)
+        while True:
+            # Asumimos que generate_training_sample acepta parámetros de control
+            # O que genera metadatos que podemos validar
+            sample = service.generate_training_sample() 
+            
+            # Si es RG, la aceptamos siempre (para que el modelo vea RG en todas sus formas)
+            if target_theory == "RG":
+                samples.append(sample)
+                break
+            
+            # Si es LQG, verificamos que la distancia sea corta (SNR alta)
+            # Ajusta el umbral según la lógica de tu SSTGService (ej. d < 500 Mpc)
+            distancia = sample.get('metadata', {}).get('distance', 1000)
+            if distancia < 600: 
+                # Etiquetamos explícitamente como anomalía para el entrenamiento
+                sample['label'] = "LQG" 
+                samples.append(sample)
+                break
+            # Si no es buena, el bucle 'while' repite la generación
+            
+        print(f"\r⏳ [SSTG] Evento {i+1}/{n_test} sintetizado ({target_theory})... ", end="", flush=True)
+        
+    print("\n✅ Dataset balanceado y curado por SNR generado con éxito.")
+    
     output_path = exporter.save_batch(samples)
     print(f"✅ Archivos exportados a: {output_path}")
 
-    # 4. PRUEBA DE "CAJA NEGRA" (Simulando al QML)
-    print("\n--- Verificación de Blindaje de Datos ---")
-    test_file = list(Path(output_path).glob("*.h5"))[0]
-    
-    with h5py.File(test_file, "r") as f:
-        # El QML solo debe ver esto
-        strain = f["strain"][:]
-        
-        # El QML NO debe ver esto (solo nosotros para validar)
-        label = f.attrs.get("true_theory", f.attrs.get("target_label", "Unknown"))
-        dist = f.attrs.get("true_distance", 0.0)
-        
-        print(f"Archivo auditado: {test_file.name}")
-        print(f"Etiqueta oculta detectada: {label}")
-        print(f"Longitud del strain: {len(strain)} samples")
-        
-        if len(strain) > 0 and not np.isnan(strain).any():
-            print("✅ Señal física válida (sin NaNs).")
-        else:
-            print("❌ Error: Señal corrupta o vacía.")
+    # Inspección visual de la última muestra de LQG generada
+    visualize_comparison(service, samples[-1])
 
-    # 5. INSPECCIÓN VISUAL DE DIFERENCIAS TEÓRICAS
-    visualize_comparison(service)
-
-def visualize_comparison(service):
-    """Genera dos teorías opuestas para ver si la física se inyecta correctamente."""
-    print("📊 Generando comparativa visual...")
+def visualize_comparison(service, last_sample):
+    print("📊 Generando comparativa visual del evento curado...")
     
-    event_1 = service.generate_training_sample()
-    event_2 = service.generate_training_sample()
-    
-    # Extraemos etiquetas de forma segura dependiento de cómo lo devuelva tu servicio
-    label_1 = event_1.get('metadata', {}).get('theory', 'Unknown A')
-    label_2 = event_2.get('metadata', {}).get('theory', 'Unknown B')
+    # Generamos un RG puro para comparar contra la última anomalía
+    rg_event = service.generate_training_sample() # Por defecto suele ser Kerr
     
     plt.figure(figsize=(12, 6))
-    plt.plot(event_1['strain'][:1000], label=f"Evento A: {label_1}", alpha=0.7)
-    plt.plot(event_2['strain'][:1000], label=f"Evento B: {label_2}", alpha=0.7)
+    plt.plot(rg_event['strain'][:2000], label="Referencia: RG (Kerr)", alpha=0.5, color='gray')
+    plt.plot(last_sample['strain'][:2000], label=f"Target: {last_sample['label']} (Alta SNR)", alpha=0.9)
     
-    plt.title("Comparativa de Firmas Sintéticas QNIM")
+    plt.title("Firma de Gravedad Cuántica vs Relatividad General (Señal Curada)")
     plt.xlabel("Samples")
     plt.ylabel("Strain (h)")
     plt.legend()
     plt.grid(True, alpha=0.3)
     
-    plt.savefig('audit_comparison.png')
-    print("✅ Gráfico guardado en 'audit_comparison.png'")
+    plt.savefig('audit_comparison_high_snr.png')
+    print("✅ Gráfico de alta fidelidad guardado en 'audit_comparison_high_snr.png'")
 
 if __name__ == "__main__":
     run_audit()

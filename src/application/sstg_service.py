@@ -61,4 +61,4 @@ class SSTGService:
 
     def _apply_wormhole_effects(self, strain):
         """Efecto topológico: Inversión y eco de salida."""
-        return -0.9 * np.roll(strain, 150) + straind
+        return -0.9 * np.roll(strain, 150) + strain
