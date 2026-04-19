@@ -1,0 +1,4 @@
+14:52:54 | INFO     | qnim.scripts.block_1_synthesis | [INIT] Initializing Block 1: GW Synthesis
+14:52:54 | INFO     | qnim.scripts.block_1_synthesis | CONFIG[SynthesisConfig]: target_samples=16384 | sample_rate=4096
+14:52:54 | INFO     | qnim.scripts.block_1_synthesis | [ENGINE] Creating Synthetic GW Generator
+14:52:54 | INFO     | qnim.scripts.block_1_synthesis | [GENERATION] Generating synthetic events (target_count=16384)

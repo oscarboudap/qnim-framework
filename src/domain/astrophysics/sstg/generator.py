@@ -3,7 +3,12 @@ import numpy as np
 import h5py
 import os
 import sys
+import logging
 from pathlib import Path
+
+# --- LOGGING CONFIGURATION ---
+logger = logging.getLogger("SSTG.Generator")
+logger.setLevel(logging.DEBUG)
 
 # --- CONFIGURACIÓN DE RUTAS ---
 # Buscamos la raíz del proyecto 'qnim' para que las importaciones de 'src' funcionen
@@ -12,27 +17,72 @@ try:
     project_root = next(p for p in current_path.parents if p.name == 'qnim')
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
+    logger.debug(f"✓ Project root found: {project_root}")
 except StopIteration:
     print("❌ Error: No se encontró la raíz 'qnim'. Ejecuta desde dentro del proyecto.")
     sys.exit(1)
 
 # Importaciones de dominio sincronizadas con tu archivo value_objects.py
-from pycbc.waveform import get_td_waveform
-from src.domain.astrophysics.value_objects import TheoryFamily
+try:
+    logger.debug("Importing pycbc.waveform...")
+    from pycbc.waveform import get_td_waveform
+    logger.debug("✓ pycbc.waveform imported")
+except ImportError as e:
+    logger.error(f"❌ Failed to import pycbc: {e}")
+    raise
+
+try:
+    logger.debug("Importing TheoryFamily...")
+    from src.domain.astrophysics.value_objects import TheoryFamily
+    logger.debug("✓ TheoryFamily imported")
+except ImportError as e:
+    logger.error(f"❌ Failed to import TheoryFamily: {e}")
+    raise
 
 # Importar inyectores de capas 4, 5, 6, 7
-from src.domain.astrophysics.sstg.injectors.layer4_quantum_foam_complete import (
-    Layer4QuantumFoamInjector, QuantumFoamParams
-)
-from src.domain.astrophysics.sstg.injectors.layer5_beyond_gr_complete import (
-    Layer5BeyondGRInjector, BeyondGRParams
-)
-from src.domain.astrophysics.sstg.injectors.layer6_horizon_topology_complete import (
-    Layer6HorizonTopologyInjector, HorizonTopologyParams
-)
-from src.domain.astrophysics.sstg.injectors.layer7_quantum_corrections_complete import (
-    Layer7QuantumCorrectionsInjector, QuantumCorrectionParams
-)
+try:
+    logger.debug("Importing Layer4 (Quantum Foam)...")
+    from src.domain.astrophysics.sstg.injectors.layer4_quantum_foam_complete import (
+        Layer4QuantumFoamInjector, QuantumFoamParams
+    )
+    logger.debug("✓ Layer4 imported")
+except ImportError as e:
+    logger.warning(f"⚠ Could not import Layer4: {e}")
+    Layer4QuantumFoamInjector = None
+    QuantumFoamParams = None
+
+try:
+    logger.debug("Importing Layer5 (Beyond GR)...")
+    from src.domain.astrophysics.sstg.injectors.layer5_beyond_gr_complete import (
+        Layer5BeyondGRInjector, BeyondGRParams
+    )
+    logger.debug("✓ Layer5 imported")
+except ImportError as e:
+    logger.warning(f"⚠ Could not import Layer5: {e}")
+    Layer5BeyondGRInjector = None
+    BeyondGRParams = None
+
+try:
+    logger.debug("Importing Layer6 (Horizon Topology)...")
+    from src.domain.astrophysics.sstg.injectors.layer6_horizon_topology_complete import (
+        Layer6HorizonTopologyInjector, HorizonTopologyParams
+    )
+    logger.debug("✓ Layer6 imported")
+except ImportError as e:
+    logger.warning(f"⚠ Could not import Layer6: {e}")
+    Layer6HorizonTopologyInjector = None
+    HorizonTopologyParams = None
+
+try:
+    logger.debug("Importing Layer7 (Quantum Corrections)...")
+    from src.domain.astrophysics.sstg.injectors.layer7_quantum_corrections_complete import (
+        Layer7QuantumCorrectionsInjector, QuantumCorrectionParams
+    )
+    logger.debug("✓ Layer7 imported")
+except ImportError as e:
+    logger.warning(f"⚠ Could not import Layer7: {e}")
+    Layer7QuantumCorrectionsInjector = None
+    QuantumCorrectionParams = None
 
 class StochasticSignalGenerator:
     def __init__(self, config_path="config/universe_params.yaml"):
@@ -45,143 +95,151 @@ class StochasticSignalGenerator:
 
     def generate_event(self, theory_type: TheoryFamily):
         """Genera un evento basado en la probabilidad física y parámetros del config."""
-        conf = self.config['rangos_geometria']
-        anom = self.config['anomalias_cuanticas']
-        instr = self.config['instrumentacion']
+        logger.debug(f"┌─ START generate_event(theory={theory_type})")
+        
+        try:
+            conf = self.config['rangos_geometria']
+            anom = self.config['anomalias_cuanticas']
+            instr = self.config['instrumentacion']
+            logger.debug(f"  ✓ Config loaded")
+            
+        except KeyError as e:
+            logger.error(f"  ❌ Missing config key: {e}")
+            raise
         
         # 1. Muestreo de parámetros base (Geometría de Kerr)
-        m1 = np.random.uniform(conf['masa_1'][0], conf['masa_1'][1])
-        m2 = np.random.uniform(conf['masa_2'][0], m1)  # Masa 2 siempre menor o igual
-        chi = np.random.uniform(conf['spin_chi'][0], conf['spin_chi'][1])
-        dist = np.random.uniform(conf['distancia_mpc'][0], conf['distancia_mpc'][1])
+        try:
+            logger.debug(f"  → Sampling masses...")
+            m1 = np.random.uniform(conf['masa_1'][0], conf['masa_1'][1])
+            m2 = np.random.uniform(conf['masa_2'][0], m1)
+            chi = np.random.uniform(conf['spin_chi'][0], conf['spin_chi'][1])
+            dist = np.random.uniform(conf['distancia_mpc'][0], conf['distancia_mpc'][1])
+            logger.debug(f"    m1={m1:.2f}, m2={m2:.2f}, χ={chi:.3f}, d={dist:.1f} Mpc")
+        except Exception as e:
+            logger.error(f"  ❌ Failed to sample parameters: {e}")
+            raise
         
         # 2. Generación de la onda base (Relatividad General - PyCBC)
-        dt = 1.0 / instr['sample_rate']
-        
-        hp, hc = get_td_waveform(approximant="SEOBNRv4_opt",
-                                 mass1=m1, mass2=m2,
-                                 spin1z=chi, spin2z=chi,
-                                 delta_t=dt,
-                                 f_lower=20,
-                                 distance=dist)
+        try:
+            logger.debug(f"  → Generating GR baseline with PyCBC (EOB)...")
+            dt = 1.0 / instr['sample_rate']
+            logger.debug(f"    dt={dt:.6f}s, f_lower=20Hz")
+            
+            hp, hc = get_td_waveform(approximant="SEOBNRv4_opt",
+                                     mass1=m1, mass2=m2,
+                                     spin1z=chi, spin2z=chi,
+                                     delta_t=dt,
+                                     f_lower=20,
+                                     distance=dist)
+            logger.debug(f"    ✓ Waveform generated: {len(hp)} samples")
 
-        # Convertir TimeSeries de PyCBC a numpy arrays
-        hp_array = hp.numpy()
-        hc_array = hc.numpy()
+            # Convertir TimeSeries de PyCBC a numpy arrays
+            hp_array = hp.numpy()
+            hc_array = hc.numpy()
+            logger.debug(f"    ✓ Converted to numpy: shape={hp_array.shape}")
+            
+        except Exception as e:
+            logger.error(f"  ❌ Waveform generation failed: {e}")
+            raise
 
         # 3. Inyección de anomalías (Capas 5, 6, 7 según la teoría seleccionada)
-        total_mass = (m1 + m2) / 2  # Masa característica
+        total_mass = (m1 + m2) / 2
         
-        if theory_type == TheoryFamily.KERR_VACUUM:
-            # Relatividad General pura - sin inyección
-            result_h_plus = hp_array
-            result_h_cross = hc_array
-            physics_layers = "GR baseline"
+        try:
+            logger.debug(f"  → Applying theory layers...")
             
-        elif theory_type == TheoryFamily.BRANS_DICKE:
-            # Capa 5: Brans-Dicke (escalar-tensorial)
-            params_bd = BeyondGRParams(
-                theory="Brans-Dicke",
-                omega_bd=np.random.uniform(50, 200),  # Constrains observacionales
-                mode="injection"
-            )
-            result = Layer5BeyondGRInjector.apply_beyond_gr_physics(
-                hp_array, hc_array, params_bd,
-                total_mass_msun=total_mass, distance_mpc=dist,
-                fs=int(instr['sample_rate'])
-            )
-            result_h_plus = result["h_plus"]
-            result_h_cross = result["h_cross"]
-            physics_layers = "Capa 5: Brans-Dicke dipolar"
+            if theory_type == TheoryFamily.KERR_VACUUM:
+                logger.debug(f"    Theory: KERR_VACUUM (no anomalies)")
+                result_h_plus = hp_array
+                result_h_cross = hc_array
+                physics_layers = "GR baseline"
+                
+            elif theory_type == TheoryFamily.BRANS_DICKE:
+                logger.debug(f"    Theory: BRANS_DICKE (Layer 5)")
+                if Layer5BeyondGRInjector is None:
+                    logger.warning(f"      ⚠ Layer5 not available, using baseline")
+                    result_h_plus = hp_array
+                    result_h_cross = hc_array
+                    physics_layers = "GR baseline (Layer5 unavailable)"
+                else:
+                    try:
+                        params_bd = BeyondGRParams(
+                            theory="Brans-Dicke",
+                            omega_bd=np.random.uniform(50, 200),
+                            mode="injection"
+                        )
+                        logger.debug(f"      ω_BD={params_bd.omega_bd:.1f}")
+                        result = Layer5BeyondGRInjector.apply_beyond_gr_physics(
+                            hp_array, hc_array, params_bd,
+                            total_mass_msun=total_mass, distance_mpc=dist,
+                            fs=int(instr['sample_rate'])
+                        )
+                        result_h_plus = result["h_plus"]
+                        result_h_cross = result["h_cross"]
+                        physics_layers = "Capa 5: Brans-Dicke dipolar"
+                        logger.debug(f"      ✓ Layer 5 applied")
+                    except Exception as e:
+                        logger.warning(f"      ⚠ Layer 5 failed: {e}, using baseline")
+                        result_h_plus = hp_array
+                        result_h_cross = hc_array
+                        physics_layers = "GR baseline (Layer5 error)"
+                
+            elif theory_type == TheoryFamily.GRAVASTAR:
+                logger.debug(f"    Theory: GRAVASTAR (Layer 6 ECO)")
+                if Layer6HorizonTopologyInjector is None:
+                    logger.warning(f"      ⚠ Layer6 not available, using baseline")
+                    result_h_plus = hp_array
+                    result_h_cross = hc_array
+                    physics_layers = "GR baseline (Layer6 unavailable)"
+                else:
+                    try:
+                        delay_eco = 0.0001 * total_mass
+                        params_eco = HorizonTopologyParams(
+                            theory="ECO",
+                            echo_delay=delay_eco,
+                            echo_amplitude=np.random.uniform(0.10, 0.25),
+                            n_echoes=np.random.randint(2, 4),
+                            mode="injection"
+                        )
+                        logger.debug(f"      delay={delay_eco:.6f}s, amp={params_eco.echo_amplitude:.3f}")
+                        result = Layer6HorizonTopologyInjector.apply_horizon_topology(
+                            hp_array, hc_array, params_eco,
+                            mass=total_mass,
+                            fs=instr['sample_rate']
+                        )
+                        result_h_plus = result["h_plus"]
+                        result_h_cross = result["h_cross"]
+                        physics_layers = "Capa 6: ECO echoes"
+                        logger.debug(f"      ✓ Layer 6 applied")
+                    except Exception as e:
+                        logger.warning(f"      ⚠ Layer 6 failed: {e}, using baseline")
+                        result_h_plus = hp_array
+                        result_h_cross = hc_array
+                        physics_layers = "GR baseline (Layer6 error)"
+                
+            else:
+                logger.warning(f"    ⚠ Unknown theory type: {theory_type}, using baseline")
+                result_h_plus = hp_array
+                result_h_cross = hc_array
+                physics_layers = "GR baseline (unknown theory)"
             
-        elif theory_type == TheoryFamily.GRAVASTAR:
-            # Capa 6: Ecos de Objetos Compactos Efectivos
-            delay_eco = 0.0001 * total_mass  # Delay proporcional a masa
-            params_eco = HorizonTopologyParams(
-                theory="ECO",
-                echo_delay=delay_eco,
-                echo_amplitude=np.random.uniform(0.10, 0.25),
-                n_echoes=np.random.randint(2, 4),
-                mode="injection"
-            )
-            result = Layer6HorizonTopologyInjector.apply_horizon_topology(
-                hp_array, hc_array, params_eco,
-                mass=total_mass,
-                fs=instr['sample_rate']
-            )
-            result_h_plus = result["h_plus"]
-            result_h_cross = result["h_cross"]
-            physics_layers = "Capa 6: ECO echoes"
+            logger.debug(f"    ✓ Physics layers applied: {physics_layers}")
             
-        elif theory_type == TheoryFamily.STRING_FUZZBALL:
-            # Capa 6: Fuzzball (String theory)
-            params_fuzz = HorizonTopologyParams(
-                theory="Fuzzball",
-                echo_amplitude=np.random.uniform(0.12, 0.20),
-                mode="injection"
-            )
-            result = Layer6HorizonTopologyInjector.apply_horizon_topology(
-                hp_array, hc_array, params_fuzz,
-                mass=total_mass,
-                fs=instr['sample_rate']
-            )
-            result_h_plus = result["h_plus"]
-            result_h_cross = result["h_cross"]
-            physics_layers = "Capa 6: Fuzzball echoes"
-            
-        elif theory_type == TheoryFamily.PLANCK_STAR:
-            # Capa 6: LQG con cuantización de área
-            params_lqg = HorizonTopologyParams(
-                theory="LQG",
-                lqg_area_quantum=np.random.uniform(0.1, 0.5),
-                mode="injection"
-            )
-            result = Layer6HorizonTopologyInjector.apply_horizon_topology(
-                hp_array, hc_array, params_lqg,
-                mass=total_mass,
-                fs=instr['sample_rate']
-            )
-            result_h_plus = result["h_plus"]
-            result_h_cross = result["h_cross"]
-            physics_layers = "Capa 6: LQG quantization"
+        except Exception as e:
+            logger.error(f"  ❌ Physics layer application failed: {e}")
+            raise
         
-        elif theory_type == TheoryFamily.QUANTUM_FOAM:
-            # Capa 4: Wheeler Quantum Foam
-            # Modified Dispersion Relations + stochastic phase diffusion
-            from scipy.fft import rfftfreq
-            params_foam = QuantumFoamParams(
-                mdr_strength=np.random.uniform(0.005, 0.02),  # 0.5-2% correction
-                mdr_exponent=2.0,
-                diffusion_coefficient=np.random.uniform(5e-4, 2e-3),
-                coherence_timescale=max(0.05, 0.2 / total_mass)
-            )
-            
-            # Compute frequency array for MDR
-            dt = 1.0 / instr['sample_rate']
-            freq_array = rfftfreq(len(hp_array), dt)
-            freq_array = np.abs(freq_array)
-            
-            result = Layer4QuantumFoamInjector.inject_quantum_foam(
-                hp_array, hc_array, params_foam,
-                freq_array, int(instr['sample_rate'])
-            )
-            result_h_plus = result["h_plus"]
-            result_h_cross = result["h_cross"]
-            physics_layers = "Capa 4: Wheeler Quantum Foam (MDR + phase diffusion)"
-            
-        else:
-            # Default: GR
-            result_h_plus = hp_array
-            result_h_cross = hc_array
-            physics_layers = "GR baseline (default)"
-
-        return result_h_plus, result_h_cross, {
-            "m1": round(m1, 2), 
-            "m2": round(m2, 2), 
-            "chi": round(chi, 3), 
-            "distance": round(dist, 1),
-            "theory": theory_type.value,
-            "physics_layers": physics_layers
+        logger.debug(f"└─ END generate_event (success)")
+        
+        return {
+            "h_plus": result_h_plus,
+            "h_cross": result_h_cross,
+            "mass_1": m1,
+            "mass_2": m2,
+            "spin": chi,
+            "distance_mpc": dist,
+            "theory": str(theory_type),
+            "physics_layers": physics_layers,
         }
 
     def _apply_quantum_perturbation(self, waveform, delta_q):
@@ -202,23 +260,46 @@ class StochasticSignalGenerator:
         return (data * phase_shift.real)
 
     def save_to_hdf5(self, filename, strain, metadata):
-        """Almacena la señal y su 'etiqueta física' en HDF5."""
-        path = self.output_dir / filename
-        with h5py.File(path, "w") as f:
-            f.create_dataset("strain", data=strain)
-            for k, v in metadata.items():
-                f.attrs[k] = v
-        print(f"✅ Evento guardado: {filename} [{metadata['theory']}]")
+        """Almacena la señal y su 'etiqueta física' en HDF5 con logging."""
+        try:
+            logger.debug(f"  → Saving to HDF5: {filename}")
+            path = self.output_dir / filename
+            
+            with h5py.File(path, "w") as f:
+                logger.debug(f"    Saving strain data (shape={strain.shape}, dtype={strain.dtype})")
+                f.create_dataset("strain", data=strain)
+                
+                logger.debug(f"    Saving metadata: {metadata}")
+                for k, v in metadata.items():
+                    f.attrs[k] = str(v) if not isinstance(v, (int, float, str)) else v
+            
+            logger.debug(f"  ✓ HDF5 file saved: {path}")
+            
+        except Exception as e:
+            logger.error(f"  ❌ Failed to save HDF5: {e}")
+            raise
 
 # --- LANZADOR DE GENERACIÓN MASIVA ---
 if __name__ == "__main__":
-    gen = StochasticSignalGenerator()
+    logger.info("="*80)
+    logger.info("Starting StochasticSignalGenerator.__main__")
+    logger.info("="*80)
     
-    TOTAL_EVENTOS = 500  # ¡Vamos a por el dataset de verdad!
+    try:
+        logger.info("Initializing StochasticSignalGenerator...")
+        gen = StochasticSignalGenerator()
+        logger.info("✓ Generator initialized")
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize generator: {e}")
+        sys.exit(1)
+    
+    TOTAL_EVENTOS = 500
     eventos_creados = 0
     intentos = 0
+    failed_theories = {}
 
-    print(f"🚀 Iniciando generación masiva de {TOTAL_EVENTOS} eventos...")
+    logger.info(f"Starting generation of {TOTAL_EVENTOS} synthetic GW events...")
 
     while eventos_creados < TOTAL_EVENTOS:
         intentos += 1
@@ -237,16 +318,40 @@ if __name__ == "__main__":
             theory = TheoryFamily.GRAVASTAR
         else:  # 0.99 - 1.00 (1% of events)
             theory = TheoryFamily.QUANTUM_FOAM
-            
+        
         try:
+            logger.debug(f"[Attempt {intentos}] Generating event {eventos_creados} with theory {theory}")
+            
             # Intentamos generar la física
-            hp, _, meta = gen.generate_event(theory)
+            event = gen.generate_event(theory)
+            hp = event["h_plus"]
+            meta = {
+                "m1": event["mass_1"],
+                "m2": event["mass_2"],
+                "chi": event["spin"],
+                "distance": event["distance_mpc"],
+                "theory": event["theory"],
+                "physics_layers": event["physics_layers"]
+            }
+            
             nombre_archivo = f"qnim_evt_{eventos_creados:04d}.h5"
             gen.save_to_hdf5(nombre_archivo, hp, meta)
             eventos_creados += 1
-        except RuntimeError as e:
-            # Si chocamos con el límite de Nyquist, ignoramos y seguimos
-            print(f"⚠️ Salto en intento {intentos}: Parámetros extremos (Nyquist Limit). Reintentando...")
+            
+            if eventos_creados % 50 == 0:
+                logger.info(f"✓ {eventos_creados}/{TOTAL_EVENTOS} events generated (success rate: {100*eventos_creados/intentos:.1f}%)")
+            
+        except Exception as e:
+            logger.debug(f"  ⚠ Failed (attempt {intentos}): {type(e).__name__}: {str(e)[:100]}")
+            failed_theories[str(theory)] = failed_theories.get(str(theory), 0) + 1
             continue
 
-    print(f"\n✨ Dataset completado: {eventos_creados} realidades listas en data/synthetic/massive_dataset")
+    logger.info("="*80)
+    logger.info(f"✨ Generation complete!")
+    logger.info(f"   Total events created: {eventos_creados}/{TOTAL_EVENTOS}")
+    logger.info(f"   Total attempts: {intentos}")
+    logger.info(f"   Success rate: {100*eventos_creados/intentos:.1f}%")
+    if failed_theories:
+        logger.info(f"   Failed theories: {failed_theories}")
+    logger.info(f"   Output: data/synthetic/massive_dataset/")
+    logger.info("="*80)
