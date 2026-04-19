@@ -14,6 +14,9 @@ import random
 from pathlib import Path
 from dotenv import load_dotenv
 
+# Add parent directory to path so imports work from scripts/
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 # Application: ValidationService
 from src.application.validation_service import ValidationService
 

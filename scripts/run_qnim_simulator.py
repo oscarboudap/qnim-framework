@@ -12,6 +12,9 @@ import numpy as np
 from pathlib import Path
 from dotenv import load_dotenv
 
+# Add parent directory to path so imports work from scripts/
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 # Infrastructure: Simulator
 from src.infrastructure.ibm_quantum_adapter import IBMQuantumAdapter
 from src.domain.quantum.entities import VQCTopology

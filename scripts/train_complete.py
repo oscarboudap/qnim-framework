@@ -16,6 +16,9 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from dotenv import load_dotenv
 
+# Add parent directory to path so imports work from scripts/
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 # Infrastructure: Data loader y trainer
 from src.infrastructure.storage.massive_loader import MassiveDatasetLoader
 from src.infrastructure.qiskit_vqc_trainer import QiskitVQCTrainer
