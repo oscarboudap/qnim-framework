@@ -110,21 +110,29 @@ def main():
     decoded_event.topology.quantum_confidence_sigma = sigma_final
     decoded_event.topology.no_hair_delta_q = delta_q_final
 
-    # 6. MOSTRAR INFORME FINAL (Estructura de 7 Capas)
-    print("\n\n" + "="*65)
-    print("📜 REPORTE DE DECODIFICACIÓN QNIM (INFERENCIA MULTICAPA)")
-    print("="*65)
-    print(f"🆔 Evento: {decoded_event.event_id}")
-    print(f"🎯 SNR Instrumental: {decoded_event.signal.snr_instrumental}")
-    
-    print("\n▶ [CAPA 1 & 2: GEOMETRÍA INTRÍNSECA - D-WAVE]")
-    print(f"  ├─ Masa 1 inferida: {decoded_event.geometry.m1.value:.2f} M_sun")
-    print(f"  ├─ Masa 2 inferida: {decoded_event.geometry.m2.value:.2f} M_sun")
-    print(f"  └─ Espín efectivo:  {decoded_event.geometry.effective_spin_chi}")
-    
-    print("\n▶ [CAPA 5 & 6: TOPOLOGÍA DEL HORIZONTE - IBM & METROLOGÍA]")
-    print(f"  ├─ Desviación de Kerr (ΔQ): {decoded_event.topology.no_hair_delta_q:.4f}")
-    print(f"  ├─ Confianza Cuántica (Promedio): {decoded_event.topology.quantum_confidence_sigma:.2f} Sigma")
+    print("\n" + "═"*70)
+    print("🌌 QNIM MULTILAYER DECODER REPORT (PROCESAMIENTO COMPLETO)")
+    print("═"*70)
+
+    print(f"\n[CAPA 1 & 2: GEOMETRÍA Y SEÑAL]")
+    print(f" ├─ Masas: {decoded_event.geometry.m1.value}/{decoded_event.geometry.m2.value} M_sun")
+    print(f" └─ Momento Cuadrupolar Q: {decoded_event.topology.no_hair_delta_q:.4f}")
+
+    print(f"\n[CAPA 3 & 4: ENTORNO Y COSMOLOGÍA]")
+    print(f" ├─ B-Field (Magnetares): {decoded_event.environment.magnetic_field_gauss:.2e} G")
+    print(f" ├─ Constante de Hubble H0: {decoded_event.cosmology.h0:.2f} km/s/Mpc")
+    print(f" └─ Masa Gravitón m_g: {decoded_event.cosmology.m_graviton:.2e} eV")
+
+    print(f"\n[CAPA 5 & 6: BEYOND GR Y ESTRUCTURA DEL HORIZONTE]")
+    print(f" ├─ Emisión Dipolar: {decoded_event.beyond_gr.dipolar_emission_strength:.4f}")
+    print(f" ├─ Ecos de ECOs (Reflectividad): {decoded_event.topology.echo_amplitude:.4f}")
+    print(f" └─ Dimensiones Extra (KK): {decoded_event.beyond_gr.extra_dims}")
+
+    print(f"\n[CAPA 7: FÍSICA CUÁNTICA PROFUNDA]")
+    print(f" ├─ Coef. Violación Lorentz: {decoded_event.quantum.lorentz_v:.2e}")
+    print(f" ├─ Confianza Cuántica Final: {decoded_event.quantum.sigma:.2f} Sigma")
+    print(f" └─ 🌌 VERDICTO TEÓRICO: {decoded_event.quantum.theory.value}")
+    print("═"*70)
     
     # Decisión final basada en el promedio del ensamble
     veredicto = decoded_event.topology.detected_theory.value

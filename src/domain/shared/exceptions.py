@@ -1,13 +1,15 @@
-# src/domain/shared/exceptions.py
-
-class DomainException(Exception):
-    """Clase base para excepciones del dominio."""
+class QNIMBaseException(Exception):
+    """Excepción base para el framework."""
     pass
 
-class SignalProcessingError(DomainException):
-    """Error ocurrido durante el procesamiento de la señal."""
+class SignalProcessingError(QNIMBaseException):
+    """Error en el blanqueo o filtrado de la señal."""
     pass
 
-class QuantumEmbeddingError(DomainException):
-    """Error al intentar mapear datos clásicos a qubits."""
+class QuantumBackendError(QNIMBaseException):
+    """Error al conectar con IBM Quantum o D-Wave."""
+    pass
+
+class PhysicsConsistencyError(QNIMBaseException):
+    """Error cuando los parámetros inferidos violan leyes fundamentales."""
     pass

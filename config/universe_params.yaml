@@ -1,0 +1,48 @@
+# ==========================================================
+# CONFIGURACIÓN DE PARÁMETROS UNIVERSALES - QNIM FRAMEWORK
+# Fase 1: Generación de Realidad Ponderada
+# ==========================================================
+
+metadata:
+  version: "1.0"
+  description: "Priors Bayesianos y rangos físicos para entrenamiento del VQC"
+
+# 1. PONDERACIÓN DE LA REALIDAD (Priors de Población)
+# Define qué tan probable es que el modelo se encuentre con cada teoría
+probabilidades_teoria:
+  kerr_vacuum: 0.85          # Relatividad General (Escenario estándar)
+  neutron_star_binary: 0.08  # Capa 2: Efectos de marea nuclear
+  beyond_gr_scalar: 0.05     # Capa 5: Teorías Escalar-Tensoriales (EdGB)
+  quantum_gravity_lqg: 0.02  # Capa 6: Cuantización del área (Horizonte)
+
+# 2. RANGOS GEOMÉTRICOS (RG Base)
+# Basado en la sensibilidad de los detectores de 2ª generación (LIGO/Virgo)
+rangos_geometria:
+  masa_1: [15.0, 100.0]       # En masas solares (M_sun)
+  masa_2: [10.0, 80.0]        # M1 >= M2 por convención
+  spin_chi: [0.0, 0.99]      # Spin adimensional (0 = Schwarzschild, 1 = Kerr extremo)
+  distancia_mpc: [100, 3000] # De 100 Mpc a z ~ 0.5
+  excentricidad: [0.0, 0.2]  # La mayoría circularizan, pero dejamos margen
+
+# 3. PARÁMETROS DE "NUEVA FÍSICA" (Anomalías de Capa 5 y 6)
+# Aquí es donde el VQC aprende a diferenciar el "pelo" cuántico
+anomalias_cuanticas:
+  delta_q_range: [0.0, 0.4]     # Desviación del momento cuadrupolar (Kerr es 0)
+  reflectividad_eco: [0.0, 0.8] # Coeficiente de reflexión del horizonte (ECOs)
+  dipole_emission: [0.0, 0.1]   # Carga escalar para teorías escalar-tensoriales
+  immirzi_parameter: 0.2375     # Parámetro estándar de LQG para el espectro de QNM
+
+# 4. PARÁMETROS INSTRUMENTALES (Ruido y Señal)
+# Para asegurar que el modelo no se vuelva "vago" con señales perfectas
+instrumentacion:
+  snr_range: [5, 40]            # Desde señales casi invisibles hasta detecciones épicas
+  sample_rate: 4096             # Hz (Estándar LIGO)
+  duration_sec: 4               # Segundos de señal por evento
+  detectors: ["H1", "L1", "V1"] # Hanford, Livingston, Virgo
+  noise_type: "REAL_LIGO_PSD"   # Usar PSD real en lugar de ruido blanco gaussiano
+
+# 5. ESTRATEGIA DE GENERACIÓN (Data Augmentation)
+augmentation:
+  fase_inicial: "random"        # Evitar que el VQC memorice la posición del pico
+  inclinacion_iota: [0.0, 3.14] # Radianes (Orientación del plano orbital)
+  polarizacion_psi: [0.0, 3.14] # Ángulo de polarización
