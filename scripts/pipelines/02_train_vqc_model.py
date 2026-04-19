@@ -22,6 +22,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 import os
+import h5py
 import numpy as np
 from typing import Dict, Any, Optional
 import joblib
@@ -83,30 +84,86 @@ def main(synthetic_data_path: Optional[str] = None) -> Dict[str, Any]:
         # ====================================================================
         logger.step("DATA", "Loading and preprocessing synthetic data")
         
-        data_loader = container.get_data_loader()
-        
-        # Load data (from Block 1 output or default location)
+        # Find Block 1 output file
         if synthetic_data_path:
-            logger.info(f"Loading from Block 1 output: {synthetic_data_path}")
-            # TODO: Implement custom loader for HDF5 from Block 1
-            X, y, scaler = data_loader.load_and_preprocess(
-                n_components=config.training.vqc.num_features
-            )
+            data_file = Path(synthetic_data_path)
+            logger.info(f"Loading from Block 1 output: {data_file}")
         else:
-            logger.info("Loading from default synthetic data location")
-            X, y, scaler = data_loader.load_and_preprocess(
-                n_components=config.training.vqc.num_features
+            # Find most recent synthetic_gw_*.h5 file
+            synthetic_dir = Path(config.training.paths.get_data_synthetic_path())
+            synthetic_files = sorted(synthetic_dir.glob("synthetic_gw_*.h5"), reverse=True)
+            if not synthetic_files:
+                raise ScriptExecutionException(
+                    "No synthetic data files found",
+                    context={"directory": str(synthetic_dir)}
+                )
+            data_file = synthetic_files[0]
+            logger.info(f"Using latest Block 1 output: {data_file}")
+        
+        # Load strain data and labels from Block 1 HDF5
+        try:
+            logger.debug(f"  → Reading HDF5: {data_file}")
+            with h5py.File(data_file, 'r') as h5f:
+                strain_plus = h5f['strain_plus'][:]  # Shape: (n_events, n_samples)
+                theory_labels = h5f['theory_labels'][:]  # Shape: (n_events,)
+                
+                logger.debug(f"    Loaded strain_plus: shape={strain_plus.shape}")
+                logger.debug(f"    Loaded theory_labels: shape={theory_labels.shape}")
+        except Exception as e:
+            raise ScriptExecutionException(
+                f"Failed to load Block 1 data",
+                context={"file": str(data_file), "error": str(e)}
             )
         
-        # Save preprocessor for inference later
-        preprocessor_path = config.training.paths.get_preprocessing_pipeline_path()
-        joblib.dump(scaler, preprocessor_path)
-        logger.info(f"Preprocessor saved: {preprocessor_path}")
+        # Encode theory labels as integers
+        from sklearn.preprocessing import LabelEncoder
+        label_encoder = LabelEncoder()
+        y = label_encoder.fit_transform(theory_labels)
         
-        # Log data statistics
-        logger.metric("num_samples", X.shape[0], unit="samples")
-        logger.metric("feature_dimension", X.shape[1], unit="dimensions")
+        logger.metric("num_samples", strain_plus.shape[0], unit="samples")
+        logger.metric("sample_length", strain_plus.shape[1], unit="samples")
         logger.metric("num_classes", len(np.unique(y)), unit="classes")
+        for theory, count in zip(label_encoder.classes_, np.bincount(y)):
+            logger.metric(f"class_{theory}", count, unit="events")
+        
+        # Feature preprocessing: PCA
+        try:
+            logger.debug(f"  → Applying PCA ({config.training.vqc.num_features} features)...")
+            from sklearn.decomposition import PCA
+            
+            pca = PCA(n_components=config.training.vqc.num_features)
+            X = pca.fit_transform(strain_plus)
+            
+            logger.debug(f"    PCA shape: {X.shape}")
+            logger.metric("pca_explained_variance", float(np.sum(pca.explained_variance_ratio_)), unit="ratio")
+        except Exception as e:
+            raise ScriptExecutionException(
+                f"PCA preprocessing failed",
+                context={"n_components": config.training.vqc.num_features, "error": str(e)}
+            )
+        
+        # Train/test split
+        try:
+            from sklearn.model_selection import train_test_split
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=0.2, random_state=42, stratify=y
+            )
+            logger.metric("train_samples", X_train.shape[0], unit="samples")
+            logger.metric("test_samples", X_test.shape[0], unit="samples")
+        except Exception as e:
+            raise ScriptExecutionException(
+                f"Train/test split failed",
+                context={"error": str(e)}
+            )
+        
+        # Save preprocessor for inference
+        try:
+            import joblib
+            preprocessor_path = config.training.paths.get_preprocessing_pipeline_path()
+            joblib.dump((pca, label_encoder), preprocessor_path)
+            logger.info(f"✓ Preprocessor saved: {preprocessor_path}")
+        except Exception as e:
+            logger.warning(f"Could not save preprocessor: {e}")
         
         # ====================================================================
         # MODEL TRAINING
@@ -116,8 +173,8 @@ def main(synthetic_data_path: Optional[str] = None) -> Dict[str, Any]:
         trainer = QiskitVQCTrainer()
         
         training_result = trainer.train_vqc(
-            X_train=X,
-            y_train=y,
+            X_train=X_train,
+            y_train=y_train,
             num_qubits=config.training.vqc.num_qubits,
             max_iterations=config.training.vqc.max_iterations,
             optimizer_name=config.training.vqc.optimizer_name,

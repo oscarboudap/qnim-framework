@@ -2,3 +2,13 @@
 14:52:54 | INFO     | qnim.scripts.block_1_synthesis | CONFIG[SynthesisConfig]: target_samples=16384 | sample_rate=4096
 14:52:54 | INFO     | qnim.scripts.block_1_synthesis | [ENGINE] Creating Synthetic GW Generator
 14:52:54 | INFO     | qnim.scripts.block_1_synthesis | [GENERATION] Generating synthetic events (target_count=16384)
+15:11:11 | INFO     | qnim.scripts.block_1_synthesis | [5461/16384] Synthesis... 33.3%
+15:27:24 | INFO     | qnim.scripts.block_1_synthesis | [10922/16384] Synthesis... 66.7%
+15:43:31 | INFO     | qnim.scripts.block_1_synthesis | [16383/16384] Synthesis... 100.0%
+15:43:31 | INFO     | qnim.scripts.block_1_synthesis | [REPORT] Block 1 Synthesis Complete
+15:43:31 | INFO     | qnim.scripts.block_1_synthesis | METRIC: theory_MODIFIED_GRAVITY=824 events
+15:43:31 | INFO     | qnim.scripts.block_1_synthesis | METRIC: theory_QUANTUM=1657 events
+15:43:31 | INFO     | qnim.scripts.block_1_synthesis | METRIC: theory_RG=13903 events
+15:43:31 | INFO     | qnim.scripts.block_1_synthesis | METRIC: snr_mean=739236.0030219312 ratio
+15:43:31 | INFO     | qnim.scripts.block_1_synthesis | METRIC: snr_std=1147294.7590362949 ratio
+15:43:31 | INFO     | qnim.scripts.block_1_synthesis | ✅ Saved 16384 synthetic events to data/synthetic/synthetic_gw_20260419_145254.h5
