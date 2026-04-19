@@ -10,12 +10,13 @@ class NealSimulatedAnnealerAdapter(IQuantumAnnealer):
     por 'DWaveSampler(token=...)' en este único archivo.
     """
     
+    def __init__(self):
+        """Inicializa el sampler de Neal"""
+        self.sampler = neal.SimulatedAnnealingSampler()
+    
     def sample_qubo(self, Q: dict, num_reads: int = 100) -> AnnealingResult:
-        # Inicializamos el sampler de D-Wave
-        sampler = neal.SimulatedAnnealingSampler()
-        
         # Ejecutamos la búsqueda del estado fundamental (Ground State)
-        response = sampler.sample_qubo(Q, num_reads=num_reads)
+        response = self.sampler.sample_qubo(Q, num_reads=num_reads)
         
         # Extraemos el mejor resultado
         best_sample = response.first.sample
@@ -31,3 +32,30 @@ class NealSimulatedAnnealerAdapter(IQuantumAnnealer):
             num_occurrences=occurrences,
             is_ground_state_confident=is_confident
         )
+    
+    def get_embedding_time(self, num_qubits: int) -> float:
+        """
+        Tiempo estimado para embedding en simulador (siempre rápido).
+        
+        Args:
+            num_qubits: Número de qubits lógicos
+            
+        Returns:
+            Tiempo estimado en microsegundos
+        """
+        # Simulador local: tiempo negligible, solo modelamos overhead
+        return 10.0 + (num_qubits * 0.5)  # ~10-100 microsegundos
+    
+    def get_native_graph_topology(self) -> dict:
+        """
+        Retorna topología nativa (simulador no tiene restricciones).
+        
+        Returns:
+            Dict completamente conectado para 8 qubits (como simplificación)
+        """
+        # Simulador: asumimos conectividad completa
+        num_qubits = 8
+        topology = {}
+        for i in range(num_qubits):
+            topology[i] = [j for j in range(num_qubits) if i != j]
+        return topology

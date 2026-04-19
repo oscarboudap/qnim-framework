@@ -92,7 +92,11 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             
             # 2. Seleccionar optimizador
             if optimizer_name.upper() == "SPSA":
-                optimizer = SPSA(maxiter=max_iterations, learning_rate=0.05)
+                optimizer = SPSA(
+                    maxiter=max_iterations,
+                    learning_rate=0.05,
+                    perturbation=0.05
+                )
             elif optimizer_name.upper() == "COBYLA":
                 from qiskit_algorithms.optimizers import COBYLA
                 optimizer = COBYLA(maxiter=max_iterations)
