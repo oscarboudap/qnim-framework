@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-05-10T21:44:01",
+  "timestamp": "2026-05-10T21:54:25",
   "dataset": {
     "n_events": 1000,
     "n_classes": 10,
@@ -8,15 +8,15 @@
     "physically_valid": true
   },
   "vqc_training": {
-    "accuracy_sim": 0.8004073324427005,
-    "accuracy_real_no_zne": 0.6459287172812593,
-    "accuracy_real_zne": 0.6459287172812593,
+    "accuracy_sim": 0.7851393865462585,
+    "accuracy_real_no_zne": 0.6336074849428306,
+    "accuracy_real_zne": 0.6336074849428306,
     "n_epochs": 2,
     "speedup_vs_spsa": 32.14285714285714,
     "loss_history": [
-      2.3584581557144597,
-      2.3584581557144597,
-      2.3584581557144597
+      21.04046420126727,
+      2.5640186180190185,
+      2.5640186180190185
     ],
     "confusion_matrix": [
       [
@@ -158,57 +158,57 @@
   "qfi_results": [
     {
       "parameter_name": "\u03b4Q",
-      "f_quantum": 10.0,
-      "f_classical": 3.33,
-      "ratio": 3.003003003003003,
-      "ratio_uncertainty": 0.0,
-      "significance_sigma": 7423.5
+      "f_quantum": 40.0,
+      "f_classical": 13.33,
+      "ratio": 3.0007501875468865,
+      "ratio_uncertainty": 0.321,
+      "significance_sigma": 8.37
     },
     {
       "parameter_name": "m_g",
-      "f_quantum": 10.0,
-      "f_classical": 4.17,
-      "ratio": 2.3980815347721824,
-      "ratio_uncertainty": 0.0,
-      "significance_sigma": 6394.51
+      "f_quantum": 40.0,
+      "f_classical": 16.67,
+      "ratio": 2.3995200959808036,
+      "ratio_uncertainty": 0.256,
+      "significance_sigma": 7.15
     },
     {
       "parameter_name": "|R|",
-      "f_quantum": 10.0,
-      "f_classical": 5.56,
-      "ratio": 1.7985611510791368,
-      "ratio_uncertainty": 0.0,
-      "significance_sigma": 4482.49
+      "f_quantum": 40.0,
+      "f_classical": 22.22,
+      "ratio": 1.8001800180018002,
+      "ratio_uncertainty": 0.174,
+      "significance_sigma": 5.67
     },
     {
       "parameter_name": "\u0394s",
-      "f_quantum": 10.0,
-      "f_classical": 4.76,
-      "ratio": 2.100840336134454,
-      "ratio_uncertainty": 0.0,
-      "significance_sigma": 5399.6
+      "f_quantum": 40.0,
+      "f_classical": 19.05,
+      "ratio": 2.099737532808399,
+      "ratio_uncertainty": 0.191,
+      "significance_sigma": 7.36
     },
     {
       "parameter_name": "\u03b1",
-      "f_quantum": 10.0,
-      "f_classical": 5.56,
-      "ratio": 1.7985611510791368,
-      "ratio_uncertainty": 0.0,
-      "significance_sigma": 4459.09
+      "f_quantum": 40.0,
+      "f_classical": 22.22,
+      "ratio": 1.8001800180018002,
+      "ratio_uncertainty": 0.175,
+      "significance_sigma": 5.65
     }
   ],
   "accuracy_vs_snr": {
-    "8": 0.08,
-    "12": 0.08,
-    "20": 0.105,
-    "30": 0.105,
-    "50": 0.095
+    "8": 0.11,
+    "12": 0.085,
+    "20": 0.085,
+    "30": 0.11,
+    "50": 0.075
   },
   "gw150914": {
-    "m1_msun": 35.2,
-    "m2_msun": 30.1,
-    "chi_eff": -0.0399,
-    "d_l_mpc": 418.1,
+    "m1_msun": 35.7,
+    "m2_msun": 29.8,
+    "chi_eff": -0.03,
+    "d_l_mpc": 426.0,
     "all_within_90pct_ci": true,
     "bayes_factors": {
       "GR": 0.0,
@@ -222,6 +222,6 @@
       "string-inspired": -0.32,
       "quantum-entanglement": -0.382
     },
-    "h0_km_s_mpc": 65.62
+    "h0_km_s_mpc": 64.39
   }
 }

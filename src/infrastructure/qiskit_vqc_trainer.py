@@ -175,7 +175,12 @@ def _make_vqc_loss_fn(
             for xi, yi in zip(X_batch, y_batch):
                 # Ejecutar circuito con parámetros actuales
                 try:
-                    bound_circuit = ansatz.assign_parameters(theta[:ansatz.num_parameters])
+                    # Pad theta if shorter than the ansatz expects (e.g. x0 was
+                    # initialised with a stale n_params constant).
+                    theta_fit = np.pad(
+                        theta, (0, max(0, ansatz.num_parameters - len(theta)))
+                    )[:ansatz.num_parameters]
+                    bound_circuit = ansatz.assign_parameters(theta_fit)
                     bound_circuit.measure_all()
                     job = sampler.run([(bound_circuit,)], shots=shots)
                     counts = job.result()[0].data.meas.get_counts()
@@ -193,9 +198,16 @@ def _make_vqc_loss_fn(
                     total_loss -= float(np.dot(yi, np.log(probs)))
                 except Exception as e:
                     logger.debug(f"Circuit eval failed: {e}, using proxy")
-                    # Fallback local si falla el circuito
-                    logits = np.dot(X_batch.mean(axis=0), theta[:len(X_batch[0])] if len(theta) >= len(X_batch[0]) else np.pad(theta, (0, len(X_batch[0]) - len(theta))))
-                    probs = np.exp(logits[:n_classes] - logits[:n_classes].max())
+                    # Fallback local si falla el circuito.
+                    # np.dot of two 1-D arrays returns a scalar, so we build a
+                    # proper (n_classes,) logit vector via a small weight matrix.
+                    x_mean = X_batch.mean(axis=0)  # (n_features,)
+                    n_features = len(x_mean)
+                    needed = n_classes * n_features
+                    t_pad = np.pad(theta, (0, max(0, needed - len(theta))))[:needed]
+                    W = t_pad.reshape(n_classes, n_features)
+                    logits = W @ x_mean  # (n_classes,)
+                    probs = np.exp(logits - logits.max())
                     probs /= probs.sum() + 1e-10
                     total_loss -= float(np.dot(yi, np.log(np.clip(probs, 1e-10, 1.0))))
 
@@ -254,7 +266,15 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         """
         try:
             t0 = time.time()
-            n_params = 64  # EfficientSU2(n_qubits=12, reps=2) → 64 params
+            # Compute true n_params from the ansatz; fall back to formula if
+            # Qiskit is unavailable.  EfficientSU2(n, reps=2) → n×2×(2+1).
+            try:
+                from qiskit.circuit.library import EfficientSU2 as _ESU2
+                n_params = _ESU2(
+                    num_qubits=num_qubits, reps=2, entanglement="linear"
+                ).num_parameters
+            except Exception:
+                n_params = num_qubits * 6  # 12 qubits → 72
 
             # Inicializar pesos (pequeños para evitar barren plateaus al inicio)
             rng = np.random.default_rng(42)
