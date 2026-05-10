@@ -21,6 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 import os
+import argparse
 import h5py
 import numpy as np
 import json
@@ -83,12 +84,13 @@ def _determine_source_type(params: Dict[str, Any]) -> str:
     return "CBC"
 
 
-def main(output_path: Optional[str] = None) -> Dict[str, Any]:
+def main(output_path: Optional[str] = None, target_events: Optional[int] = None) -> Dict[str, Any]:
     """
     Generate synthetic GW dataset with quantum gravity anomalies.
     
     Args:
         output_path: Optional custom output directory
+        target_events: Optional number of events to generate (overrides config)
     
     Returns:
         Dict with:
@@ -145,8 +147,10 @@ def main(output_path: Optional[str] = None) -> Dict[str, Any]:
         
         output_dir.mkdir(parents=True, exist_ok=True)
         
-        # Use full target from config
-        TARGET_EVENTS = config.training.preprocessing.target_samples
+        # Use provided target_events or fallback to sensible default
+        # BUG FIX: target_samples is waveform samples (16384), NOT num events!
+        TARGET_EVENTS = target_events if target_events else 10
+        logger.info(f"Target events to generate: {TARGET_EVENTS}")
         
         # ====================================================================
         # GENERATION LOOP
@@ -303,4 +307,21 @@ def main(output_path: Optional[str] = None) -> Dict[str, Any]:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="Generate synthetic gravitational wave events with quantum anomalies"
+    )
+    parser.add_argument(
+        "--target-events",
+        type=int,
+        default=10,
+        help="Number of synthetic events to generate (default: 10)"
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default=None,
+        help="Output directory for HDF5 files (default: data/synthetic)"
+    )
+    
+    args = parser.parse_args()
+    main(output_path=args.output_dir, target_events=args.target_events)

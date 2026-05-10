@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-05-10T02:39:12.378074",
+  "model_performance": {
+    "training_accuracy": 94.5,
+    "test_accuracy": 84.0,
+    "algorithm": "Random Forest",
+    "n_estimators": 100,
+    "feature_dimension": 64
+  },
+  "gw150914_analysis": {
+    "predicted_theory": "RG",
+    "confidence_percent": 84.3,
+    "rg_probability": 0.843,
+    "quantum_probability": 0.083,
+    "modified_gravity_probability": 0.074
+  },
+  "dataset_stats": {
+    "n_events": 500,
+    "samples_per_event": 16384,
+    "sample_rate_hz": 4096,
+    "duration_seconds": 4.0
+  }
+}

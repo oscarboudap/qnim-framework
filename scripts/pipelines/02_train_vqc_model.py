@@ -22,6 +22,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 import os
+import argparse
 import h5py
 import numpy as np
 from typing import Dict, Any, Optional
@@ -43,12 +44,14 @@ from src.infrastructure.sklearn_preprocessing_adapter import SklearnPreprocessor
 from src.infrastructure.storage.quantum_dataloader import QuantumDatasetLoader
 
 
-def main(synthetic_data_path: Optional[str] = None) -> Dict[str, Any]:
+def main(synthetic_data_path: Optional[str] = None, max_iterations: Optional[int] = None, num_qubits: Optional[int] = None) -> Dict[str, Any]:
     """
     Train Quantum VQC model on synthetic GW dataset.
     
     Args:
         synthetic_data_path: Path to HDF5 file from Block 1
+        max_iterations: Override max training iterations
+        num_qubits: Override number of qubits in circuit
     
     Returns:
         Dict with:
@@ -228,4 +231,31 @@ def main(synthetic_data_path: Optional[str] = None) -> Dict[str, Any]:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="Train Quantum VQC model on synthetic GW dataset"
+    )
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default=None,
+        help="Path to synthetic dataset HDF5 file (default: use latest from data/synthetic/)"
+    )
+    parser.add_argument(
+        "--max-iterations",
+        type=int,
+        default=None,
+        help="Override max training iterations (default: from config)"
+    )
+    parser.add_argument(
+        "--num-qubits",
+        type=int,
+        default=None,
+        help="Override number of qubits (default: from config)"
+    )
+    
+    args = parser.parse_args()
+    main(
+        synthetic_data_path=args.dataset,
+        max_iterations=args.max_iterations,
+        num_qubits=args.num_qubits
+    )

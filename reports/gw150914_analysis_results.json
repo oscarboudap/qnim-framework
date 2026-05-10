@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-05-10T02:37:39.847140",
+  "event": "GW150914",
+  "predicted_theory": "RG",
+  "probabilities": {
+    "MODIFIED_GRAVITY": 0.07409455471259661,
+    "QUANTUM": 0.08290136004559519,
+    "RG": 0.8430040852418081
+  },
+  "h1_samples": 131072,
+  "l1_samples": 131072
+}
