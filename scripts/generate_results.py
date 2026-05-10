@@ -121,6 +121,7 @@ def _build_vqc_trainer(config):
             use_real_hardware=config.use_real_hardware,
             backend_name=config.backend_name,
             token=os.environ.get("IBM_QUANTUM_TOKEN", ""),
+            mode=config.mode,
         )
     except ImportError as e:
         logger.warning(f"QiskitVQCTrainer no disponible: {e}. Usando FallbackVQCTrainer.")
@@ -338,6 +339,7 @@ def main() -> int:
         use_real_hardware=(args.mode == "ibm"),
         backend_name=args.backend,
         use_zne=args.use_zne,
+        mode=args.mode,
         output_dir=args.output_dir,
     )
 

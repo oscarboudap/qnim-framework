@@ -168,6 +168,56 @@ class IQuantumMLTrainerPort(ABC):
     def load_weights(self, path: str) -> np.ndarray:
         """Carga pesos previamente guardados."""
         raise NotImplementedError
+    
+    @abstractmethod
+    def predict(self,
+                X: np.ndarray,
+                weights: np.ndarray,
+                num_qubits: int) -> np.ndarray:
+        """
+        Realiza predicciones con pesos entrenados.
+        
+        Args:
+            X: Features [n_samples, n_features]
+            weights: Pesos entrenados
+            num_qubits: Número de qubits del modelo
+            
+        Returns:
+            Predicciones [n_samples] (clase predicha)
+        """
+        raise NotImplementedError
+    
+    @abstractmethod
+    def estimate_accuracy_vs_snr(self,
+                                 X_val: np.ndarray,
+                                 y_val: np.ndarray,
+                                 snr_vals: np.ndarray,
+                                 weights: np.ndarray,
+                                 num_qubits: int,
+                                 snr_bins: int = 5) -> dict:
+        """
+        Calcula accuracy como función del SNR (para robustez).
+        
+        Agrupa las muestras de validación por SNR y calcula
+        la precisión en cada bin. Esto muestra cómo degrada
+        el rendimiento del VQC con el ruido.
+        
+        Args:
+            X_val: Features de validación [n_samples, n_features]
+            y_val: Labels de validación [n_samples]
+            snr_vals: SNR de cada muestra [n_samples]
+            weights: Pesos entrenados del VQC
+            num_qubits: Número de qubits
+            snr_bins: Número de bins de SNR
+            
+        Returns:
+            {
+                snr_min: accuracy,
+                snr_max: accuracy,
+                ...
+            }
+        """
+        raise NotImplementedError
 
 
 class IPreprocessingPort(ABC):

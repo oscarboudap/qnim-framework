@@ -193,6 +193,7 @@ class BalancedDataset:
     n_classes: int       # Número de clases (10 teorías)
     snr_mean: float      # SNR promedio
     snr_std: float       # Desviación estándar SNR
+    snr_val: np.ndarray = None  # SNR de cada muestra de validación [n_val]
     is_physically_valid: bool  # Todos los eventos son físicamente válidos
     
     @property
