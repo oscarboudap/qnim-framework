@@ -183,6 +183,29 @@ class SyntheticDatasetInfo:
     golden_events_count: int  # Eventos con SNR > umbral
 
 
+@dataclass
+class BalancedDataset:
+    """Dataset balanceado generado por SSTG para el pipeline."""
+    X_train: np.ndarray  # Features entrenamiento [n_train, n_features]
+    y_train: np.ndarray  # Labels entrenamiento [n_train]
+    X_val: np.ndarray    # Features validación [n_val, n_features]
+    y_val: np.ndarray    # Labels validación [n_val]
+    n_classes: int       # Número de clases (10 teorías)
+    snr_mean: float      # SNR promedio
+    snr_std: float       # Desviación estándar SNR
+    is_physically_valid: bool  # Todos los eventos son físicamente válidos
+    
+    @property
+    def n_train(self) -> int:
+        """Número de eventos de entrenamiento."""
+        return len(self.X_train)
+    
+    @property
+    def n_val(self) -> int:
+        """Número de eventos de validación."""
+        return len(self.X_val)
+
+
 # ============================================================================
 # CONFIGURATION / THRESHOLDS
 # ============================================================================
