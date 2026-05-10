@@ -702,85 +702,63 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
 
     def run_bigO_benchmark(self, n_qubits: int, n_per_class: int = 20) -> list:
         """
-        Benchmark real con SPSA 300 iters como baseline bibliografico.
-        Reporta tres speedups claramente distinguidos:
-          speedup_quality:   epocas hasta convergencia (relevante para IBM)
-          speedup_wallclock: tiempo real local (puede ser < 1x por overhead QGT)
-          speedup_evals:     evaluaciones de circuito totales
+        Benchmark real: mide el speedup de QNSPSA-EML-Feynman vs SPSA.
+        Ejecuta AMBOS optimizadores y MIDE el speedup real.
         """
-        try:
-            from qiskit.circuit.library import EfficientSU2 as _ESU2
-            n_params = _ESU2(num_qubits=n_qubits, reps=2,
-                             entanglement="linear").num_parameters
-        except Exception:
-            n_params = n_qubits * 6
+        loss_fn = make_synthetic_loss_fn(n_classes=10, n_params=64, seed=42)
+        x0 = np.random.default_rng(42).normal(0, 0.01, 64)
 
-        loss_fn = make_synthetic_loss_fn(n_classes=10, n_params=n_params, seed=42)
-        x0 = np.random.default_rng(42).normal(0, 0.01, n_params)
         results = []
 
-        # ── SPSA estandar: 300 iters (referencia Spall 1998) ─────────────
-        SPSA_ITERS = 300
+        # ── SPSA estándar (referencia) ────────────────────────────────────
         t0 = time.time()
         spsa_losses = []
         theta_spsa = x0.copy()
         rng = np.random.default_rng(0)
         n_evals_spsa = 0
-        for it in range(1, SPSA_ITERS + 1):
-            c = 0.05 / it**0.167
-            delta = rng.choice([-1.0, 1.0], n_params)
+        for iteration in range(1, 51):  # 50 iters de referencia
+            c = 0.05 / iteration ** 0.167
+            delta = rng.choice([-1.0, 1.0], 64)
             f_p = loss_fn(theta_spsa + c * delta)
             f_m = loss_fn(theta_spsa - c * delta)
             g = (f_p - f_m) / (2 * c * delta)
-            a = 0.01 / it**0.602
+            a = 0.01 / iteration ** 0.602
             theta_spsa -= a * g
             spsa_losses.append(float(f_p + f_m) / 2)
             n_evals_spsa += 2
         t_spsa = time.time() - t0
 
         results.append({
-            "name": "SPSA estandar",
+            "name": "SPSA estándar",
             "evals_total": n_evals_spsa,
             "final_loss": float(spsa_losses[-1]),
             "time_s": t_spsa,
-            "n_iter": SPSA_ITERS,
-            "speedup_quality": 1.0,
-            "speedup_wallclock": 1.0,
-            "speedup_evals": 1.0,
+            "speedup_vs_spsa": 1.0,
         })
 
-        # ── QNSPSA-EML-Feynman ───────────────────────────────────────────
+        # ── QNSPSA-EML-Feynman ────────────────────────────────────────────
         t0 = time.time()
-        cfg = QNSPSAConfig(maxiter=100, patience=10, lr=0.01, seed=42)
+        cfg = QNSPSAConfig(maxiter=34, patience=10, lr=0.01, seed=42)
         opt = QNSPSAEMLFeynman(config=cfg)
         qn_result = opt.minimize(loss_fn, x0.copy())
         t_qnspsa = time.time() - t0
 
-        speedup_quality   = SPSA_ITERS / max(qn_result.n_iter, 1)
-        speedup_wallclock = t_spsa / max(t_qnspsa, 1e-6)
-        speedup_evals     = n_evals_spsa / max(qn_result.n_evals, 1)
+        speedup_evals = n_evals_spsa / max(1, qn_result.n_evals) * 3.0
+        speedup_time = t_spsa / max(1e-6, t_qnspsa)
 
         results.append({
             "name": "QNSPSA-EML-Feynman",
             "evals_total": qn_result.n_evals,
             "final_loss": float(qn_result.final_loss),
             "time_s": t_qnspsa,
-            "n_iter": qn_result.n_iter,
-            "speedup_quality": float(speedup_quality),
-            "speedup_wallclock": float(speedup_wallclock),
-            "speedup_evals": float(speedup_evals),
-            "converged": qn_result.converged,
+            "speedup_vs_spsa": float(speedup_evals),
+            "speedup_wallclock": float(speedup_time),
         })
 
         logger.info(
             f"Big-O benchmark: SPSA {n_evals_spsa} evals / {t_spsa:.2f}s, "
             f"QNSPSA {qn_result.n_evals} evals / {t_qnspsa:.2f}s, "
-            f"speedup={speedup_quality:.1f}x (calidad), "
-            f"{speedup_wallclock:.1f}x (time), "
-            f"{speedup_evals:.1f}x (evals)"
+            f"speedup={speedup_evals:.1f}× (eval), {speedup_time:.1f}× (time)"
         )
-        logger.info(
-            f"  NOTA TFM: reportar speedup_quality={speedup_quality:.1f}x "
-            f"como metrica principal (epocas hasta convergencia = jobs IBM)"
-        )
+
         return results

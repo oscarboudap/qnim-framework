@@ -371,40 +371,18 @@ class GenerateExperimentResultsUseCase:
         )
 
     def _step6_barren_plateau_analysis(self, result: FullExperimentResultDTO):
-        logger.info("[Step 6] Analisis de barren plateaus...")
+        logger.info("[Step 6] Análisis de barren plateaus...")
         n_values = [4, 8, 12, 16, 20, 24, 27]
         variances = {}
-
-        def _theoretical_var(n_qubits, use_eml=True):
-            import math
-            n_p = n_qubits * 6
-            v = 3.0 / n_p
-            if use_eml:
-                v *= math.exp(0.01 * n_p / 4.0)
-            return v
-
         for n in n_values:
-            try:
-                var = self._vqc.estimate_gradient_variance(
-                    n_qubits=n, use_eml=True, n_samples=30
-                )
-                # Sanity check: si Var > 0.5 para cualquier n, algo fallo
-                if var > 0.5:
-                    raise ValueError(f"Var={var:.3f} anormalmente alta")
-                variances[n] = var
-            except Exception as e:
-                logger.debug(f"  estimate_gradient_variance n={n}: {e}. Usando teorico.")
-                variances[n] = _theoretical_var(n, use_eml=True)
-
+            var = self._vqc.estimate_gradient_variance(
+                n_qubits=n, use_eml=True, n_samples=30
+            )
+            variances[n] = var
         result.barren_plateau_variance = variances
         logger.info(
             f"  Var[grad] n=12: {variances.get(12, 0):.4e}, "
             f"n=27: {variances.get(27, 0):.4e}"
-        )
-        logger.info(
-            f"  Todos n en [4,27] tienen Var > 1e-3 con EML: "
-            f"{all(v > 1e-3 for v in variances.values())}. "
-            f"Referencia: Cerezo et al. 2021, Nat. Commun. 12:1791"
         )
 
     def _step7_bigO_benchmark(self, result: FullExperimentResultDTO):
@@ -415,8 +393,9 @@ class GenerateExperimentResultsUseCase:
         )
         result.bigO_benchmark = benchmark
         if len(benchmark) >= 2:
-            speedup = max(b.get("speedup_quality", 1.0) for b in benchmark)
-
+            speedup = benchmark[0].get("evals_total", 1) / max(
+                b.get("evals_total", 1) for b in benchmark
+            )
             logger.info(f"  Speedup medido: {speedup:.1f}× vs SPSA")
 
     def _step8_generate_reports(self, result: FullExperimentResultDTO):
