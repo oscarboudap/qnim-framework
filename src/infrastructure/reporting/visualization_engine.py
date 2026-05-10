@@ -819,7 +819,7 @@ def generate_all_figures(
     Genera todas las figuras del TFM a partir del reporte JSON.
     
     Uso:
-        from src.results.visualization_engine import generate_all_figures
+        from src.infrastructure.reporting.visualization_engine import generate_all_figures
         paths = generate_all_figures("reports/full_results.json")
         for name, path in paths.items():
             print(f"  {name}: {path}")

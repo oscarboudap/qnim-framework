@@ -177,11 +177,6 @@ from .repositories import (
 )
 
 # ============================================================================
-# ADAPTADORES Y CONVERTIDORES (Legacy compatibility)
-# ============================================================================
-from .converters import AstrophysicsMath
-
-# ============================================================================
 # EXPORTACIONES PÚBLICAS
 # ============================================================================
 
@@ -280,8 +275,6 @@ __all__ = [
     "CompositeSpecification",
     "RepositoryFactory",
     
-    # Adaptadores/Legacy
-    "AstrophysicsMath",
 ]
 
 
