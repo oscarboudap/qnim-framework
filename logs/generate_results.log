@@ -1,0 +1,57 @@
+03:46:32 | INFO     | qnim.generate_results | MODO: Simulador Aer (sin hardware real)
+03:46:32 | INFO     | qnim.generate_results | Generando dataset balanceado...
+03:46:32 | INFO     | qnim.generate_results | Dataset: train=800 (80/clase), val=200 (20/clase), features=12, clases=10
+03:47:32 | INFO     | qnim.generate_results | Iniciando experimento completo...
+03:47:32 | INFO     | qnim.results.ibm | Preproceso Chebyshev: (800, 12), rango [0.014, 3.127]
+03:47:32 | INFO     | qnim.results.ibm | Iniciando entrenamiento en simulador Aer...
+03:47:32 | WARNING  | qiskit_machine_learning.neural_networks.sampler_qnn | No gradient function provided, creating a gradient function. If your Sampler requires transpilation, please provide a pass manager.
+03:47:32 | INFO     | qiskit_algorithms.optimizers.spsa | SPSA: Starting optimization.
+03:48:49 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 1/101 done in 76.70933365821838.
+03:50:48 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 2/101 done in 79.81420850753784.
+03:52:55 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 3/101 done in 84.5555100440979.
+03:54:56 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 4/101 done in 81.43453168869019.
+03:56:54 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 5/101 done in 77.33823657035828.
+03:58:54 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 6/101 done in 81.8980929851532.
+04:01:01 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 7/101 done in 83.93773651123047.
+04:03:06 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 8/101 done in 83.87473654747009.
+04:05:10 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 9/101 done in 82.42948722839355.
+04:07:16 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 10/101 done in 85.36115074157715.
+04:07:57 | INFO     | qnim.results.ibm |   iter= 30  loss=26.9033
+04:09:25 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 11/101 done in 87.50033140182495.
+04:11:37 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 12/101 done in 89.12417650222778.
+04:13:48 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 13/101 done in 86.61735343933105.
+04:16:02 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 14/101 done in 90.76069450378418.
+04:18:14 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 15/101 done in 88.21175646781921.
+04:20:28 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 16/101 done in 90.77006959915161.
+04:22:42 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 17/101 done in 88.56723952293396.
+04:24:54 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 18/101 done in 88.83482193946838.
+04:27:02 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 19/101 done in 83.75951266288757.
+04:28:28 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 20/101 done in 57.754698276519775.
+04:28:56 | INFO     | qnim.results.ibm |   iter= 60  loss=26.8994
+04:29:53 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 21/101 done in 56.4821560382843.
+04:31:14 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 22/101 done in 54.34268379211426.
+04:32:35 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 23/101 done in 55.42512059211731.
+04:34:03 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 24/101 done in 59.50068211555481.
+04:35:28 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 25/101 done in 56.18788003921509.
+04:36:55 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 26/101 done in 57.16166067123413.
+04:38:20 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 27/101 done in 56.452219009399414.
+04:39:47 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 28/101 done in 56.89448285102844.
+04:41:12 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 29/101 done in 56.94819474220276.
+04:42:40 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 30/101 done in 58.181899070739746.
+04:43:08 | INFO     | qnim.results.ibm |   iter= 90  loss=26.8927
+04:44:03 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 31/101 done in 55.08935570716858.
+04:45:30 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 32/101 done in 56.609209060668945.
+04:46:56 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 33/101 done in 57.948676109313965.
+04:48:22 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 34/101 done in 57.02967190742493.
+04:49:48 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 35/101 done in 58.00114321708679.
+04:51:14 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 36/101 done in 57.315861225128174.
+04:52:42 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 37/101 done in 58.7405846118927.
+04:54:02 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 38/101 done in 52.469016313552856.
+04:55:22 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 39/101 done in 53.496368408203125.
+04:56:45 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 40/101 done in 53.9794762134552.
+04:57:18 | INFO     | qnim.results.ibm |   iter=120  loss=26.8859
+04:58:24 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 41/101 done in 65.19823217391968.
+05:00:00 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 42/101 done in 64.7514238357544.
+05:01:34 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 43/101 done in 63.21839952468872.
+05:03:10 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 44/101 done in 64.50785517692566.
+05:04:49 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 45/101 done in 67.72124242782593.
