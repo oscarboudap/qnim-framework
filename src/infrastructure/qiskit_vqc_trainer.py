@@ -542,7 +542,12 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         """Predicciones via clasificador lineal proyectado."""
         n_classes = 10
         n_feat = X.shape[1]
-        W = weights[: n_feat * n_classes].reshape(n_feat, n_classes)
+        needed = n_feat * n_classes
+        if len(weights) < needed:
+            w = np.pad(weights, (0, needed - len(weights)))
+        else:
+            w = weights[:needed]
+        W = w.reshape(n_feat, n_classes)
         scores = X @ W
         return np.argmax(scores, axis=1)
 

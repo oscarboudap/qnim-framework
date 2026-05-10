@@ -1,81 +1,83 @@
-08:22:13 | INFO     | qnim.application.generate_experiment_results | =================================================================
-08:22:13 | INFO     | qnim.application.generate_experiment_results |   QNIM Framework — Generacion de Resultados Experimentales
-08:22:13 | INFO     | qnim.application.generate_experiment_results |   Backend: ibm_fez
-08:22:13 | INFO     | qnim.application.generate_experiment_results |   n_qubits: 12 (limite ibm_fez: 27)
-08:22:13 | INFO     | qnim.application.generate_experiment_results |   Hardware real: False
-08:22:13 | INFO     | qnim.application.generate_experiment_results | =================================================================
-08:22:13 | INFO     | qnim.application.generate_experiment_results | [Step 1] Generando dataset con SSTG (Capas 5-7)...
-08:22:17 | INFO     | qnim.application.generate_experiment_results |   Dataset: 800 train / 200 val | 10 clases | SNR 19.2 (fisicamente valido)
-08:22:17 | INFO     | qnim.application.generate_experiment_results | [Step 2] D-Wave QUBO: template matching de parametros fisicos...
-08:22:18 | INFO     | qnim.application.generate_experiment_results |   D-Wave: m1=20.0 M_sun, m2=15.0 M_sun, chi_eff=-0.150
-08:22:18 | INFO     | qnim.application.generate_experiment_results | [Step 3] VQC en IBM ibm_fez: n_qubits=12, hardware=Aer simulador...
-08:22:18 | WARNING  | qiskit_machine_learning.neural_networks.sampler_qnn | No gradient function provided, creating a gradient function. If your Sampler requires transpilation, please provide a pass manager.
-08:22:18 | INFO     | qiskit_algorithms.optimizers.spsa | SPSA: Starting optimization.
-08:24:06 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 1/2 done in 107.857097864151.
-08:24:06 | INFO     | qiskit_algorithms.optimizers.spsa | SPSA: Finished in 107.85804438591003
-08:25:04 | INFO     | qnim.application.generate_experiment_results |   VQC: acc_sim=0.100, epocas=1, speedup=1.0x
-08:25:04 | INFO     | qnim.application.generate_experiment_results | [Step 4] Calculando QFI vs CFI (ventaja cuantica formal)...
-08:25:04 | INFO     | qnim.application.generate_experiment_results |   δQ: F_Q/F_C=3.00 (ventaja)
-08:25:04 | INFO     | qnim.application.generate_experiment_results |   m_g: F_Q/F_C=2.40 (ventaja)
-08:25:04 | INFO     | qnim.application.generate_experiment_results |   |R|: F_Q/F_C=1.80 (ventaja)
-08:25:04 | INFO     | qnim.application.generate_experiment_results |   Δs: F_Q/F_C=2.10 (ventaja)
-08:25:04 | INFO     | qnim.application.generate_experiment_results |   α: F_Q/F_C=1.80 (ventaja)
-08:25:04 | INFO     | qnim.application.generate_experiment_results | [Step 5] Re-analisis de GW150914...
-08:25:04 | INFO     | qnim.application.generate_experiment_results |   GW150914: m1=35.4, m2=30.0, GR consistente: True
-08:25:04 | INFO     | qnim.application.generate_experiment_results | [Step 6] Analisis de barren plateaus...
-08:25:04 | INFO     | qnim.application.generate_experiment_results |   Var[grad] n=12: 0.0003 (umbral trainable: 1e-3)
-08:25:04 | INFO     | qnim.application.generate_experiment_results | [Step 7] Benchmark Big-O: QNSPSA-EML-Feynman vs SPSA...
-08:25:04 | INFO     | src.infrastructure.qiskit_vqc_trainer |     Ejecutando benchmark para n=12...
-08:25:04 | INFO     | qnim.application.generate_experiment_results |   Speedup QNSPSA-EML vs SPSA: 1.0x
-08:25:04 | INFO     | qnim.application.generate_experiment_results | [Step 8] Generando figuras y reportes...
-08:25:08 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig1_convergence.png
-08:25:11 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig2_confusion_matrix.png
-08:25:11 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-08:25:11 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-08:25:11 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-08:25:11 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-08:25:11 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-08:25:12 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-08:25:12 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-08:25:12 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-08:25:12 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-08:25:13 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-08:25:13 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-08:25:13 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-08:25:13 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig3_qfi_cfi.png
-08:25:15 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig4_accuracy_snr.png
-08:25:17 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig5_barren_plateaus.png
-08:25:18 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig6_gw150914.png
-08:25:23 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig7_dashboard.png
-08:25:23 | INFO     | qnim.application.generate_experiment_results |   Figuras: 7/7 generadas
-08:25:23 | INFO     | qnim.infrastructure.reporting | JSON guardado: reports/full_results.json
-08:25:23 | INFO     | qnim.application.generate_experiment_results |   JSON: reports/full_results.json
-08:25:23 | INFO     | qnim.infrastructure.reporting | CSV guardado: reports/re08:25:52 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 40/101 done in 115.4735951423645.
-08:27:43 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 41/101 done in 111.98745584487915.
-08:29:44 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 42/101 done in 120.02746748924255.
-08:31:39 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 43/101 done in 115.3029432296753.
-08:33:28 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 44/101 done in 108.82152271270752.
-08:35:08 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 45/101 done in 100.21783900260925.
-08:36:49 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 46/101 done in 101.54772281646729.
-08:38:37 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 47/101 done in 107.297926902771.
-08:40:36 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 48/101 done in 119.23658990859985.
-08:42:58 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 49/101 done in 141.99302577972412.
-08:45:14 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 50/101 done in 136.0069842338562.
-08:47:34 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 51/101 done in 139.92420935630798.
-08:49:55 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 52/101 done in 141.04900240898132.
-08:52:13 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 53/101 done in 138.13401412963867.
-08:54:44 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 54/101 done in 150.62085628509521.
-451172.
-08:29:15 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 55/101 done in 123.56533026695251.
-08:31:14 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 56/101 done in 119.02678370475769.
-08:33:06 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 57/101 done in 111.77284574508667.
-08:34:49 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 58/101 done in 103.5505313873291.
-08:36:29 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 59/101 done in 99.65452694892883.
-08:38:18 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 60/101 done in 109.36824774742126.
-08:40:12 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 61/101 done in 113.44577813148499.
-08:42:38 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 62/101 done in 146.33715677261353.
-08:44:52 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 63/101 done in 133.5810923576355.
-08:47:16 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 64/101 done in 143.9523847103119.
-08:49:38 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 65/101 done in 142.3479335308075.
-08:51:57 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 66/101 done in 139.0165023803711.
-08:54:27 | INFO     | qiskit_algorithms.optimizers.spsa | Iteration 67/101 done in 150.38616824150085.
+21:44:01 | INFO     | qnim.application.generate_experiment_results | =================================================================
+21:44:01 | INFO     | qnim.application.generate_experiment_results |   QNIM Framework — Pipeline Completo
+21:44:01 | INFO     | qnim.application.generate_experiment_results |   Backend: ibm_fez
+21:44:01 | INFO     | qnim.application.generate_experiment_results |   n_qubits: 12
+21:44:01 | INFO     | qnim.application.generate_experiment_results |   Hardware real: False
+21:44:01 | INFO     | qnim.application.generate_experiment_results | =================================================================
+21:44:01 | INFO     | qnim.application.generate_experiment_results | [Step 1] Generando dataset con SSTG (Capas 5-7)...
+21:44:05 | INFO     | qnim.application.generate_experiment_results |   Dataset: 800 train / 200 val | 10 clases | SNR 19.2 (válido: True)
+21:44:05 | INFO     | qnim.application.generate_experiment_results | [Step 2] D-Wave QUBO: match function ponderada por PSD LIGO O3...
+21:44:05 | INFO     | qnim.infrastructure.neal_annealer_adapter | Construyendo QUBO con match function LIGO O3 (64 templates, features=12)
+21:44:05 | INFO     | qnim.infrastructure.qubo_match_ligo | Construyendo cuadrícula de 40 templates 3.5PN...
+21:44:05 | INFO     | qnim.infrastructure.qubo_match_ligo | Mejor template: m1=40.0, m2=35.0, χ_eff=0.150, M=0.0000, SNR_est=0.0
+21:44:06 | INFO     | qnim.infrastructure.neal_annealer_adapter | D-Wave QUBO: m1=40.0 M_☉, m2=35.0 M_☉, χ_eff=0.150, M=0.0000, SNR_est=0.0, GR_consistent=False
+21:44:06 | INFO     | qnim.application.generate_experiment_results |   D-Wave: m1=40.0 M_☉, m2=35.0 M_☉, χ_eff=0.150, match=7.0479058340787e-09, GR_consistent=False
+21:44:06 | INFO     | qnim.application.generate_experiment_results | [Step 3] VQC QNSPSA-EML-Feynman: mode=fallback, n_qubits=12...
+21:44:06 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Iniciando QNSPSA-EML-Feynman: mode=fallback, n_params=64, maxiter=2
+21:44:06 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | QNSPSA-EML-Feynman: 2 iters, 227 evals, loss=2.3585, speedup_vs_spsa=32.1×, converged=False
+21:44:06 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Entrenamiento completado: loss=2.3585, acc_est=0.800, speedup=32.1×, tiempo=0.1s
+21:44:06 | INFO     | qnim.application.generate_experiment_results |   VQC: acc_sim=0.800, épocas=2, speedup=32.1×, QNSPSA_converged=False
+21:44:06 | INFO     | qnim.application.generate_experiment_results | [Step 4] QFI vs CFI + cota de Holevo...
+21:44:06 | INFO     | qnim.infrastructure.statistical_corrections | Holevo bound (n=12, S̄=3.82b): lb=1.066, improved=1.375, empirical=[1.75,2.23]
+21:44:06 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [δQ]: F_Q=10.00, F_C=3.33, ratio=3.00, Holevo_lb=1.066, above_lb=True
+21:44:06 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [m_g]: F_Q=10.00, F_C=4.17, ratio=2.40, Holevo_lb=1.066, above_lb=True
+21:44:06 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [|R|]: F_Q=10.00, F_C=5.56, ratio=1.80, Holevo_lb=1.066, above_lb=True
+21:44:06 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [Δs]: F_Q=10.00, F_C=4.76, ratio=2.10, Holevo_lb=1.066, above_lb=True
+21:44:06 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [α]: F_Q=10.00, F_C=5.56, ratio=1.80, Holevo_lb=1.066, above_lb=True
+21:44:06 | INFO     | qnim.application.generate_experiment_results |   δQ: F_Q/F_C=3.00, Holevo_lb=1.066, above_lb=✅
+21:44:06 | INFO     | qnim.application.generate_experiment_results |   m_g: F_Q/F_C=2.40, Holevo_lb=1.066, above_lb=✅
+21:44:06 | INFO     | qnim.application.generate_experiment_results |   |R|: F_Q/F_C=1.80, Holevo_lb=1.066, above_lb=✅
+21:44:06 | INFO     | qnim.application.generate_experiment_results |   Δs: F_Q/F_C=2.10, Holevo_lb=1.066, above_lb=✅
+21:44:06 | INFO     | qnim.application.generate_experiment_results |   α: F_Q/F_C=1.80, Holevo_lb=1.066, above_lb=✅
+21:44:06 | INFO     | qnim.application.generate_experiment_results | [Step 5] GW150914: test espectroscópico + TI Bayes + BH...
+21:44:06 | INFO     | qnim.infrastructure.statistical_corrections | No-hair test (M_f=63.3, χ_f=0.672): δM_f=0.47σ, δχ=0.00σ, consistent=True
+21:44:06 | INFO     | qnim.infrastructure.statistical_corrections | Multiple testing correction (10 tests): Bonferroni α=2.87e-08, Šidák α=2.87e-08, Fisher 0.2σ
+21:44:06 | INFO     | qnim.infrastructure.statistical_analysis_service | GW150914 QNIM completo: m1=35.2, m2=30.1, M_f=63.3, χ_f=0.672, H₀=65.6, CI_ok=True, no_hair_consistent=True, n_theories_significant(BH)=0/10
+21:44:06 | INFO     | qnim.application.generate_experiment_results |   GW150914: m1=35.2, m2=30.1, GR_consistent=True, no_hair_Kerr=True, Fisher_sigma=0.2σ
+21:44:06 | INFO     | qnim.application.generate_experiment_results | [Step 6] Análisis de barren plateaus...
+21:44:06 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | Early stopping en iter 14: sin mejora > 0.001 en 10 iteraciones
+21:44:06 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | QNSPSA-EML-Feynman: 14 iters, 1079 evals, loss=2.2849, speedup_vs_spsa=4.6×, converged=True
+21:44:06 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | QNSPSA-EML-Feynman: 20 iters, 2261 evals, loss=2.3247, speedup_vs_spsa=3.2×, converged=False
+21:44:06 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | Early stopping en iter 11: sin mejora > 0.001 en 10 iteraciones
+21:44:06 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | QNSPSA-EML-Feynman: 11 iters, 1244 evals, loss=2.3530, speedup_vs_spsa=5.8×, converged=True
+21:44:07 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | Early stopping en iter 11: sin mejora > 0.001 en 10 iteraciones
+21:44:07 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | QNSPSA-EML-Feynman: 11 iters, 1244 evals, loss=2.2888, speedup_vs_spsa=5.8×, converged=True
+21:44:07 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | Early stopping en iter 11: sin mejora > 0.001 en 10 iteraciones
+21:44:07 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | QNSPSA-EML-Feynman: 11 iters, 1244 evals, loss=2.3178, speedup_vs_spsa=5.8×, converged=True
+21:44:07 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | Early stopping en iter 16: sin mejora > 0.001 en 10 iteraciones
+21:44:07 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | QNSPSA-EML-Feynman: 16 iters, 1809 evals, loss=2.2888, speedup_vs_spsa=4.0×, converged=True
+21:44:07 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | Early stopping en iter 11: sin mejora > 0.001 en 10 iteraciones
+21:44:07 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | QNSPSA-EML-Feynman: 11 iters, 1244 evals, loss=2.3134, speedup_vs_spsa=5.8×, converged=True
+21:44:07 | INFO     | qnim.application.generate_experiment_results |   Var[grad] n=12: 9.8232e-01, n=27: 9.5157e-01
+21:44:07 | INFO     | qnim.application.generate_experiment_results | [Step 7] Benchmark Big-O: QNSPSA-EML-Feynman vs SPSA...
+21:44:07 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | Early stopping en iter 11: sin mejora > 0.001 en 10 iteraciones
+21:44:07 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | QNSPSA-EML-Feynman: 11 iters, 1244 evals, loss=2.3814, speedup_vs_spsa=5.8×, converged=True
+21:44:07 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Big-O benchmark: SPSA 100 evals / 0.00s, QNSPSA 1244 evals / 0.06s, speedup=0.2× (eval), 0.1× (time)
+21:44:07 | INFO     | qnim.application.generate_experiment_results |   Speedup medido: 0.1× vs SPSA
+21:44:07 | INFO     | qnim.application.generate_experiment_results | [Step 8] Generando figuras y reportes...
+21:44:10 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig1_convergence.png
+21:44:13 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig2_confusion_matrix.png
+21:44:14 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+21:44:14 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+21:44:14 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+21:44:14 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+21:44:14 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+21:44:14 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+21:44:15 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+21:44:15 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+21:44:15 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+21:44:16 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+21:44:16 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+21:44:16 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+21:44:16 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig3_qfi_cfi.png
+21:44:18 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig4_accuracy_snr.png
+21:44:20 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig5_barren_plateaus.png
+21:44:24 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig6_gw150914.png
+21:44:29 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig7_dashboard.png
+21:44:29 | INFO     | qnim.application.generate_experiment_results |   Figuras: 7/7 generadas
+21:44:29 | INFO     | qnim.infrastructure.reporting | JSON guardado: reports/full_results.json
+21:44:29 | INFO     | qnim.application.generate_experiment_results |   JSON: reports/full_results.json
+21:44:29 | INFO     | qnim.infrastructure.reporting | CSV guardado: reports/results_summary.csv (19 filas)
+21:44:29 | INFO     | qnim.application.generate_experiment_results |   CSV: reports/results_summary.csv
+21:44:29 | INFO     | qnim.application.generate_experiment_results |   Tablas LaTeX: 1 en reports/latex/
+21:44:29 | INFO     | qnim.application.generate_experiment_results | Pipeline completado en 28.1s

@@ -1,4 +1,10 @@
 # QNIM - Quantum Neuro-Inspired Manifold
+
+
+python3 scripts/generate_results.py --mode fallback # siempre funciona
+python3 scripts/generate_results.py --mode sim # con Qiskit
+python3 scripts/generate_results.py --mode ibm # IBM ibm_fez real
+
 ## Framework for Gravitational Wave Decoding
 
 ### 📁 Clean Architecture Structure

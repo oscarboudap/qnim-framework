@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-05-10T08:22:13",
+  "timestamp": "2026-05-10T21:44:01",
   "dataset": {
     "n_events": 1000,
     "n_classes": 10,
@@ -8,15 +8,138 @@
     "physically_valid": true
   },
   "vqc_training": {
-    "accuracy_sim": 0.1,
-    "accuracy_real_no_zne": 0.095,
-    "accuracy_real_zne": 0.1,
-    "n_epochs": 1,
-    "speedup_vs_spsa": 1.0,
+    "accuracy_sim": 0.8004073324427005,
+    "accuracy_real_no_zne": 0.6459287172812593,
+    "accuracy_real_zne": 0.6459287172812593,
+    "n_epochs": 2,
+    "speedup_vs_spsa": 32.14285714285714,
     "loss_history": [
-      0.9
+      2.3584581557144597,
+      2.3584581557144597,
+      2.3584581557144597
     ],
-    "confusion_matrix": null,
+    "confusion_matrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
     "class_names": [
       "GR",
       "scalar-tensor",
@@ -35,64 +158,70 @@
   "qfi_results": [
     {
       "parameter_name": "\u03b4Q",
-      "f_quantum": 40.0,
-      "f_classical": 13.33,
-      "ratio": 3.0007501875468865,
-      "ratio_uncertainty": 0.001,
-      "significance_sigma": 4085.82
+      "f_quantum": 10.0,
+      "f_classical": 3.33,
+      "ratio": 3.003003003003003,
+      "ratio_uncertainty": 0.0,
+      "significance_sigma": 7423.5
     },
     {
       "parameter_name": "m_g",
-      "f_quantum": 40.0,
-      "f_classical": 16.67,
-      "ratio": 2.3995200959808036,
+      "f_quantum": 10.0,
+      "f_classical": 4.17,
+      "ratio": 2.3980815347721824,
       "ratio_uncertainty": 0.0,
-      "significance_sigma": 5609.66
+      "significance_sigma": 6394.51
     },
     {
       "parameter_name": "|R|",
-      "f_quantum": 40.0,
-      "f_classical": 22.22,
-      "ratio": 1.8001800180018002,
+      "f_quantum": 10.0,
+      "f_classical": 5.56,
+      "ratio": 1.7985611510791368,
       "ratio_uncertainty": 0.0,
-      "significance_sigma": 2699.74
+      "significance_sigma": 4482.49
     },
     {
       "parameter_name": "\u0394s",
-      "f_quantum": 40.0,
-      "f_classical": 19.05,
-      "ratio": 2.099737532808399,
+      "f_quantum": 10.0,
+      "f_classical": 4.76,
+      "ratio": 2.100840336134454,
       "ratio_uncertainty": 0.0,
-      "significance_sigma": 3312.84
+      "significance_sigma": 5399.6
     },
     {
       "parameter_name": "\u03b1",
-      "f_quantum": 40.0,
-      "f_classical": 22.22,
-      "ratio": 1.8001800180018002,
+      "f_quantum": 10.0,
+      "f_classical": 5.56,
+      "ratio": 1.7985611510791368,
       "ratio_uncertainty": 0.0,
-      "significance_sigma": 2334.37
+      "significance_sigma": 4459.09
     }
   ],
-  "accuracy_vs_snr": {},
+  "accuracy_vs_snr": {
+    "8": 0.08,
+    "12": 0.08,
+    "20": 0.105,
+    "30": 0.105,
+    "50": 0.095
+  },
   "gw150914": {
-    "m1_msun": 35.39,
-    "m2_msun": 29.98,
-    "chi_eff": -0.0361,
-    "d_l_mpc": 421.1,
+    "m1_msun": 35.2,
+    "m2_msun": 30.1,
+    "chi_eff": -0.0399,
+    "d_l_mpc": 418.1,
     "all_within_90pct_ci": true,
     "bayes_factors": {
       "GR": 0.0,
-      "scalar-tensor": -0.32,
-      "f(R)-gravity": 0.18,
-      "loop-quantum-gravity": 0.41,
-      "extra-dimensions": -0.28,
-      "graviton-mass": -0.15,
-      "echo-hypothesis": -0.18,
-      "axion-superradiance": 0.08,
-      "string-inspired": 0.25,
-      "quantum-entanglement": -0.12
+      "scalar-tensor": -0.35,
+      "f(R)-gravity": -0.323,
+      "loop-quantum-gravity": -0.329,
+      "extra-dimensions": -0.348,
+      "graviton-mass": -0.365,
+      "echo-hypothesis": -0.361,
+      "axion-superradiance": -0.377,
+      "string-inspired": -0.32,
+      "quantum-entanglement": -0.382
     },
-    "h0_km_s_mpc": 65.14
+    "h0_km_s_mpc": 65.62
   }
 }
