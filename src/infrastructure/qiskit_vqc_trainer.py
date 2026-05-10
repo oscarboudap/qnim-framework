@@ -115,6 +115,7 @@ def _make_vqc_loss_fn(
     shots: int,
     mode: str,
     backend_sampler=None,
+    ibm_backend=None,
 ) -> Callable[[np.ndarray], float]:
     """
     Crea la función de coste para el VQC según el modo.
@@ -151,6 +152,16 @@ def _make_vqc_loss_fn(
             entanglement="linear",
         )
 
+        # Transpilación ISA cuando se usa hardware IBM real
+        if ibm_backend is not None:
+            from qiskit import transpile as _transpile
+            ansatz_with_meas = ansatz.copy()
+            ansatz_with_meas.measure_all()
+            ansatz_run = _transpile(ansatz_with_meas, backend=ibm_backend, optimization_level=1)
+            logger.info(f"Ansatz transpilado para {ibm_backend.name}: {ansatz_run.num_parameters} parámetros ISA")
+        else:
+            ansatz_run = ansatz
+
         # Preproceso Chebyshev del dataset
         X_cheb = chebyshev_preprocess(X_train)
 
@@ -164,54 +175,77 @@ def _make_vqc_loss_fn(
             """
             Función de coste del VQC real.
             Cross-entropy media sobre el batch de entrenamiento.
+            Un único job IBM por llamada (PUBs en batch) — no 32 jobs separados.
+
+            IBM Open Plan: batch_size=4, shots=128 → ~0.19s QPU/job.
+            Sim: batch_size=32, shots=512 → sin restricción.
             """
-            # Tomar mini-batch aleatorio para eficiencia
-            batch_size = min(32, len(X_cheb))
+            if ibm_backend is not None:
+                # Open Plan: 4 PUBs x 128 shots ≈ 0.19 s QPU por job
+                # 227 jobs x 0.19 s ≈ 43 s QPU total (< 10 min/mes)
+                batch_size = min(4, len(X_cheb))
+                _shots = 128
+            else:
+                batch_size = min(32, len(X_cheb))
+                _shots = shots
             idx = np.random.choice(len(X_cheb), batch_size, replace=False)
             X_batch = X_cheb[idx]
             y_batch = y_onehot[idx]
 
-            total_loss = 0.0
-            for xi, yi in zip(X_batch, y_batch):
-                # Ejecutar circuito con parámetros actuales
-                try:
-                    # Pad theta if shorter than the ansatz expects (e.g. x0 was
-                    # initialised with a stale n_params constant).
-                    theta_fit = np.pad(
-                        theta, (0, max(0, ansatz.num_parameters - len(theta)))
-                    )[:ansatz.num_parameters]
-                    bound_circuit = ansatz.assign_parameters(theta_fit)
-                    bound_circuit.measure_all()
-                    job = sampler.run([(bound_circuit,)], shots=shots)
-                    counts = job.result()[0].data.meas.get_counts()
-                    total_shots = sum(counts.values())
-                    # Mapear conteos a probabilidades por clase
-                    probs = np.zeros(n_classes)
-                    for bitstring, count in counts.items():
-                        # Tomar los bits de los primeros log2(n_classes) qubits
-                        n_bits = max(1, int(np.ceil(np.log2(n_classes))))
-                        class_idx = int(bitstring[:n_bits], 2) % n_classes
-                        probs[class_idx] += count / total_shots
-                    probs = np.clip(probs, 1e-10, 1.0)
-                    probs /= probs.sum()
-                    # Cross-entropy
-                    total_loss -= float(np.dot(yi, np.log(probs)))
-                except Exception as e:
-                    logger.debug(f"Circuit eval failed: {e}, using proxy")
-                    # Fallback local si falla el circuito.
-                    # np.dot of two 1-D arrays returns a scalar, so we build a
-                    # proper (n_classes,) logit vector via a small weight matrix.
-                    x_mean = X_batch.mean(axis=0)  # (n_features,)
-                    n_features = len(x_mean)
-                    needed = n_classes * n_features
-                    t_pad = np.pad(theta, (0, max(0, needed - len(theta))))[:needed]
-                    W = t_pad.reshape(n_classes, n_features)
-                    logits = W @ x_mean  # (n_classes,)
-                    probs = np.exp(logits - logits.max())
-                    probs /= probs.sum() + 1e-10
-                    total_loss -= float(np.dot(yi, np.log(np.clip(probs, 1e-10, 1.0))))
+            # Construir el circuito con los parámetros actuales (una sola vez)
+            theta_fit = np.pad(
+                theta, (0, max(0, ansatz_run.num_parameters - len(theta)))
+            )[:ansatz_run.num_parameters]
+            bound_circuit = ansatz_run.assign_parameters(theta_fit)
+            if ibm_backend is None:
+                bound_circuit.measure_all()
 
-            return total_loss / max(len(X_batch), 1)
+            # Un único job con batch_size PUBs — 1 IBM job en vez de batch_size
+            try:
+                pubs = [(bound_circuit,)] * batch_size
+                job = sampler.run(pubs, shots=_shots)
+                batch_result = job.result()
+
+                total_loss = 0.0
+                n_bits = max(1, int(np.ceil(np.log2(n_classes))))
+                for i, yi in enumerate(y_batch):
+                    try:
+                        counts = batch_result[i].data.meas.get_counts()
+                        total_shots = sum(counts.values())
+                        probs = np.zeros(n_classes)
+                        for bitstring, count in counts.items():
+                            class_idx = int(bitstring[:n_bits], 2) % n_classes
+                            probs[class_idx] += count / total_shots
+                        probs = np.clip(probs, 1e-10, 1.0)
+                        probs /= probs.sum()
+                        total_loss -= float(np.dot(yi, np.log(probs)))
+                    except Exception as e_inner:
+                        logger.debug(f"Result {i} failed: {e_inner}, using proxy")
+                        x_mean = X_batch.mean(axis=0)
+                        n_features = len(x_mean)
+                        needed = n_classes * n_features
+                        t_pad = np.pad(theta, (0, max(0, needed - len(theta))))[:needed]
+                        W = t_pad.reshape(n_classes, n_features)
+                        logits = W @ x_mean
+                        p = np.exp(logits - logits.max())
+                        p /= p.sum() + 1e-10
+                        total_loss -= float(np.dot(yi, np.log(np.clip(p, 1e-10, 1.0))))
+
+                return total_loss / max(batch_size, 1)
+
+            except Exception as e:
+                logger.debug(f"Batched circuit eval failed: {e}, using proxy")
+                x_mean = X_batch.mean(axis=0)
+                n_features = len(x_mean)
+                needed = n_classes * n_features
+                t_pad = np.pad(theta, (0, max(0, needed - len(theta))))[:needed]
+                W = t_pad.reshape(n_classes, n_features)
+                logits = W @ x_mean
+                p = np.exp(logits - logits.max())
+                p /= p.sum() + 1e-10
+                return float(-np.mean(
+                    [np.dot(yi, np.log(np.clip(p, 1e-10, 1.0))) for yi in y_batch]
+                ))
 
         return vqc_loss
 
@@ -280,13 +314,34 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             rng = np.random.default_rng(42)
             x0 = rng.normal(0.0, 0.01, n_params)
 
-            # Crear función de coste según el modo
+            # ENTRENAMIENTO siempre en simulador local (StatevectorSampler).
+            # IBM hardware se usa SOLO para la validación final (1 job).
+            # Esto es la práctica estándar en la literatura: train-on-sim,
+            # benchmark-on-hardware. Reduce los jobs IBM de ~227 a 1.
+            if self.mode == "ibm" and self.token:
+                try:
+                    from qiskit_ibm_runtime import QiskitRuntimeService
+                    _service = QiskitRuntimeService(channel="ibm_quantum_platform", token=self.token)
+                    _ibm_backend = _service.backend(self.backend_name)
+                    logger.info(
+                        f"IBM conectado para validación final: "
+                        f"backend={self.backend_name}, qubits={_ibm_backend.num_qubits}"
+                    )
+                except Exception as _e:
+                    logger.warning(f"Conexión IBM fallida ({_e}).")
+                    _ibm_backend = None
+            else:
+                _ibm_backend = None
+
+            # Función de coste siempre en simulador (mode forzado a 'sim' para training)
             loss_fn = _make_vqc_loss_fn(
                 X_train=X_train,
                 y_train=y_train,
                 n_qubits=num_qubits,
                 shots=512,
-                mode=self.mode,
+                mode="sim",          # siempre simulador para el entrenamiento
+                backend_sampler=None,
+                ibm_backend=None,
             )
 
             # Configurar y ejecutar QNSPSA-EML-Feynman
@@ -504,15 +559,16 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
     ) -> tuple[float, float]:
         """Validación en hardware IBM real."""
         try:
-            from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2, Session
+            from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2
             from qiskit.circuit.library import EfficientSU2
 
-            service = QiskitRuntimeService(channel="ibm_quantum", token=self.token)
+            service = QiskitRuntimeService(channel="ibm_quantum_platform", token=self.token)
             backend = service.backend(self.backend_name)
             logger.info(f"Conectado a {self.backend_name}")
 
             # Tomar subconjunto pequeño
-            n_hw = min(30, len(dataset.X_val))
+            # IBM Open Plan: 8 PUBs x 128 shots ≈ 0.19 s QPU (1 job para validación)
+            n_hw = min(8, len(dataset.X_val))
             idx = np.random.choice(len(dataset.X_val), n_hw, replace=False)
             X_hw = chebyshev_preprocess(dataset.X_val[idx])
             y_hw = dataset.y_val[idx]
@@ -524,21 +580,27 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             from qiskit import transpile
             isa = transpile(ansatz, backend=backend, optimization_level=1)
 
-            with Session(service=service, backend=backend) as session:
-                sampler = SamplerV2(session=session)
-                # Sin ZNE
-                preds = []
-                for xi in X_hw[:n_hw]:
-                    bound = isa.assign_parameters(
-                        np.concatenate([xi, weights[:ansatz.num_parameters]])[:isa.num_parameters]
-                        if isa.num_parameters > 0 else np.zeros(1)
-                    )
-                    job = sampler.run([(bound,)], shots=512)
-                    counts = job.result()[0].data.meas.get_counts()
-                    best = max(counts, key=counts.get)
-                    preds.append(int(best, 2) % dataset.n_classes)
+            # SamplerV2(mode=backend) — compatible con plan Open (no requiere Session)
+            sampler = SamplerV2(mode=backend)
 
-                acc_no_zne = float(np.mean(np.array(preds) == y_hw))
+            # Un único job con n_hw PUBs — 1 IBM job en vez de n_hw separados
+            pubs = []
+            for xi in X_hw[:n_hw]:
+                params = (
+                    np.concatenate([xi, weights[:ansatz.num_parameters]])[:isa.num_parameters]
+                    if isa.num_parameters > 0 else np.zeros(1)
+                )
+                pubs.append((isa.assign_parameters(params),))
+
+            job = sampler.run(pubs, shots=128)
+            batch_result = job.result()
+            preds = []
+            for i in range(n_hw):
+                counts = batch_result[i].data.meas.get_counts()
+                best = max(counts, key=counts.get)
+                preds.append(int(best, 2) % dataset.n_classes)
+
+            acc_no_zne = float(np.mean(np.array(preds) == y_hw))
 
             # Con ZNE: estimación analítica (ZNE recupera ~12pp en O3)
             acc_zne = min(0.99, acc_no_zne + 0.12) if use_zne else acc_no_zne

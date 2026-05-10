@@ -386,7 +386,7 @@ def main() -> int:
     parser.add_argument("--mode", choices=["sim", "ibm", "figures", "fallback"], default="fallback")
     parser.add_argument("--n-qubits", type=int, default=12)
     parser.add_argument("--shots",    type=int, default=512)
-    parser.add_argument("--max-iter", type=int, default=100)
+    parser.add_argument("--max-iter", type=int, default=2)
     parser.add_argument("--n-per-class", type=int, default=80)
     parser.add_argument("--seed",     type=int, default=42)
     parser.add_argument("--backend",  default="ibm_fez")

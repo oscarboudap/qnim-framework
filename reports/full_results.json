@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-05-10T21:54:25",
+  "timestamp": "2026-05-10T23:38:52",
   "dataset": {
     "n_events": 1000,
     "n_classes": 10,
@@ -8,15 +8,15 @@
     "physically_valid": true
   },
   "vqc_training": {
-    "accuracy_sim": 0.7851393865462585,
-    "accuracy_real_no_zne": 0.6336074849428306,
-    "accuracy_real_zne": 0.6336074849428306,
+    "accuracy_sim": 0.7741756224350463,
+    "accuracy_real_no_zne": 0.6247597273050824,
+    "accuracy_real_zne": 0.6247597273050824,
     "n_epochs": 2,
     "speedup_vs_spsa": 32.14285714285714,
     "loss_history": [
-      21.04046420126727,
-      2.5640186180190185,
-      2.5640186180190185
+      21.06212505065352,
+      2.9148135764892524,
+      2.714280492007066
     ],
     "confusion_matrix": [
       [
@@ -161,48 +161,48 @@
       "f_quantum": 40.0,
       "f_classical": 13.33,
       "ratio": 3.0007501875468865,
-      "ratio_uncertainty": 0.321,
-      "significance_sigma": 8.37
+      "ratio_uncertainty": 0.214,
+      "significance_sigma": 12.54
     },
     {
       "parameter_name": "m_g",
       "f_quantum": 40.0,
       "f_classical": 16.67,
       "ratio": 2.3995200959808036,
-      "ratio_uncertainty": 0.256,
-      "significance_sigma": 7.15
+      "ratio_uncertainty": 0.198,
+      "significance_sigma": 9.25
     },
     {
       "parameter_name": "|R|",
       "f_quantum": 40.0,
       "f_classical": 22.22,
       "ratio": 1.8001800180018002,
-      "ratio_uncertainty": 0.174,
-      "significance_sigma": 5.67
+      "ratio_uncertainty": 0.131,
+      "significance_sigma": 7.55
     },
     {
       "parameter_name": "\u0394s",
       "f_quantum": 40.0,
       "f_classical": 19.05,
       "ratio": 2.099737532808399,
-      "ratio_uncertainty": 0.191,
-      "significance_sigma": 7.36
+      "ratio_uncertainty": 0.136,
+      "significance_sigma": 10.35
     },
     {
       "parameter_name": "\u03b1",
       "f_quantum": 40.0,
       "f_classical": 22.22,
       "ratio": 1.8001800180018002,
-      "ratio_uncertainty": 0.175,
-      "significance_sigma": 5.65
+      "ratio_uncertainty": 0.115,
+      "significance_sigma": 8.61
     }
   ],
   "accuracy_vs_snr": {
     "8": 0.11,
-    "12": 0.085,
-    "20": 0.085,
-    "30": 0.11,
-    "50": 0.075
+    "12": 0.12,
+    "20": 0.065,
+    "30": 0.105,
+    "50": 0.105
   },
   "gw150914": {
     "m1_msun": 35.7,
