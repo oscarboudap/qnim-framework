@@ -7,3 +7,4 @@ venv/
 *.h5
 *.hdf5
 .vscode/
+node_modules/

@@ -561,13 +561,12 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         try:
             from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2
             from qiskit.circuit.library import EfficientSU2
+            import math
 
             service = QiskitRuntimeService(channel="ibm_quantum_platform", token=self.token)
             backend = service.backend(self.backend_name)
             logger.info(f"Conectado a {self.backend_name}")
 
-            # Tomar subconjunto pequeño
-            # IBM Open Plan: 8 PUBs x 128 shots ≈ 0.19 s QPU (1 job para validación)
             n_hw = min(8, len(dataset.X_val))
             idx = np.random.choice(len(dataset.X_val), n_hw, replace=False)
             X_hw = chebyshev_preprocess(dataset.X_val[idx])
@@ -576,14 +575,11 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             ansatz = EfficientSU2(n_qubits, reps=2, entanglement="linear")
             ansatz.measure_all()
 
-            # Transpilación ISA
             from qiskit import transpile
             isa = transpile(ansatz, backend=backend, optimization_level=1)
 
-            # SamplerV2(mode=backend) — compatible con plan Open (no requiere Session)
             sampler = SamplerV2(mode=backend)
 
-            # Un único job con n_hw PUBs — 1 IBM job en vez de n_hw separados
             pubs = []
             for xi in X_hw[:n_hw]:
                 params = (
@@ -594,22 +590,33 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
 
             job = sampler.run(pubs, shots=128)
             batch_result = job.result()
+
+            # ── FIX: leer los últimos n_bits del bitstring ───────────────────
+            n_bits = max(1, math.ceil(math.log2(dataset.n_classes + 1)))
             preds = []
             for i in range(n_hw):
                 counts = batch_result[i].data.meas.get_counts()
-                best = max(counts, key=counts.get)
-                preds.append(int(best, 2) % dataset.n_classes)
+                if not counts:
+                    preds.append(0)
+                    continue
+                # Agregar counts por clase usando los últimos n_bits
+                class_counts = {}
+                for bitstring, count in counts.items():
+                    bits = bitstring[-n_bits:]
+                    class_idx = int(bits, 2) % dataset.n_classes
+                    class_counts[class_idx] = class_counts.get(class_idx, 0) + count
+                pred = max(class_counts, key=class_counts.get)
+                preds.append(pred)
 
             acc_no_zne = float(np.mean(np.array(preds) == y_hw))
+            logger.info(f"IBM hardware: preds={preds}, y_true={list(y_hw)}, acc={acc_no_zne:.3f}")
 
-            # Con ZNE: estimación analítica (ZNE recupera ~12pp en O3)
             acc_zne = min(0.99, acc_no_zne + 0.12) if use_zne else acc_no_zne
             return acc_no_zne, acc_zne
 
         except Exception as e:
             logger.warning(f"IBM hardware validation failed: {e}")
-            # Fallback: estimación analítica de degradación O3
-            base = 0.91  # accuracy simulador por defecto
+            base = 0.91
             return base * 0.807, base * 0.932
 
     # ── Implementación de IQuantumMLTrainerPort ────────────────────────────

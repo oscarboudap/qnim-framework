@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-05-11T01:24:19",
+  "timestamp": "2026-05-11T02:52:02",
   "dataset": {
     "n_events": 1000,
     "n_classes": 10,
@@ -8,23 +8,32 @@
     "physically_valid": true
   },
   "vqc_training": {
-    "accuracy_sim": 0.7995355565768366,
-    "accuracy_real_no_zne": 0.6452251941575072,
-    "accuracy_real_zne": 0.6452251941575072,
-    "n_epochs": 10,
-    "speedup_vs_spsa": 30.0,
+    "accuracy_sim": 0.8075276824517577,
+    "accuracy_real_no_zne": 0.0,
+    "accuracy_real_zne": 0.0,
+    "n_epochs": 19,
+    "speedup_vs_spsa": 15.789473684210526,
     "loss_history": [
-      21.5867352477098,
-      17.67650023854455,
-      2.8374666684124117,
-      2.37008227781148,
-      2.37008227781148,
-      2.37008227781148,
-      2.37008227781148,
-      2.37008227781148,
-      2.37008227781148,
-      2.37008227781148,
-      2.37008227781148
+      21.06218614550776,
+      2.497401677867636,
+      2.497401677867636,
+      2.488615995823225,
+      2.488615995823225,
+      2.334083238195023,
+      2.334083238195023,
+      2.334083238195023,
+      2.334083238195023,
+      2.264019033880268,
+      2.264019033880268,
+      2.264019033880268,
+      2.264019033880268,
+      2.264019033880268,
+      2.264019033880268,
+      2.264019033880268,
+      2.264019033880268,
+      2.264019033880268,
+      2.264019033880268,
+      2.264019033880268
     ],
     "confusion_matrix": [
       [
@@ -169,48 +178,48 @@
       "f_quantum": 40.0,
       "f_classical": 13.33,
       "ratio": 3.0007501875468865,
-      "ratio_uncertainty": 0.73,
-      "significance_sigma": 3.67
+      "ratio_uncertainty": 0.333,
+      "significance_sigma": 8.06
     },
     {
       "parameter_name": "m_g",
       "f_quantum": 40.0,
       "f_classical": 16.67,
       "ratio": 2.3995200959808036,
-      "ratio_uncertainty": 0.533,
-      "significance_sigma": 3.43
+      "ratio_uncertainty": 0.256,
+      "significance_sigma": 7.13
     },
     {
       "parameter_name": "|R|",
       "f_quantum": 40.0,
       "f_classical": 22.22,
       "ratio": 1.8001800180018002,
-      "ratio_uncertainty": 0.398,
-      "significance_sigma": 2.48
+      "ratio_uncertainty": 0.179,
+      "significance_sigma": 5.54
     },
     {
       "parameter_name": "\u0394s",
       "f_quantum": 40.0,
       "f_classical": 19.05,
       "ratio": 2.099737532808399,
-      "ratio_uncertainty": 0.315,
-      "significance_sigma": 4.46
+      "ratio_uncertainty": 0.181,
+      "significance_sigma": 7.76
     },
     {
       "parameter_name": "\u03b1",
       "f_quantum": 40.0,
       "f_classical": 22.22,
       "ratio": 1.8001800180018002,
-      "ratio_uncertainty": 0.401,
-      "significance_sigma": 2.46
+      "ratio_uncertainty": 0.187,
+      "significance_sigma": 5.29
     }
   ],
   "accuracy_vs_snr": {
-    "8": 0.11,
-    "12": 0.12,
+    "8": 0.085,
+    "12": 0.1,
     "20": 0.09,
-    "30": 0.095,
-    "50": 0.1
+    "30": 0.105,
+    "50": 0.075
   },
   "gw150914": {
     "m1_msun": 35.7,
