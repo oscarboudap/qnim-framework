@@ -181,7 +181,85 @@ class FisherMatrixCalculator:
             for j in range(i+1, n_params):
                 corr = abs(normed_cov[i, j])
                 if corr > 0.9:  # Muy correlacionado
-                    degeneracies.append((param_names[i], param_names[j], float(corr))
+                    degeneracies.append((param_names[i], param_names[j], float(corr)))
         
         # Cumulative SNR^2 = Trace(F)
-        cumulative_snr = float(np.sqrt(np.trace(fisher_matrix)))\n        \n        # Imprimir resumen\n        print(f\"\\n  📈 Fisher Matrix Summary:\")\n        print(f\"     Cumulative SNR: {cumulative_snr:.2f}\")\n        print(f\"\\n     Parameter Errors (1σ):\")\n        for param_name, error in zip(param_names, parameter_errors):\n            print(f\"       σ({param_name:<12}): {error:.6e}\")\n        \n        if degeneracies:\n            print(f\"\\n     ⚠️  Degeneracies detected (corr > 0.9):\")\n            for p1, p2, corr in degeneracies:\n                print(f\"       {p1} ↔ {p2}: ρ = {corr:.3f}\")\n        \n        return FisherResult(\n            fisher_matrix=fisher_matrix,\n            param_names=param_names,\n            parameter_errors=parameter_errors,\n            parameter_correlations=normed_cov,\n            degeneracies=degeneracies,\n            cumulative_snr=cumulative_snr\n        )\n    \n    def cramér_rao_bounds(\n        self,\n        fisher_result: FisherResult\n    ) -> Dict[str, Dict]:\n        \"\"\"\n        Calcula las cotas de Cramér-Rao (best-case lower bounds).\n        \n        Teorema: Para estimador insesgado θ̂,\n        Var(θ̂_i) >= [F^-1]_ii\n        \n        Args:\n            fisher_result: Resultado de compute_fisher_matrix\n            \n        Returns:\n            {param_name: {cr_bound, relative_precision}}\n        \"\"\"\n        fisher_inv = np.linalg.pinv(fisher_result.fisher_matrix)\n        cr_bounds = np.sqrt(np.diag(fisher_inv))\n        \n        results = {}\n        for i, param_name in enumerate(fisher_result.param_names):\n            results[param_name] = {\n                \"cramér_rao_bound\": float(cr_bounds[i]),\n                \"relative_precision\": float(cr_bounds[i])  # Como % si queremos\n            }\n        \n        return results\n    \n    def theory_discrimination_power(\n        self,\n        fisher_matrix: np.ndarray,\n        theory_diff_vector: np.ndarray\n    ) -> float:\n        \"\"\"\n        Evalúa poder para discriminar dos teorías.\n        \n        Usa métrica: d = sqrt(Δθ^T F Δθ)\n        \n        Si d > 1 → discriminación posible a nivel 1σ\n        Si d > 3 → discriminación robusta a nivel 3σ\n        \n        Args:\n            fisher_matrix: Matriz de Fisher compuesta\n            theory_diff_vector: Diferencia de parámetros entre teorías\n            \n        Returns:\n            Distance metric d (adimensional)\n        \"\"\"\n        if fisher_matrix.shape[0] != len(theory_diff_vector):\n            raise ValueError(\"Dimensiones incompatibles\")\n        \n        # d = sqrt(ΔΘ^T F ΔΘ)\n        d_squared = np.dot(theory_diff_vector, np.dot(fisher_matrix, theory_diff_vector))\n        d = np.sqrt(max(d_squared, 0))  # Evitar sqrt de negativo\n        \n        return float(d)\n
+        cumulative_snr = float(np.sqrt(np.trace(fisher_matrix)))
+
+        # Imprimir resumen
+        print(f"\n  📈 Fisher Matrix Summary:")
+        print(f"     Cumulative SNR: {cumulative_snr:.2f}")
+        print(f"\n     Parameter Errors (1σ):")
+        for param_name, error in zip(param_names, parameter_errors):
+            print(f"       σ({param_name:<12}): {error:.6e}")
+
+        if degeneracies:
+            print(f"\n     ⚠️  Degeneracies detected (corr > 0.9):")
+            for p1, p2, corr in degeneracies:
+                print(f"       {p1} ↔ {p2}: ρ = {corr:.3f}")
+
+        return FisherResult(
+            fisher_matrix=fisher_matrix,
+            param_names=param_names,
+            parameter_errors=parameter_errors,
+            parameter_correlations=normed_cov,
+            degeneracies=degeneracies,
+            cumulative_snr=cumulative_snr,
+        )
+
+    def cramér_rao_bounds(
+        self,
+        fisher_result: FisherResult,
+    ) -> Dict[str, Dict]:
+        """
+        Calcula las cotas de Cramér-Rao (best-case lower bounds).
+
+        Teorema: Para estimador insesgado θ̂,
+        Var(θ̂_i) >= [F^-1]_ii
+
+        Args:
+            fisher_result: Resultado de compute_fisher_matrix
+
+        Returns:
+            {param_name: {cr_bound, relative_precision}}
+        """
+        fisher_inv = np.linalg.pinv(fisher_result.fisher_matrix)
+        cr_bounds = np.sqrt(np.diag(fisher_inv))
+
+        results = {}
+        for i, param_name in enumerate(fisher_result.param_names):
+            results[param_name] = {
+                "cramér_rao_bound": float(cr_bounds[i]),
+                "relative_precision": float(cr_bounds[i]),
+            }
+
+        return results
+
+    def theory_discrimination_power(
+        self,
+        fisher_matrix: np.ndarray,
+        theory_diff_vector: np.ndarray,
+    ) -> float:
+        """
+        Evalúa poder para discriminar dos teorías.
+
+        Usa métrica: d = sqrt(Δθ^T F Δθ)
+
+        Si d > 1 → discriminación posible a nivel 1σ
+        Si d > 3 → discriminación robusta a nivel 3σ
+
+        Args:
+            fisher_matrix: Matriz de Fisher compuesta
+            theory_diff_vector: Diferencia de parámetros entre teorías
+
+        Returns:
+            Distance metric d (adimensional)
+        """
+        if fisher_matrix.shape[0] != len(theory_diff_vector):
+            raise ValueError("Dimensiones incompatibles")
+
+        # d = sqrt(ΔΘ^T F ΔΘ)
+        d_squared = np.dot(theory_diff_vector, np.dot(fisher_matrix, theory_diff_vector))
+        d = np.sqrt(max(d_squared, 0))  # Evitar sqrt de negativo
+
+        return float(d)

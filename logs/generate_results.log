@@ -1,0 +1,17 @@
+04:56:36 | INFO     | qnim.application.generate_experiment_results | =================================================================
+04:56:36 | INFO     | qnim.application.generate_experiment_results |   QNIM Framework — Pipeline Completo
+04:56:36 | INFO     | qnim.application.generate_experiment_results |   Backend: ibm_fez
+04:56:36 | INFO     | qnim.application.generate_experiment_results |   n_qubits: 12
+04:56:36 | INFO     | qnim.application.generate_experiment_results |   Hardware real: True
+04:56:36 | INFO     | qnim.application.generate_experiment_results | =================================================================
+04:56:36 | INFO     | qnim.application.generate_experiment_results | [Step 1] Generando dataset con SSTG (Capas 5-7)...
+04:56:40 | INFO     | qnim.application.generate_experiment_results |   Dataset: 800 train / 200 val | 10 clases | SNR 19.2 (válido: True)
+04:56:40 | INFO     | qnim.application.generate_experiment_results | [Step 2] D-Wave QUBO: match function ponderada por PSD LIGO O3...
+04:56:40 | INFO     | qnim.infrastructure.neal_annealer_adapter | Construyendo QUBO con match function LIGO O3 (64 templates, features=12)
+04:56:40 | INFO     | qnim.infrastructure.qubo_match_ligo | Construyendo cuadricula de 40 templates 3.5PN...
+04:56:40 | INFO     | qnim.infrastructure.qubo_match_ligo | Mejor template: m1=20.0, m2=15.0, chi_eff=-0.500, M=1.0000, SNR_est=24.0
+04:56:40 | INFO     | qnim.infrastructure.neal_annealer_adapter | D-Wave QUBO: m1=20.0 M_☉, m2=15.0 M_☉, χ_eff=-0.500, M=1.0000, SNR_est=24.0, GR_consistent=True
+04:56:40 | INFO     | qnim.application.generate_experiment_results |   D-Wave: m1=20.0 M_☉, m2=15.0 M_☉, χ_eff=-0.500, match=1.0, GR_consistent=True
+04:56:40 | INFO     | qnim.application.generate_experiment_results | [Step 3] VQC QNSPSA-EML-Feynman: mode=ibm, n_qubits=12...
+04:57:19 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | IBM conectado para validación final: backend=ibm_fez, qubits=156
+04:57:19 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Iniciando QNSPSA-EML-Feynman: mode=ibm, n_params=72, maxiter=50

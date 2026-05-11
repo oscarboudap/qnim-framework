@@ -29,7 +29,7 @@ function generateSimWaveform(m1: number, m2: number, injection: string, snr: num
     if (t < 0) {
       const tau = -t;
       const freq = (20 / (m1 + m2)) * Math.pow(tau + 0.01, -3 / 8) * 0.1;
-      const amp = Math.pow(tau + 0.01, -1 / 4) * (snr / 30) * 0.3;
+      const amp = Math.pow(tau + 0.01, -1 / 4) * (snr / 24) * 0.3;
       strain = amp * Math.sin(2 * Math.PI * freq * tau * 3);
       if (injection !== 'None (Pure GR)') {
         const deltaPhase = injection.includes('Dipolar') ? -0.08 * Math.pow(Math.max(freq, 0.01), -7 / 3)
@@ -38,7 +38,7 @@ function generateSimWaveform(m1: number, m2: number, injection: string, snr: num
         strain += amp * 0.1 * Math.sin(2 * Math.PI * freq * tau * 3 + deltaPhase);
       }
     } else {
-      strain = 0.4 * (snr / 30) * Math.exp(-t * 15) * Math.cos(2 * Math.PI * 30 * t);
+      strain = 0.4 * (snr / 24) * Math.exp(-t * 15) * Math.cos(2 * Math.PI * 30 * t);
       if (injection.includes('Echo') && t > 0.05) {
         strain += 0.12 * Math.exp(-(t - 0.05) * 20) * Math.cos(2 * Math.PI * 25 * (t - 0.05));
       }

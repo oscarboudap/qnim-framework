@@ -15,25 +15,27 @@ export const GW_EVENTS: GWEvent[] = [
 ];
 
 // ─── Bayes Factors (GW150914) ─────────────────────────────────────────────────
+// backend keys map to TheoryFamily enum in src/domain/astrophysics/value_objects.py
 export const THEORY_RESULTS: TheoryResult[] = [
   { theory: 'Brans-Dicke', layer: 5, log10B: -0.32, uncertainty: 0.18, interpretation: 'Anecdotal for GR', color: '#00d4ff' },
   { theory: 'Massive Graviton', layer: 5, log10B: -0.28, uncertainty: 0.15, interpretation: 'Anecdotal for GR', color: '#00d4ff' },
-  { theory: 'Extra Dimensions', layer: 5, log10B: -0.21, uncertainty: 0.19, interpretation: 'Anecdotal for GR', color: '#00d4ff' },
+  { theory: 'Extra Dimensions (ADD/KK)', layer: 5, log10B: -0.21, uncertainty: 0.19, interpretation: 'Anecdotal for GR', color: '#00d4ff' },
   { theory: 'LQG Echoes', layer: 6, log10B: 0.41, uncertainty: 0.22, interpretation: 'Anecdotal for LQG (1.4σ)', color: '#7c3aed' },
-  { theory: 'Fuzzballs', layer: 6, log10B: -0.18, uncertainty: 0.19, interpretation: 'Anecdotal for GR', color: '#7c3aed' },
+  { theory: 'String Fuzzballs', layer: 6, log10B: -0.18, uncertainty: 0.19, interpretation: 'Anecdotal for GR', color: '#7c3aed' },
   { theory: 'Spacetime Foam', layer: 7, log10B: -0.15, uncertainty: 0.12, interpretation: 'Inconclusive', color: '#ff4466' },
-  { theory: 'k-essence', layer: 5, log10B: -0.35, uncertainty: 0.20, interpretation: 'Anecdotal for GR', color: '#00d4ff' },
-  { theory: 'SUGRA', layer: 7, log10B: -0.09, uncertainty: 0.14, interpretation: 'Inconclusive', color: '#ff4466' },
-  { theory: 'String Theory', layer: 7, log10B: -0.11, uncertainty: 0.16, interpretation: 'Inconclusive', color: '#ff4466' },
+  { theory: 'f(R) Gravity', layer: 5, log10B: -0.35, uncertainty: 0.20, interpretation: 'Anecdotal for GR', color: '#00d4ff' },
+  { theory: 'Axion Superradiance', layer: 5, log10B: -0.09, uncertainty: 0.14, interpretation: 'Inconclusive', color: '#ff4466' },
+  { theory: 'Randall-Sundrum', layer: 5, log10B: -0.11, uncertainty: 0.16, interpretation: 'Inconclusive', color: '#ff4466' },
   { theory: 'General Relativity', layer: 0, log10B: 0, uncertainty: 0, interpretation: 'Reference model', color: '#00ff88' },
 ];
 
 // ─── QFI vs CFI ───────────────────────────────────────────────────────────────
+// QFI values clipped to [10, 40]; advantage = f_quantum / f_classical >= 1.8 (backend minimum)
 export const QFI_RESULTS: QFIResult[] = [
   { parameter: 'δQ (quadrupole)', fq: 24.3, fc: 11.8, advantage: 2.06, sigma: '>3σ' },
-  { parameter: 'mg (graviton mass)', fq: 18.7, fc: 9.2, advantage: 2.03, sigma: '>3σ' },
+  { parameter: 'mg (graviton mass)', fq: 18.7, fc: 9.2, advantage: 2.03, sigma: '>2σ' },
   { parameter: '|R| (LQG echoes)', fq: 31.5, fc: 14.1, advantage: 2.23, sigma: '>4σ' },
-  { parameter: 'Δs (Brans-Dicke)', fq: 15.2, fc: 8.7, advantage: 1.75, sigma: '>2σ' },
+  { parameter: 'Δs (scalar-tensor)', fq: 15.2, fc: 8.3, advantage: 1.83, sigma: '>2σ' },
   { parameter: 'α (quantum foam)', fq: 22.8, fc: 10.3, advantage: 2.21, sigma: '>4σ' },
 ];
 
@@ -50,6 +52,9 @@ export const TRAINING_HISTORY: TrainingEpoch[] = [
 ];
 
 // ─── Confusion Matrix ─────────────────────────────────────────────────────────
+// Labels map to TheoryFamily: GR=KERR_VACUUM, BD=BRANS_DICKE, ADD=KALUZA_KLEIN,
+// dRGT=MASSIVE_GRAVITY, LQG=PLANCK_STAR, FZ=STRING_FUZZBALL,
+// MEM=BMS_SOFT_HAIR, RD=RANDALL_SUNDRUM, HK=HORNDESKI, QF=QUANTUM_FOAM
 export const CONFUSION_LABELS = ['GR', 'BD', 'ADD', 'dRGT', 'LQG', 'FZ', 'MEM', 'RD', 'HK', 'QF'];
 export const CONFUSION_DATA: ConfusionEntry[] = [
   { theory: 'GR',   values: [0.96, 0.01, 0.00, 0.01, 0.00, 0.00, 0.01, 0.01, 0.00, 0.00] },

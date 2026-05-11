@@ -26,7 +26,7 @@ function generateWaveform(m1: number, m2: number, distance: number, snr: number,
       // Inspiral: chirp
       const tau = -t;
       const freq = fScale * Math.pow(tau + 0.01, -3 / 8) * 0.1;
-      const amp = Math.pow(tau + 0.01, -1 / 4) * (snr / 30) * 0.3;
+      const amp = Math.pow(tau + 0.01, -1 / 4) * (snr / 24) * 0.3;
       strain = amp * Math.sin(2 * Math.PI * freq * tau * 3);
       if (addBSM) {
         // Brans-Dicke dipolar correction
@@ -37,7 +37,7 @@ function generateWaveform(m1: number, m2: number, distance: number, snr: number,
       // Ringdown
       const fQNM = (1.5251 - 1.1568 * Math.pow(0.3, 0.1292)) / (2 * Math.PI * M * 4.93e-6);
       const tau_rd = t;
-      strain = 0.4 * (snr / 30) * Math.exp(-tau_rd * 15) * Math.cos(2 * Math.PI * Math.min(fQNM / 100, 50) * tau_rd);
+      strain = 0.4 * (snr / 24) * Math.exp(-tau_rd * 15) * Math.cos(2 * Math.PI * Math.min(fQNM / 100, 50) * tau_rd);
       if (addBSM) {
         // LQG echo after ringdown
         const echoDelay = 0.05;

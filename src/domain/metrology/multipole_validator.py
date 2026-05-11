@@ -77,11 +77,11 @@ class NoHairTheoremAnalyzer:
         # Inferencia de teoría compatible
         if is_violated:
             if violation_magnitude > 3.0:  # >3-sigma
-                inferred_theory = TheoryFamily.LOOP_QUANTUM_GRAVITY
+                inferred_theory = TheoryFamily.PLANCK_STAR
             elif quantum_anomaly_confidence > 0.7:
-                inferred_theory = TheoryFamily.FUZZBALLS
+                inferred_theory = TheoryFamily.STRING_FUZZBALL
             else:
-                inferred_theory = TheoryFamily.HAIRY_BLACK_HOLES
+                inferred_theory = TheoryFamily.GRAVASTAR
         else:
             inferred_theory = TheoryFamily.KERR_VACUUM
         
