@@ -1,0 +1,36 @@
+{
+  "event_id": "GW231123_135430",
+  "gps_time": 1385128488,
+  "pipeline_status": "success",
+  "top_class": 0,
+  "top_class_name": "GR (Kerr vacuum)",
+  "p_star": 0.831,
+  "ln_B": -2.02,
+  "tier": "D",
+  "map_params": {
+    "m1_msun": 174.1,
+    "m2_msun": 106.2,
+    "Mtot_msun": 280.3,
+    "q": 0.61,
+    "chi_eff": 0.13,
+    "d_L_Mpc": 3780.0,
+    "class_name": "b'MODIFIED_GRAVITY'"
+  },
+  "error": "X has 12 features, but RandomForestClassifier is expecting 64 features as input.",
+  "strain_source": "surrogate_GPS_fingerprint",
+  "all_class_probs": {
+    "GR (Kerr vacuum)": 0.831,
+    "Brans-Dicke (\u03c9_BD=1000)": 0.0,
+    "Massive graviton (m_g)": 0.0,
+    "f(R) Starobinsky": 0.0,
+    "PN 3.5PN deformation": 0.1099,
+    "Randall-Sundrum extra dim.": 0.0592,
+    "LQG / Planck star echoes": 0.0,
+    "BMS soft hair memory": 0.0,
+    "Chern-Simons parity": 0.0,
+    "LIV \u03b1=1 (linear)": 0.0,
+    "LIV \u03b1=2 (quadratic)": 0.0,
+    "GUP / minimum length": 0.0,
+    "Scalar field (axion cloud)": 0.0
+  }
+}

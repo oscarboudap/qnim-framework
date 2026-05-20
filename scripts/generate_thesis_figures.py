@@ -99,8 +99,10 @@ def fig1_convergence():
     acc_no_zne = vqc["accuracy_real_no_zne"] * 100
     acc_zne   = vqc["accuracy_real_zne"] * 100
 
-    accs_sim = np.linspace(40, acc_sim, len(epochs))
-    accs_sim[:3] = [40, 60, 75]
+    chance_13 = 100.0 / 13          # ≈ 7.69 % for random 13-class guess
+
+    accs_sim = np.linspace(chance_13 * 2, acc_sim, len(epochs))
+    accs_sim[:3] = [chance_13 * 2, chance_13 * 5, chance_13 * 10]
 
     ax2.plot(epochs, accs_sim, color=COLORS["green"], lw=2.2,
              label="Simulator (AerSimulator)")
@@ -110,10 +112,12 @@ def fig1_convergence():
                 label=f"IBM Fez + ZNE: {acc_zne:.1f}%")
     ax2.axhline(78.0,     color=COLORS["classic"], ls="-.", lw=1.4, alpha=0.8,
                 label="ResNet-18 baseline: 78.0%")
-    ax2.set_ylim(35, 100)
+    ax2.axhline(chance_13, color=COLORS["gray"],   ls=":",  lw=1.2, alpha=0.7,
+                label=f"Chance (1/13): {chance_13:.1f}%")
+    ax2.set_ylim(5, 100)
     ax2.set_xlabel("Training step")
     ax2.set_ylabel("Validation accuracy (%)")
-    ax2.set_title("(b) Classification accuracy (10 theory classes)")
+    ax2.set_title("(b) Classification accuracy (13 theory classes)")
     ax2.legend()
     ax2.grid(True, alpha=0.3)
 
