@@ -130,7 +130,7 @@ class _FallbackDataset:
         except Exception as e:
             logger.warning(f"Dataset físico falló ({e}), usando sintético simple")
             rng = np.random.default_rng(seed=config.seed)
-            n, v, nc = config.n_events_per_class, config.n_val_per_class, 10
+            n, v, nc = config.n_events_per_class, config.n_val_per_class, 13
             centers = rng.uniform(-3, 3, (nc, config.n_qubits)) * 2.0
             Xs, ys = [], []
             for c in range(nc):
@@ -150,12 +150,13 @@ class _FallbackDataset:
 
         self.n_train = len(self.X_train)
         self.n_val = len(self.X_val)
-        self.n_classes = 10
+        self.n_classes = 13
         self.snr_val = None
         self.class_names = [
-            "GR", "scalar-tensor", "f(R)-gravity", "loop-quantum-gravity",
-            "extra-dimensions", "graviton-mass", "echo-hypothesis",
-            "axion-superradiance", "string-inspired", "quantum-entanglement",
+            "GR", "standard-siren", "qnm-21", "qnm-33",
+            "pn-deformation", "extra-dimensions", "scalar-tensor",
+            "graviton-mass", "chern-simons", "liv-alpha2",
+            "liv-alpha4", "loop-quantum-gravity", "gup",
         ]
 
 

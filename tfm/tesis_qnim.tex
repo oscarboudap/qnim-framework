@@ -1,4 +1,4 @@
-% ============================================================
+﻿% ============================================================
 %  QNIM – Quantum Native Inverse Models
 %  Master's Thesis in Astrophysics and Astronomical Observation
 %  Author : Óscar Boullosa Dapena
@@ -127,7 +127,7 @@
 % ------------------------------------------------------------------
 \title{Quantum Native Inverse Models for Gravitational-Wave Spectroscopy:
        A New Analytical Methodology for Probing Quantum Gravity Signatures
-       Across Modified-Gravity Regimes and Physics Beyond the Standard Model}
+       Across Modified Gravity Regimes and Physics Beyond the Standard Model}
 \titulacion{M\'{a}ster Universitario en Astrof\'{i}sica
             y T\'{e}cnicas de Observaci\'{o}n en Astronom\'{i}a}
 \author{\'{O}scar Boullosa Dapena}
@@ -165,11 +165,18 @@
 \renewcommand{\listtablename}{Índice de Tablas}
 \renewcommand{\contentsname}{Índice de Contenidos}
 \renewcommand{\figurename}{Figura}
-\renewcommand{\tablename}{Tabla} 
+\renewcommand{\tablename}{Tabla}
 
+% Cover page and author/director page: no page numbers
+% \creaportada (called by \maketitle) already issues \thispagestyle{empty}
+% on both pages, but we also suppress the fancyhdr header/footer globally
+% for those pages by entering frontmatter first and resetting the counter
+% after the cover so that roman numbering begins at the TOC/Resumen.
+\pagestyle{empty}
 \maketitle
-
+\pagestyle{fancy}
 \frontmatter
+\setcounter{page}{1}
 \tableofcontents
 \listoffigures
 \listoftables
@@ -1284,7 +1291,8 @@ testing the linear-stability hierarchy of the No-Hair theorem.
 
 \begin{table}[ht]
 \centering
-\caption{Berti–Cardoso–Will fit coefficients for the $(l=m=2)$ QNMs,
+\caption[Berti--Cardoso--Will fit coefficients for the $(l=m=2)$ QNMs,
+         overtones $n=0$--$3$.]{Berti–Cardoso–Will fit coefficients for the $(l=m=2)$ QNMs,
          overtones $n=0$--$3$ \cite{Berti_2006}.}
 \label{tab:bcw}
 \begin{tabular}{@{}ccccccc@{}}
@@ -1584,7 +1592,7 @@ Sitter bulk.  Gravitational waves can leak into the bulk on scales smaller
 than the crossover radius $R_\mathrm{cross}$.  For sources at
 $d_L > R_\mathrm{cross}$, the strain amplitude damps as:
 \begin{equation}
-  \label{eq:rs_amplitude}
+  \label{eq:rs_correction}
   h \propto d_L^{-(1+n_\mathrm{extra}/2)},
 \end{equation}
 where $n_\mathrm{extra}$ is the number of large extra dimensions.  The
@@ -1596,7 +1604,7 @@ an anomalous distance–luminosity relation in the standard-siren analysis.
 
 More general modifications to the graviton dispersion relation take the form:
 \begin{equation}
-  \label{eq:mdr}
+  \label{eq:liv_dispersion}
   E^2 = p^2c^2\left[1 + A_\alpha\!\left(\frac{pc}{E_\mathrm{QG}}\right)^{\alpha-2}
     \right] + m_g^2c^4,
 \end{equation}
@@ -1651,7 +1659,7 @@ labels.  For the physical value $\gamma_\mathrm{Meissner} = \ln 2/(\pi\sqrt{3})$
 discreteness in the QNM spectrum, observable as spectral line broadening in
 high-SNR ringdowns.  The echo time delay in LQG is:
 \begin{equation}
-  \label{eq:lqg_delay}
+  \label{eq:lqg_correction}
   \Delta t_\mathrm{LQG} =
     \frac{2r_+(a)}{c}\ln\!\left(\frac{M_f}{m_P\sqrt{\gamma}}\right),
 \end{equation}
@@ -3814,7 +3822,7 @@ parameter drawn from a Gaussian $H_0 = 67.4 \pm 0.5$\,km\,s$^{-1}$\,Mpc$^{-1}$
 
 The ringdown correction injects a secondary QNM with $(l,m) = (2,1)$
 at the frequency and damping time predicted by the GR perturbation
-equations (Eq.~\ref{eq:qnm_spectrum}).  The injection amplitude
+equations (Eq.~\ref{eq:bcw_fits}).  The injection amplitude
 $\epsilon_{(2,1)}$ is drawn from the observational upper limits obtained
 from GW150914 \cite{Isi_2019}.
 
@@ -4468,7 +4476,7 @@ using five metrics:
   \item[Brier score] ($\mathrm{BS}$): mean squared error of the
         predicted probability vector; lower is better.
   \item[AUROC] (one-vs-rest, macro-averaged).
-  \item[Layer~7 recall] ($\mathrm{Rec}_{L7}$): recall for the three
+  \item[Layer~7 recall] ($\mathrm{Rec}_{L7}$): recall for the two
         quantum-geometry classes (Classes 11--12), which are the
         scientifically most challenging.
 \end{description}
@@ -4889,7 +4897,7 @@ independently significant.  \emph{First}, the $87.8\,\%$ loss reduction
 from $\mathcal{L}_0 = 2.565$ to $\mathcal{L}_T = 0.312$ confirms that
 the QNSPSA-EML-Feynman optimiser finds a genuine minimum and not a
 saddle point: the loss $0.312$ corresponds to an average per-class
-posterior entropy of $e^{0.312}/13 = 1.08\,\%$, far below the $7.7\,\%$
+posterior entropy of $e^{0.312}/13 = 1.08\,\%$, far below the $10\,\%$
 uniform random baseline.  \emph{Second}, the $21.4\times$ speedup (14
 IBM-mode steps vs.\ $\sim\!300$ for SPSA) is explained mathematically by
 the quantum natural gradient: where SPSA moves along the Euclidean
@@ -4969,7 +4977,7 @@ score for the QNIM VQC on the SSTG test set ($N = 11{,}700$).
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.78\textwidth]{fig2_confusion_matrix}
-\caption{Normalised confusion matrix for the QNIM VQC on the 10-class
+\caption{Normalised confusion matrix for the QNIM VQC on the 13-class
          synthetic test set.  Cell values indicate per-class recall (\%).
          The diagonal, which ideally equals 100\,\%, ranges from
          84.8\,\% (quantum entanglement, Class~9) to 95.1\,\% (GR, Class~0).
@@ -5026,9 +5034,9 @@ The normalised confusion matrix of Figure~\ref{fig:confusion_matrix}
 reveals two physically meaningful patterns.  \emph{First}, the
 diagonal ranges from $84.8\,\%$ (Class~9, quantum entanglement) to
 $95.1\,\%$ (Class~0, GR), which corresponds to an overall accuracy of
-$80.4\,\%$ on the simulator — a remarkable result for a 10-class
+$80.4\,\%$ on the simulator — a remarkable result for a 13-class
 problem with only 12 input features.  To put this in context: a random
-classifier would achieve $10\,\%$; a 1-vs-rest classical SVM on the
+classifier would achieve $7.7\,\%$; a 1-vs-rest classical SVM on the
 same 12 PCA features achieves $\sim\!72\,\%$; the ResNet-18 baseline
 achieves $78.0\,\%$ with $\sim\!11\times$ more trainable parameters.
 \emph{Second}, the strongest off-diagonal confusion is between LQG
@@ -5250,8 +5258,8 @@ The primary finding from the GWTC-3 analysis is:
         in GWTC-3 provides strong evidence for a departure from GR.
 \end{itemize}
 
-\subsection{GW190521: the most anomalous event}
-\label{subsec:gw190521}
+\subsection{GW150914: pipeline validation}
+\label{subsec:gw150914}
 
 \begin{figure}[htbp]
 \centering
@@ -5270,12 +5278,6 @@ The primary finding from the GWTC-3 analysis is:
          this event is $H_0 = 64.4$\,km\,s$^{-1}$\,Mpc$^{-1}$.}
 \label{fig:gw150914}
 \end{figure}
-
-GW190521 is the most massive binary black hole merger detected in GWTC-3
-($M_\mathrm{tot} \approx 150\,M_\odot$, with both components in the
-pair-instability supernova mass gap).  The QNIM classifier assigns
-it to Class~5 (extra dimensions) with $p^\star = 0.723$ and
-$\ln B = 3.8$ (moderate evidence, Tier B).
 
 Figure~\ref{fig:gw150914} is the cornerstone validation result of the
 entire QNIM pipeline, because GW150914 is the only GWTC-3 event for
@@ -5305,6 +5307,15 @@ $H_0 = 64.4$\,km\,s$^{-1}$\,Mpc$^{-1}$, is within the Planck CMB
 68\,\% interval ($67.4 \pm 0.5$) and within $\sim\!1\sigma$ of the
 distance-ladder value ($73.0 \pm 1.0$), consistent with the expected
 precision from a single-event standard siren measurement.
+
+\subsection{GW190521: the most anomalous event}
+\label{subsec:gw190521}
+
+GW190521 is the most massive binary black hole merger detected in GWTC-3
+($M_\mathrm{tot} \approx 150\,M_\odot$, with both components in the
+pair-instability supernova mass gap).  The QNIM classifier assigns
+it to Class~5 (extra dimensions) with $p^\star = 0.723$ and
+$\ln B = 3.8$ (moderate evidence, Tier B).
 
 The QUBO parameter estimation for the Randall-Sundrum extra-dimension
 model yields a compactification radius:

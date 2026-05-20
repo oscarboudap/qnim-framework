@@ -26,18 +26,21 @@ class SSTGAdapter(ISyntheticDataGeneratorPort):
     características realistas (strain simulado + ruido coloreado).
     """
     
-    # 10 teorías beyond-GR soportadas
+    # 13 teorías beyond-GR soportadas (aligned with thesis classification scheme)
     THEORY_CLASSES = [
         "GR",                      # Clase 0: General Relativity (baseline)
-        "scalar-tensor",           # Clase 1: Brans-Dicke
-        "f(R)-gravity",            # Clase 2: f(R) modified gravity
-        "loop-quantum-gravity",    # Clase 3: LQG
-        "extra-dimensions",        # Clase 4: Kaluza-Klein
-        "graviton-mass",           # Clase 5: Massive graviton
-        "echo-hypothesis",         # Clase 6: Firewall echoes (ECO)
-        "axion-superradiance",     # Clase 7: Axion coupling
-        "string-inspired",         # Clase 8: String theory signatures
-        "quantum-entanglement",    # Clase 9: Quantum information effects
+        "standard-siren",          # Clase 1: Standard siren / H0 measurement
+        "qnm-21",                  # Clase 2: QNM (2,1) overtone
+        "qnm-33",                  # Clase 3: QNM (3,3) overtone
+        "pn-deformation",          # Clase 4: Post-Newtonian 3.5 deformation
+        "extra-dimensions",        # Clase 5: Randall-Sundrum extra dimensions
+        "scalar-tensor",           # Clase 6: Brans-Dicke scalar-tensor
+        "graviton-mass",           # Clase 7: Massive graviton
+        "chern-simons",            # Clase 8: Chern-Simons parity violation
+        "liv-alpha2",              # Clase 9: LIV α=2 (speed of gravity)
+        "liv-alpha4",              # Clase 10: LIV α=4 (quadratic)
+        "loop-quantum-gravity",    # Clase 11: LQG area quantisation
+        "gup",                     # Clase 12: Generalised Uncertainty Principle
     ]
     
     def __init__(self):
