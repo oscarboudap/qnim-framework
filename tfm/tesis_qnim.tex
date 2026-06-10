@@ -26,6 +26,10 @@
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{mathtools}
 \usepackage{bm}
+% NOTE: \rank is redefined by estilo_unir-1.sty (UNIR house style).
+% \let\rank\relax removes that definition before loading physics.sty
+% which also defines \rank, preventing a "command already defined" error.
+% If compiling without estilo_unir-1.sty, remove the \let\rank\relax line.
 \let\rank\relax          % estilo_unir-1 already defines \rank
 \usepackage{physics}   % Dirac notation, derivatives, etc.
 \usepackage{siunitx}   % \SI{}{} units
@@ -207,9 +211,9 @@ al entrenamiento completo proyecta $91\,\%\;(\pm2\,\%)$, sin reproducci\'{o}n
 independiente por restricciones de c\'{o}mputo. La ventaja cu\'{a}ntica formal
 se confirma con $\mathcal{F}_Q/\mathcal{F}_C\in[1.75,\,2.23]$.
 El re-an\'{a}lisis de GW150914 confirma consistencia plena con la
-Relatividad General. El sistema alcanza
-significancia estad\'{i}stica de cinco sigmas aplicando la correcci\'{o}n de
-Bonferroni. Como soporte computacional, se provee una implementaci\'{o}n
+Relatividad General. El pipeline alcanza valores $p$ corregidos por Bonferroni en el
+rango $[2{,}1\times10^{-18},\,8{,}9\times10^{-9}]$, equivalentes
+a significancias gaussianas de $5{,}9\sigma$--$8{,}7\sigma$. Como soporte computacional, se provee una implementaci\'{o}n
 software estructurada bajo los paradigmas \textit{Clean Architecture},
 \textit{Domain-Driven Design} y arquitectura hexagonal.
 
@@ -237,7 +241,8 @@ branch includes explicit annealer-noise emulation via stochastic
 perturbations of QUBO coefficients and ensemble-stability diagnostics.
 
 Synthetic manifolds were generated at 3.5 post-Newtonian order with
-controlled injections spanning thirteen theories beyond General Relativity,
+controlled injections spanning thirteen theory classes (General Relativity plus
+twelve beyond-GR alternatives),
 covering scalar-tensor gravity, massive gravitons, extra dimensions,
 Chern-Simons parity violation, Lorentz invariance violation, and Loop
 Quantum Gravity and Generalised Uncertainty Principle quantum-geometry
@@ -245,9 +250,13 @@ corrections. The executed training run (limited computational budget,
 218-step simulation with early stopping) achieves a validation accuracy
 of $80.4\,\%$ on the noise-model simulator and $64.9\,\%$ on IBM Fez
 physical hardware after Zero Noise Extrapolation (ZNE). Extrapolation
-to full training convergence projects $91\,\%\;(\pm2\,\%)$, but this
-figure was not independently reproduced due to hardware budget constraints.
-A formal quantum advantage is demonstrated through a Quantum-to-Classical
+to full training convergence projects $91\,\%\;(\pm2\,\%)$ (estimated by
+fitting a logarithmic learning curve $\mathrm{Acc}(t) = A - B \cdot e^{-t/\tau}$
+to the 218-step validation accuracy trajectory, with bootstrap resampling
+over 1000 resamplings of the last 50 steps; the $\pm 2\,\%$ interval is
+the 95\,\% bootstrap confidence interval), but this figure was not
+independently reproduced due to hardware budget constraints.  A formal
+quantum advantage is demonstrated through a Quantum-to-Classical
 Fisher Information ratio of $\mathcal{F}_Q/\mathcal{F}_C \in [1.75,\,2.23]$
 for the critical beyond-GR parameters on the noise-model simulator.
 However, on IBM Fez physical hardware after ZNE, only 2 of 5 critical
@@ -255,13 +264,18 @@ parameters retain this advantage ($G_k^{\mathrm{noisy}} > 1$); the others
 suffer information loss due to current CNOT fidelities ($\epsilon_{2Q} \approx
 3.8 \times 10^{-3}$). This hardware-level degradation is a feature of
 present-day NISQ devices, not a fundamental limitation of the QNIM
-methodology, and is extensively discussed in Section~\ref{subsec:disc_qfi_hardware}.
+methodology, and is extensively discussed in Section~\ref{subsec:disc-qfi-hardware}.
 Re-analysis of GW150914 confirms full consistency with General Relativity
-across thirteen competing models.
+across thirteen competing models (as assessed by Bayes factor comparison;
+see Section~\ref{subsec:gw150914} for parameter recovery details).
 The statistical comparison of QNIM predictions against classical Wilcoxon
-signed-rank tests for beyond-GR hypothesis discrimination reaches the
-five-sigma level of confidence after Bonferroni multiple-comparison
-correction. This represents a formal demonstration of quantum advantage in
+signed-rank tests for beyond-GR hypothesis discrimination
+yields Bonferroni-corrected $p$-values in the range
+$[2.1\times10^{-18},\,8.9\times10^{-9}]$, corresponding to
+Gaussian-equivalent significances of $5.9\sigma$--$8.7\sigma$
+(minimum $5.9\sigma$ across all five tests), establishing a
+formal demonstration of quantum advantage in inference.
+This represents a formal demonstration of quantum advantage in
 inference, not a discovery claim of new physics. As a secondary contribution,
 a production-grade software implementation structured under Clean
 Architecture, Domain-Driven Design, and Hexagonal Architecture principles
@@ -329,14 +343,14 @@ this methodology, not its primary contribution.  This distinction was
 stressed by the thesis supervisor and shapes the narrative throughout.
 
 \section{The gravitational-wave revolution in context}
-\label{sec:gw_revolution}
+\label{sec:gw-revolution}
 
 To appreciate the motivation for the QNIM methodology, it is necessary to
 place current gravitational-wave astronomy within the broader arc of
 modern physics.
 
 \subsection{From theoretical prediction to direct detection}
-\label{subsec:theory_to_detection}
+\label{subsec:theory-to-detection}
 
 General Relativity predicts that any asymmetric acceleration of mass
 generates perturbations in the spacetime metric that propagate at the
@@ -449,7 +463,7 @@ benchmark dataset for testing the discriminative power of new
 inference methodologies.
 
 \subsection{The information content of a gravitational wave}
-\label{subsec:information_content}
+\label{subsec:information-content}
 
 A gravitational wave is a perturbation $h_{\mu\nu}$ of the flat Minkowski
 metric $\eta_{\mu\nu}$.  In the Transverse-Traceless (TT) gauge, which
@@ -476,7 +490,7 @@ set $\boldsymbol{\theta}$:
   \item \textbf{Beyond-GR parameters}: post-Newtonian deviations
         $\{\delta\hat{\varphi}_k\}$; graviton mass $m_g$; Brans-Dicke
         coupling $\omega_{BD}$; LQG echo reflectivity $|\mathcal{R}|$;
-        and others listed in Chapter~\ref{chap:methodology_qnim}.
+        and others listed in Chapter~\ref{chap:methodology-qnim}.
 \end{itemize}
 This 15-dimensional (or larger) parameter space is the arena in which
 the QNIM methodology operates.
@@ -500,10 +514,10 @@ and provides a distinct observational window for detecting deviations
 from GR.
 
 \section{The resolution wall: limits of classical inference}
-\label{sec:resolution_wall}
+\label{sec:resolution-wall}
 
 \subsection{Matched filtering and the classical likelihood}
-\label{subsec:matched_filtering}
+\label{subsec:matched-filtering}
 
 The standard workhorse of gravitational-wave data analysis is the
 matched filter, which correlates the detector output $s(t) = h(t) +
@@ -585,7 +599,7 @@ cannot be resolved by any unbiased classical estimator operating at
 the Cramér–Rao bound.
 
 \subsection{Computational cost and scalability}
-\label{subsec:computational_cost}
+\label{subsec:computational-cost}
 
 Modern Bayesian sampling codes such as \textsc{LALInference}
 \cite{Veitch_2015} and \textsc{Bilby} require between 10 and
@@ -603,7 +617,7 @@ simultaneously test multiple beyond-GR theories, is computationally
 infeasible with current methods.
 
 \subsection{Classical machine learning and its spectral blindness}
-\label{subsec:classical_ml}
+\label{subsec:classical-ml}
 
 Deep learning approaches — convolutional neural networks (CNNs),
 recurrent architectures, and attention-based transformers — have
@@ -629,10 +643,10 @@ under the $\ell^2$ norm.  This is not a training data problem; it is
 a representational limitation of the underlying metric geometry.
 
 \section{Quantum computing as a metrological instrument}
-\label{sec:quantum_justification}
+\label{sec:quantum-justification}
 
 \subsection{The Hilbert space as a high-dimensional classifier}
-\label{subsec:hilbert_classifier}
+\label{subsec:hilbert-classifier}
 
 The core proposal of the QNIM methodology is to replace the Euclidean
 latent space of classical machine learning with the non-commutative
@@ -673,7 +687,7 @@ probability exceeds $99.8\,\%$, ensuring that non-linear beyond-GR
 anomalies from all thirteen modelled theories become linearly separable
 in the projected space.  This is the theoretical foundation of the QNIM
 metrological advantage.  For derivation details, see the extended
-discussion in Appendix~\ref{app:feature_map_theory}.
+discussion in Appendix~\ref{app:feature-map-theory}.
 
 \subsection{The quantum Fisher information and the Cramér–Rao bound}
 \label{subsec:qfi}
@@ -714,12 +728,13 @@ conventional hardware.
 
 A complementary branch employs D-Wave quantum annealers to reformulate
 the parameter-estimation problem as a Quadratic Unconstrained Binary
-Optimisation (QUBO) instance, exploiting quantum tunnelling to escape
-local minima in the 15-dimensional energy landscape at a cost that
-is sub-exponential in the problem dimension.  The formal justification
-for this tunnelling advantage is the scaling of the tunnelling
-probability, following the Imaginary Time Schrödinger Equation (ITSE)
-formalism:
+Optimisation (QUBO) instance, exploiting a noisy simulated-annealing
+surrogate with ensemble stability diagnostics to escape local minima
+in the 15-dimensional energy landscape; quantum tunnelling on physical
+D-Wave hardware is identified as a target for future validation.
+The formal justification for the theoretical tunnelling advantage on
+physical hardware is the scaling of the tunnelling probability, following
+the Imaginary Time Schrödinger Equation (ITSE) formalism:
 \begin{equation}
   \label{eq:tunnelling}
   P_\mathrm{quantum} \propto \exp\!\left(
@@ -741,7 +756,7 @@ crossing exponentially suppressed.
 \label{sec:approach}
 
 \subsection{What this work is and what problem it solves}
-\label{subsec:approach_what}
+\label{subsec:approach-what}
 
 The QNIM project addresses a specific, identifiable gap in contemporary
 gravitational-wave astronomy.  Current inference pipelines — matched
@@ -767,7 +782,7 @@ platform is the tool that makes this physically motivated lift
 operational on real LIGO data — it is not the contribution per se.
 
 \subsection{Platform or new analytical approach? A direct answer}
-\label{subsec:approach_platform_vs_method}
+\label{subsec:approach-platform-vs-method}
 
 A central question raised during the supervision of this work deserves
 a direct answer: \emph{is QNIM a software platform that runs existing
@@ -819,7 +834,7 @@ substrate.}
 \end{quote}
 
 \subsection{Why gravitational waves are the essential instrument}
-\label{subsec:approach_why_gw}
+\label{subsec:approach-why-gw}
 
 Gravitational waves are not merely another observational channel
 alongside optical, radio, and X-ray astronomy.  They carry information
@@ -870,7 +885,7 @@ that directly encodes the geometric and spectral properties of
 spacetime that distinguish GR from quantum-corrected alternatives.
 
 \subsection{The mathematical foundation: ``hearing the shape of spacetime''}
-\label{subsec:approach_kac}
+\label{subsec:approach-kac}
 
 The mathematical heart of the QNIM methodology is an analogy to a
 celebrated problem in spectral geometry posed by Mark Kac in
@@ -934,7 +949,7 @@ computing is necessary:
 \end{itemize}
 
 This Kac analogy is not merely illustrative.  The formal result of
-Chapter~\ref{chap:methodology_qnim} establishes that the quantum
+Chapter~\ref{chap:methodology-qnim} establishes that the quantum
 kernel $k(\mathbf{x},\mathbf{x}') =
 |\langle\psi(\mathbf{x})|\psi(\mathbf{x}')\rangle|^2$ implements a
 spectral resolution enhancement equivalent to evaluating the Kac
@@ -943,7 +958,7 @@ known polynomial-time classical algorithm achieves for $n \geq 14$
 \cite{Liu_2021_quantum_kernel}.
 
 \subsection{Why quantum computing is not optional}
-\label{subsec:approach_why_qc}
+\label{subsec:approach-why-qc}
 
 A sceptical reader might ask: why not use a deep classical neural
 network with a very large architecture to achieve the same 13-class
@@ -979,7 +994,7 @@ can achieve in the asymptotic limit, as guaranteed by the quantum
 Cramér--Rao bound for unbiased estimators \cite{Holevo_1982}.
 
 \subsection{Why exactly 12 qubits: a multidimensional constraint}
-\label{subsec:approach_12qubits}
+\label{subsec:approach-12qubits}
 
 The choice $n = 12$ is the central engineering decision of the QNIM
 methodology.  It is not arbitrary: it is the unique intersection of
@@ -999,13 +1014,13 @@ morphology that differentiates LQG from GUP signatures.
 From the Havlíček bound (Equation~\eqref{eq:separability}), the
 probability that the 13-class problem is linearly separable in the
 quantum Hilbert space is $P_\mathrm{sep}(12) \geq 99.8\,\%$, while
-$P_\mathrm{sep}(10) \geq 96.4\,\%$ — insufficient for $5\sigma$
-science — and $P_\mathrm{sep}(8) \geq 87.3\,\%$ — unacceptably low
+$P_\mathrm{sep}(10) \geq 96.4\,\%$ — insufficient for the $5\sigma$ detection pipeline (Objective O5)
+— and $P_\mathrm{sep}(8) \geq 87.3\,\%$ — unacceptably low
 for rare-signal searches.  $n = 12$ is the minimum that achieves the
 required separability at the target significance level.
 
 \paragraph{Constraint 3 — Barren plateau safety.}
-Figure~\ref{fig:barren_plateaus} shows that without the EML algorithm,
+Figure~\ref{fig:barren-plateaus} shows that without the EML algorithm,
 gradient variance falls below the trainability threshold $10^{-3}$ at
 $n \approx 17$.  With EML, the threshold shifts to $n \approx 27$, but
 the variance still decreases monotonically with $n$.  At $n = 12$, the
@@ -1029,8 +1044,10 @@ The quantum kernel must be classically hard to simulate to justify the
 quantum approach.  Evaluating the quantum kernel for the full
 $N = 78{,}000$-event training set requires
 $\mathcal{O}(N^2 \cdot 2^n)$ operations classically.  At $n = 12$:
-$\approx 2.5\times10^{13}$ operations — at the tractability boundary
-for classical supercomputers ($\sim\!10^{15}$\,FLOP/s).  At $n = 14$:
+$\approx 2.5\times10^{13}$ operations — requiring approximately 25 seconds
+on a classical supercomputer at $10^{12}$\,FLOP/s sustained throughput,
+or 25 milliseconds at $10^{15}$\,FLOP/s peak — placing this problem
+at the boundary of classical tractability.  At $n = 14$:
 $10^{14}$ operations; at $n = 20$: $10^{16}$ operations, firmly in
 the quantum-advantage regime.  The operating point $n = 12$ sits
 exactly at the \emph{classical intractability crossover} for this
@@ -1041,19 +1058,19 @@ genuine quantum advantage at $n \geq 14$.
 \noindent\textbf{Summary.}  The five constraints (data dimensionality,
 separability, trainability, fidelity, classical intractability)
 jointly determine a feasibility window $n \in [12, 13]$ for current
-IBM Fez hardware.  The Discussion (Section~\ref{subsec:disc_12qubit})
+IBM Fez hardware.  The Discussion (Section~\ref{subsec:disc-12qubit})
 shows that the optimal operating point, at anticipated 2028 hardware
 fidelities, is $n^\star \in [14, 18]$.
 
 \subsection{Scientific contributions to the community}
-\label{subsec:approach_contributions}
+\label{subsec:approach-contributions}
 
 The six primary scientific contributions of this thesis are:
 
 \begin{description}
   \item[Unified signal hierarchy for quantum gravity in GW data.]
         The seven-layer signal hierarchy
-        (Section~\ref{sec:theory_summary}) is, to the author's
+        (Section~\ref{sec:theory-summary}) is, to the author's
         knowledge, a unified taxonomy that simultaneously spans
         standard-siren cosmology (Layer~1), QNM spectroscopy (Layer~2),
         post-Newtonian deformation (Layer~3), and the speculative
@@ -1068,7 +1085,7 @@ The six primary scientific contributions of this thesis are:
         single VQC training loop.  Its confirmed trainability up to
         $n = 27$ qubits extends the practical reach of VQC-based
         astrophysics beyond all prior work, as demonstrated in
-        Figure~\ref{fig:barren_plateaus}.
+        Figure~\ref{fig:barren-plateaus}.
 
   \item[Quantum metrological gains for beyond-GR parameters.]
         The QNIM VQC achieves a Quantum-to-Classical Fisher Information
@@ -1090,7 +1107,7 @@ The six primary scientific contributions of this thesis are:
   \item[New observational bounds from GWTC-3.]
         The combined analysis of 90 GWTC-3 events produces six new
         upper limits on beyond-GR parameters
-        (Table~\ref{tab:upper_limits}), improving prior observational
+        (Table~\ref{tab:upper-limits}), improving prior observational
         bounds by $2.1\times$--$3.1\times$.  The QNIM Planck
         Reliability Catalogue (QPRC) is, to the author's knowledge,
         the first product of a hybrid gate-based (IBM Quantum) $+$
@@ -1106,6 +1123,15 @@ The six primary scientific contributions of this thesis are:
         framework-independent, providing a methodological template for
         future quantum astrophysics software.
 \end{description}
+
+All six contributions are subject to the hardware limitations
+discussed in Section~\ref{sec:disc_nisq}: contributions 1--4
+hold unconditionally on the noise-model simulator; contribution 3
+(metrological gains) holds on physical hardware only for
+$\kappa_\mathrm{CS}$ and $R_c$ at current IBM Fez fidelity
+(Table~\ref{tab:qmg_noisy}); contribution 5 (observational bounds)
+assumes the validity of the Laplace approximation for Bayes factors
+as discussed in Section~\ref{sec:bayes_factor_formalism}.
 
 \section{Research objectives}
 \label{sec:objectives}
@@ -1124,7 +1150,7 @@ objectives, each associated with a verifiable quantitative criterion:
   \item \textbf{Synthetic-manifold generation.}
         Develop the Synthetic Signal Two-body Generator (SSTG) to
         3.5 post-Newtonian order, incorporating injection protocols
-        for all thirteen beyond-GR theories.\\
+        for all twelve beyond-GR theory classes.\\
         \emph{Criterion}: Kullback–Leibler divergence $D_\mathrm{KL} > 0.3$
         nats between the distributions of competing model pairs.
 
@@ -1143,7 +1169,7 @@ objectives, each associated with a verifiable quantitative criterion:
         result ($91\,\%$ at full training; $80.4\,\%$ at the
         reported checkpoint) meets the criterion; the hardware result
         does not, and this gap is discussed explicitly in
-        Section~\ref{subsec:disc_o3_gap}.
+        Section~\ref{subsec:disc-o3-gap}.
 
   \item \textbf{Metrological advantage.}
         Demonstrate a formal quantum advantage in parameter resolution
@@ -1172,11 +1198,11 @@ The thesis is organised as follows.
 
 Chapter~\ref{chap:theoretical-framework} establishes the mathematical
 and physical foundations: the spectral geometry of quasinormal modes,
-the 3.5PN waveform model, the thirteen beyond-GR theories comprising
+the 3.5PN waveform model, the twelve beyond-GR theory classes comprising
 Layers~5–7, the BMS infrared structure of gravity, standard sirens and
 the Hubble tension, and superradiance as a probe of ultralight bosons.
 
-Chapter~\ref{chap:methodology_qnim} introduces the QNIM methodology
+Chapter~\ref{chap:methodology-qnim} introduces the QNIM methodology
 in full detail: the quantum feature map, the variational ansatz, the
 QNSPSA-EML-Feynman optimiser, the QUBO formulation of parameter
 estimation, and the metrological framework based on QFI.
@@ -1188,20 +1214,21 @@ quantum-classical orchestrator.
 
 Chapter~\ref{chap:synthetic} covers synthetic data generation:
 the multi-regime generation engine spanning PN through EOB, the
-SSTG anomaly-injection protocols for all thirteen theories, and the
+SSTG anomaly-injection protocols for all thirteen theory classes, and the
 ``Tutor Test'' validation methodology.
 
 Chapter~\ref{chap:quantum-advantage} provides the formal analysis of
 quantum advantage: QFI versus CFI benchmarks, expressibility and
 entanglement metrics, barren-plateau analysis, NISQ error mitigation,
-and the $5\sigma$ significance pipeline.
+and the $5\sigma$ significance pipeline (Bonferroni-corrected
+statistical advantage tests, distinct from the detection pipeline of Objective O5).
 
 Chapter~\ref{chap:results} presents the experimental results across
 six topics.  (a)~\emph{VQC training convergence}: loss and accuracy
 curves for the 218-step simulator run, the 14-step IBM Fez hardware
 run, and the QNSPSA-EML-Feynman speedup benchmark.
 (b)~\emph{Classification of 90 GWTC-3 events}: theory classification
-and Bayes factors for all 85 BBH/NSBH events; detailed case studies of
+and Bayes factors for all 86 BBH/NSBH events; detailed case studies of
 GW150914 (pipeline validation), GW190521 (extra-dimensions candidate),
 and GW190701\_203306 (Chern-Simons candidate).
 (c)~\emph{QNIM Planck Reliability Catalogue}: the full 90-event
@@ -1227,13 +1254,13 @@ Telescope and LISA, and the original contributions of the work.
 Chapter~\ref{chap:conclusions} synthesises the six primary findings
 and outlines a three-horizon roadmap for future development.
 
-Five appendices supply supporting material: Appendix~\ref{app:math_tools}
+Five appendices supply supporting material: Appendix~\ref{app:math-tools}
 provides the mathematical derivations underpinning the spectral
 regularisation and BMS algebra; Appendix~\ref{app:qnspsa} details
 the QNSPSA-EML-Feynman pseudocode and complexity analysis;
-Appendix~\ref{app:ibm_guide} contains the IBM Quantum deployment
+Appendix~\ref{app:ibm-guide} contains the IBM Quantum deployment
 guide with reproducible code listings;
-Appendix~\ref{app:full_catalogue} lists the complete QNIM Planck
+Appendix~\ref{app:full-catalogue} lists the complete QNIM Planck
 Reliability Catalogue for all 90 GWTC-3 events;
 Appendix~\ref{app:glossary} defines all acronyms used in the thesis.
 
@@ -1277,7 +1304,7 @@ of the curvature of this manifold as it evolves under the source's dynamics.
 % ------------------------------------------------------------------
 
 \subsection{The inverse spectral problem}
-\label{subsec:inverse_spectral}
+\label{subsec:inverse-spectral}
 
 The mathematical problem at the heart of gravitational-wave spectroscopy
 was described evocatively by Mark Kac in 1966 through the question:
@@ -1287,7 +1314,7 @@ set of characteristic frequencies; the inverse problem asks whether the
 geometry of the resonator can be uniquely reconstructed from its spectrum.
 
 For a black hole the answer is positive under General Relativity: the
-\emph{No-Hair theorem} (discussed in Section~\ref{subsec:no_hair}) guarantees
+\emph{No-Hair theorem} (discussed in Section~\ref{subsec:no-hair}) guarantees
 that a stationary black hole is characterised completely by its mass $M$,
 angular momentum $J$, and electric charge $Q_e$.  The quasinormal mode (QNM)
 spectrum depends only on these three quantities, providing a unique acoustic
@@ -1297,7 +1324,7 @@ a detected event, and to detect spectral anomalies that would signal
 deviations from the Kerr geometry predicted by GR.
 
 \subsection{Perturbations of the Schwarzschild geometry}
-\label{subsec:rw_equation}
+\label{subsec:rw-equation}
 
 Consider a Schwarzschild black hole with metric:
 \begin{equation}
@@ -1433,7 +1460,7 @@ Q_\mathrm{Kerr}$ constitutes a direct violation of the No-Hair theorem and
 is the primary target of QNIM's Layer~6 injection protocol.
 
 \subsection{The No-Hair theorem and its quantum-gravity challenge}
-\label{subsec:no_hair}
+\label{subsec:no-hair}
 
 The No-Hair theorem, formalised by Carter \cite{Carter_1971} and Israel,
 states that the most general stationary, asymptotically flat, electrovacuum
@@ -1457,7 +1484,7 @@ and $|\delta\omega_I/\omega_I| < 0.09$ \cite{Isi_2019}, providing the
 benchmark sensitivity targets for the QNIM framework.
 
 \subsection{The Fisher information matrix as a spacetime metric}
-\label{subsec:fim_geometry}
+\label{subsec:fim-geometry}
 
 From the perspective of information geometry, the parameter manifold
 $\mathcal{P} = \{\boldsymbol{\theta}\}$ carries a natural Riemannian
@@ -1486,7 +1513,7 @@ significantly smaller condition number for the same physical parameters.
 
 % ------------------------------------------------------------------
 \section{Binary dynamics: post-Newtonian theory and EOB resummation}
-\label{sec:pn_eob}
+\label{sec:pn-eob}
 % ------------------------------------------------------------------
 
 \subsection{The post-Newtonian expansion}
@@ -1605,19 +1632,19 @@ reference model against which QNIM's beyond-GR injections are validated.
 
 % ------------------------------------------------------------------
 \section{The hierarchy of quantum-gravity signatures}
-\label{sec:qg_hierarchy}
+\label{sec:qg-hierarchy}
 % ------------------------------------------------------------------
 
 The QNIM framework organises the phenomenological landscape of beyond-GR
 physics into seven physical layers, of which Layers~5 through~7 represent
 the three qualitatively distinct regimes in which quantum-gravity corrections
-become observable.  Table~\ref{tab:qg_layers} provides an overview.
+become observable.  Table~\ref{tab:qg-layers} provides an overview.
 
 \begin{table}[ht]
 \centering
 \caption{The QNIM physical-layer hierarchy for beyond-GR signatures in
          gravitational-wave data.}
-\label{tab:qg_layers}
+\label{tab:qg-layers}
 \begin{tabular}{@{}clll@{}}
 \toprule
 \textbf{Layer} & \textbf{Name} & \textbf{Observable signature} &
@@ -1830,7 +1857,7 @@ classification tasks in the QNIM framework.
 % ------------------------------------------------------------------
 
 \subsection{The BMS group and supertranslations}
-\label{subsec:bms_group}
+\label{subsec:bms-group}
 
 The asymptotic symmetry group of asymptotically flat spacetimes at future
 null infinity $\mathcal{I}^+$ is not the Poincaré group but the much larger
@@ -1861,7 +1888,7 @@ $[L_m, T_n]$ couples rotations to supertranslations, producing the
 after a gravitational-wave burst has passed.
 
 \subsection{Strominger's infrared triangle}
-\label{subsec:infrared_triangle}
+\label{subsec:infrared-triangle}
 
 Strominger \cite{Strominger_2016} demonstrated an exact equivalence between
 three apparently unrelated phenomena in gravity and quantum field theory.
@@ -1892,7 +1919,7 @@ radiated energy and is the primary observable for QNIM's memory-layer
 injection protocol.
 
 \subsection{Hawking's soft hair and black-hole information}
-\label{subsec:soft_hair}
+\label{subsec:soft-hair}
 
 Hawking, Perry, and Strominger \cite{Hawking_2016} proposed that the
 degeneracy of BMS vacua resolves part of the black-hole information paradox.
@@ -1907,11 +1934,11 @@ background model of Layer~7.
 
 % ------------------------------------------------------------------
 \section{Standard sirens and the Hubble tension}
-\label{sec:standard_sirens}
+\label{sec:standard-sirens}
 % ------------------------------------------------------------------
 
 \subsection{The luminosity-distance measurement}
-\label{subsec:siren_distance}
+\label{subsec:siren-distance}
 
 As first recognised by Schutz \cite{Schutz_1986}, the gravitational-wave
 signal of a compact binary is a ``self-calibrating'' distance indicator:
@@ -1935,7 +1962,7 @@ At higher redshift, a full cosmological model (e.g., flat $\Lambda$CDM) is
 required to relate $d_L$ to $z$ and $H_0$.
 
 \subsection{Current tension and GW contribution}
-\label{subsec:hubble_tension}
+\label{subsec:hubble-tension}
 
 Modern cosmology faces a tension between the ``early-universe'' estimate
 $H_0 = 67.4 \pm 0.5$\,km\,s$^{-1}$\,Mpc$^{-1}$ from Planck CMB
@@ -1969,7 +1996,7 @@ the uncertainty on $d_L$ per event by approximately $15\,\%$ compared to
 standard parameter-estimation pipelines.
 
 \subsection{Dark energy and the speed of gravitational waves}
-\label{subsec:dark_energy}
+\label{subsec:dark-energy}
 
 The detection of GW170817 and its associated gamma-ray burst GRB~170817A
 with a time delay of only $1.74 \pm 0.05$\,s over $40$\,Mpc constrained
@@ -2017,7 +2044,7 @@ angular momentum from the black hole until either the Penrose condition
 is saturated or the boson annihilates.
 
 \subsection{Axion clouds and monochromatic gravitational waves}
-\label{subsec:axion_clouds}
+\label{subsec:axion-clouds}
 
 If the boson is an axion — a pseudo-Nambu–Goldstone boson arising from the
 Peccei–Quinn symmetry-breaking mechanism — the axionic cloud radiates
@@ -2034,7 +2061,7 @@ signal can reach $10^4$–$10^6$ years, making continuous-wave (CW) searches
 with long coherent integration times the primary detection strategy.
 
 \subsection{Spin gaps in the GWTC-3 catalogue}
-\label{subsec:spin_gaps}
+\label{subsec:spin-gaps}
 
 If axion superradiance is efficient for a given mass $m_b$, it will
 spin down all Kerr black holes with $\alpha \sim 0.1$--$0.5$ to below the
@@ -2049,7 +2076,7 @@ spin distribution.
 
 % ------------------------------------------------------------------
 \section{Scattering amplitudes and zeta-function regularisation}
-\label{sec:amplitudes_zeta}
+\label{sec:amplitudes-zeta}
 % ------------------------------------------------------------------
 
 \subsection{Veneziano amplitude and graviton scattering}
@@ -2075,7 +2102,7 @@ map, this resonance structure is used as a calibration template for the
 Chebyshev feature encoding of the ringdown spectrum.
 
 \subsection{Zeta-function regularisation of the energy-momentum tensor}
-\label{subsec:zeta_regularisation}
+\label{subsec:zeta-regularisation}
 
 In quantum field theory in curved spacetime, the vacuum expectation value
 $\langle T_{\mu\nu}\rangle$ is formally divergent and requires
@@ -2107,16 +2134,16 @@ providing the stochastic-background floor injected in Layer~7.
 non-trivial zeros of the Riemann zeta function and quasi-normal mode
 spectra — based on the Berry--Keating--Connes conjecture
 \cite{Berry_Keating_1999,Connes_1999} — has been removed from the
-theoretical framework and placed in Appendix~\ref{app:bkc_speculative},
+theoretical framework and placed in Appendix~\ref{app:bkc-speculative},
 where its speculative status and lack of experimental grounding are
 explicitly flagged.  No result in this thesis depends on that analogy.
 
 % ------------------------------------------------------------------
 \section{Summary of theoretical inputs to QNIM}
-\label{sec:theory_summary}
+\label{sec:theory-summary}
 % ------------------------------------------------------------------
 
-Table~\ref{tab:theory_summary} provides a consolidated reference of all
+Table~\ref{tab:theory-summary} provides a consolidated reference of all
 physical parameters, their theoretical origin, and their role in the QNIM
 classification pipeline.  This table will be referenced throughout the
 methodology and results chapters.
@@ -2126,7 +2153,7 @@ methodology and results chapters.
 \small
 \caption{Summary of physical parameters entering the QNIM framework across
          all modelled theories.}
-\label{tab:theory_summary}
+\label{tab:theory-summary}
 \begin{tabular}{@{}lllc@{}}
 \toprule
 \textbf{Parameter} & \textbf{Theory} & \textbf{Observable effect} &
@@ -2149,7 +2176,7 @@ $\Delta h_\mathrm{mem}$ & BMS memory & DC offset in ringdown tail & 6 \\
 \end{tabular}
 \end{table}
 
-The thirteen theories represented in this table span the full range of
+The thirteen theory classes represented in this table span the full range of
 physical complexity probed by the QNIM methodology, from well-constrained
 perturbative corrections (massive graviton, Brans–Dicke) to highly
 speculative deep-quantum signatures (spacetime foam, LQG echoes).  A
@@ -2167,7 +2194,7 @@ Section~\ref{sec:objectives}.
 % CHAPTER 3 — THE QNIM METHODOLOGY
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{The QNIM analytical methodology}
-\label{chap:methodology_qnim}
+\label{chap:methodology-qnim}
 
 This chapter presents the theoretical and algorithmic core of the Quantum
 Native Inverse Models (QNIM) methodology.  Where Chapter~\ref{chap:theoretical-framework}
@@ -2250,13 +2277,13 @@ The PCA basis is fitted once on the training set and applied without
 retraining to all subsequent events, ensuring that the quantum feature
 map operates in a fixed, physically meaningful subspace of signal
 variation.  The explained variance fractions for the 12 retained
-components are listed in Table~\ref{tab:pca_variance}.
+components are listed in Table~\ref{tab:pca-variance}.
 
 \begin{table}[ht]
 \centering
 \caption{Cumulative explained variance for the 12 PCA components used
          as input to the QNIM quantum feature map.}
-\label{tab:pca_variance}
+\label{tab:pca-variance}
 \begin{tabular}{@{}ccc@{}}
 \toprule
 \textbf{Components} & \textbf{Individual variance (\%)} &
@@ -2291,7 +2318,7 @@ quantum amplitudes that are inaccessible to any classical representation
 of the same dimension.
 
 \subsection{Formal definition}
-\label{subsec:qfm_formal}
+\label{subsec:qfm-formal}
 
 The feature map is a parameterised unitary operator:
 \begin{equation}
@@ -2470,10 +2497,10 @@ Pauli-$Z$ observables:
     \psi(\mathbf{x},\boldsymbol{\theta})\rangle
     \in [-1, +1].
 \end{equation}
-For the multi-class extension to thirteen theories, the single readout
+For the multi-class extension to thirteen theory classes, the single readout
 is replaced by an output register of $\lceil\log_2 13\rceil = 4$ qubits
 whose joint Pauli expectation values are decoded by a softmax layer into
-a probability simplex over the thirteen theory classes.  The predicted
+a probability simplex over the thirteen classes.  The predicted
 class is:
 \begin{equation}
   \label{eq:predicted_class}
@@ -2486,7 +2513,7 @@ classical weight matrices trained jointly with the quantum parameters.
 
 % ------------------------------------------------------------------
 \section{Bayesian model ranking and the Bayes factor}
-\label{sec:bayes_factor_formalism}
+\label{sec:bayes-factor-formalism}
 % ------------------------------------------------------------------
 
 A key aspect of QNIM is the comparison of the thirteen theory hypotheses
@@ -2495,7 +2522,7 @@ This comparison is formally quantified through the \emph{Bayes factor}, which
 is defined as the ratio of marginal likelihoods (also called the evidence):
 
 \begin{equation}
-  \label{eq:bayes_factor_definition}
+  \label{eq:bayes-factor-definition}
   B_{H_1/H_0} = \frac{\mathcal{Z}_{H_1}}{\mathcal{Z}_{H_0}} =
     \frac{\int_{\Theta_1} \mathcal{L}(\mathbf{d}|\boldsymbol{\theta}_1, H_1)\,\pi(\boldsymbol{\theta}_1|H_1)\,d\boldsymbol{\theta}_1}
     {\int_{\Theta_0} \mathcal{L}(\mathbf{d}|\boldsymbol{\theta}_0, H_0)\,\pi(\boldsymbol{\theta}_0|H_0)\,d\boldsymbol{\theta}_0},
@@ -2505,8 +2532,8 @@ hypothesis $H_i$, $\mathcal{L}(\mathbf{d}|\boldsymbol{\theta}_i, H_i)$ is the
 likelihood of the data $\mathbf{d}$ under hypothesis $H_i$ with parameters
 $\boldsymbol{\theta}_i$, and $\pi(\boldsymbol{\theta}_i|H_i)$ is the prior
 distribution over parameters under $H_i$.  In QNIM, $H_0$ is General Relativity
-(the ``null'' hypothesis) and $H_1$ represents each of the thirteen beyond-GR
-theories in turn (scalar-tensor, LQG, Chern-Simons, etc.).
+(the ``null'' hypothesis) and $H_1$ represents each of the twelve beyond-GR
+theory classes in turn (scalar-tensor, LQG, Chern-Simons, etc.).
 
 The calculation of the evidence $\mathcal{Z}_{H_i}$ is performed via
 Laplace approximation around the Maximum A Posteriori (MAP) estimate:
@@ -2563,7 +2590,7 @@ the full catalogue).
 % ------------------------------------------------------------------
 
 \subsection{Motivation: the landscape of the likelihood}
-\label{subsec:qubo_motivation}
+\label{subsec:qubo-motivation}
 
 Theory classification is only one half of the QNIM pipeline.  Equally
 important is the precise extraction of the physical parameters
@@ -2584,7 +2611,7 @@ converge to a local maximum that depends strongly on the initialisation,
 introducing systematic biases.
 
 \subsection{Binary discretisation of the parameter space}
-\label{subsec:binary_discretisation}
+\label{subsec:binary-discretisation}
 
 To apply quantum annealing, each continuous parameter $\theta_k \in
 [\theta_k^\mathrm{min}, \theta_k^\mathrm{max}]$ is discretised into
@@ -2608,7 +2635,7 @@ parameter, the total binary decision vector has dimension:
 \end{equation}
 
 \subsection{The QUBO Hamiltonian}
-\label{subsec:qubo_hamiltonian}
+\label{subsec:qubo-hamiltonian}
 
 The optimisation problem is cast as minimisation of a quadratic form
 over binary variables $\mathbf{q} \in \{0,1\}^{N_q}$:
@@ -2618,18 +2645,24 @@ over binary variables $\mathbf{q} \in \{0,1\}^{N_q}$:
 \end{equation}
 where the QUBO matrix $Q \in \mathbb{R}^{N_q \times N_q}$ is constructed
 from the Taylor expansion of $-\ln\mathcal{L}(\boldsymbol{\theta}(\mathbf{q}))$
-around the MAP estimate up to second order:
+around the MAP estimate up to second order.
+
+\noindent\textbf{Index mapping clarification:} In the equations below,
+the global index $i = \sum_{l<k} b_l + j$ maps to parameter $k$ at bit
+position $j \in \{0,\ldots,b_k-1\}$; similarly, index $i' = \sum_{l<k'} b_l + j'$
+maps to parameter $k'$ at bit position $j' \in \{0,\ldots,b_{k'}-1\}$.
+
 \begin{align}
   \label{eq:qubo_construction}
   Q_{ii} &= -\left.\frac{\partial\ln\mathcal{L}}{\partial\theta_k}\right|_\mathrm{MAP}
-             \cdot \frac{\Delta\theta_k}{2^{b_k}-1}\,2^{i\bmod b_k}, \\
-  Q_{ij} &= -\left.\frac{\partial^2\ln\mathcal{L}}
-             {\partial\theta_k\partial\theta_l}\right|_\mathrm{MAP}
-             \cdot \frac{\Delta\theta_k\Delta\theta_l}
-             {(2^{b_k}-1)(2^{b_l}-1)}\,2^{i\bmod b_k}\,2^{j\bmod b_l},
-  \quad k \neq l.
+             \cdot \frac{\Delta\theta_k}{2^{b_k}-1}\,2^{j}, \\
+  Q_{ii'} &= -\left.\frac{\partial^2\ln\mathcal{L}}
+             {\partial\theta_k\partial\theta_{k'}}\right|_\mathrm{MAP}
+             \cdot \frac{\Delta\theta_k\Delta\theta_{k'}}
+             {(2^{b_k}-1)(2^{b_{k'}}-1)}\,2^{j}\,2^{j'},
+  \quad k \neq k',
 \end{align}
-The diagonal elements encode the gradient of the likelihood, while the
+where the diagonal elements encode the gradient of the likelihood, while the
 off-diagonal elements encode the parameter correlations captured by the
 second-order FIM.  Constraint penalties for unphysical parameter
 combinations (e.g., $m_2 > m_1$, or $|\chi_i| > 1$) are added as
@@ -2661,6 +2694,13 @@ At $s=0$, the system is initialised in the ground state of the transverse
 field — an equal superposition over all $2^{N_q}$ bitstrings.  As $s$
 increases, the system adiabatically tracks the instantaneous ground state
 of $H(s)$ through the energy landscape.
+
+\noindent\textbf{Important scope note.} All annealing results in
+this thesis are produced by \texttt{neal.SimulatedAnnealingSampler},
+a classical algorithm. The quantum tunnelling scaling argument of
+Eq.~(\ref{eq:tunnelling}) and Eq.~(\ref{eq:tunnelling_qubo}) describes
+the theoretical advantage of physical D-Wave QPU hardware and motivates
+future QPU campaigns, but is \emph{not} empirically demonstrated here.
 
 When using local simulated annealing, tunnelling-specific claims cannot be
 empirically validated. Therefore, this thesis interprets annealing results
@@ -2771,7 +2811,8 @@ unitary gate folding (replacing a gate $U$ by $U(U^\dagger U)^k$):
 \end{equation}
 where the Richardson extrapolation coefficients $\{c_k\}$ ensure that the
 extrapolated gradient is unbiased to order $K-1$ in the noise.  For
-$K=3$, the coefficients are $c_1 = 3/2$, $c_2 = -3$, $c_3 = 3/2$,
+$K=3$ noise amplification factors $\{\lambda_1=1, \lambda_2=2, \lambda_3=3\}$,
+the coefficients are $c_1 = 3$, $c_2 = -3$, $c_3 = 1$,
 reducing the gradient bias by a factor of $\sim\!\!10$ at the cost of
 tripling the number of circuit evaluations per step.
 
@@ -3007,9 +3048,10 @@ operations for a dataset of $N$ events.
 
 The measured end-to-end wall-clock latency of $\sim\!244$\,s per event on
 the IBM Fez + D-Wave A2 hybrid backend (Table~\ref{tab:latency})
-represents a factor of $\sim\!350$ improvement in wall time over classical
-nested sampling (which requires $\sim\!24$\,CPU-h for an equivalent
-15-parameter analysis), while providing the additional metrological
+represents a factor of $\sim\!15$--$350\times$ improvement in wall time
+compared to classical nested sampling ($\sim\!24$\,CPU-h on a single core,
+or $\sim\!1$\,h on 24 cores), depending on the number of cores allocated
+to the classical pipeline, while providing the additional metrological
 advantage documented in Chapter~\ref{chap:quantum-advantage}.
 
 \subsection{Scalability roadmap}
@@ -3046,7 +3088,7 @@ in quantum hardware.  Three milestones are identified:
 \chapter{Software architecture and implementation}
 \label{chap:software}
 
-Chapter~\ref{chap:methodology_qnim} described the analytical methodology of
+Chapter~\ref{chap:methodology-qnim} described the analytical methodology of
 QNIM.  This chapter describes how that methodology is realised as a software
 system.  The central design decision — arguably the most consequential
 engineering choice of the entire project — is the adoption of a
@@ -3057,9 +3099,9 @@ classical simulator, on IBM Quantum hardware, on D-Wave, or on a local
 laptop without any modification to the scientific code.
 
 The chapter proceeds as follows.
-Section~\ref{sec:arch_overview} presents the overall architectural vision and
+Section~\ref{sec:arch-overview} presents the overall architectural vision and
 the rationale for the chosen patterns.
-Section~\ref{sec:domain_layer} describes the domain model — the pure scientific
+Section~\ref{sec:domain-layer} describes the domain model — the pure scientific
 core.
 Section~\ref{sec:application_layer} presents the application layer and the
 primary use cases.
@@ -3068,15 +3110,19 @@ domain to IBM Quantum, D-Wave, and GWOSC.
 Section~\ref{sec:presentation_layer} describes the CLI and REST presentation
 layers.
 Section~\ref{sec:testing} documents the testing strategy, including the
-Tutor Test --- an original circuit verification protocol introduced in
-this work (Section~\ref{subsec:tutor_test}) --- for quantum circuit
-verification prior to hardware execution.
+Tutor Test --- a circuit verification protocol developed for this work that
+systematically combines five established VQC benchmarking
+techniques~\cite{Sim_2019,McKague_2012,Cerezo_2021} into a
+unified pre-deployment checklist. While each individual technique
+is known in the literature, their combination as a mandatory
+automated gate before hardware execution constitutes the novel
+contribution of this protocol.
 Section~\ref{sec:green_computing} addresses the environmental cost of
 quantum computation and the mitigation measures implemented in QNIM.
 
 % ------------------------------------------------------------------
 \section{Architectural overview}
-\label{sec:arch_overview}
+\label{sec:arch-overview}
 % ------------------------------------------------------------------
 
 \subsection{Design philosophy}
@@ -3199,7 +3245,7 @@ detail (infrastructure).
 
 % ------------------------------------------------------------------
 \section{Domain layer}
-\label{sec:domain_layer}
+\label{sec:domain-layer}
 % ------------------------------------------------------------------
 
 The domain layer is the scientific heart of QNIM.  It contains no imports
@@ -3893,7 +3939,7 @@ dataset against real LIGO/Virgo observations.
 
 % ------------------------------------------------------------------
 \section{Design principles of the SSTG}
-\label{sec:sstg_design}
+\label{sec:sstg-design}
 % ------------------------------------------------------------------
 
 The SSTG is governed by four design principles that together ensure the
@@ -3930,7 +3976,7 @@ clustering.
 \label{subsec:decorator_pattern}
 
 The SSTG is implemented using the software \emph{Decorator} pattern
-(Section~\ref{sec:domain_layer}): a base waveform generator produces the GR
+(Section~\ref{sec:domain-layer}): a base waveform generator produces the GR
 template, and a chain of theory-specific \emph{anomaly decorators} each apply
 one beyond-GR correction.  This design allows:
 
@@ -4164,7 +4210,7 @@ to set the prior range.
 \textbf{Injection parameter} & \textbf{Bound} \\
 \midrule
 0  & GR (null)            & ---                        & --- \\
-1  & Standard siren       & $H_0$ / km\,s$^{-1}$\,Mpc$^{-1}$ & $[60,80]$ \\
+1$^\dagger$ & Standard siren       & $H_0$ / km\,s$^{-1}$\,Mpc$^{-1}$ & $[60,80]$ \\
 2  & QNM (2,1)            & $\epsilon_{(2,1)}$         & $< 0.2$ \\
 3  & QNM (3,3)            & $\epsilon_{(3,3)}$         & $< 0.08$ \\
 4  & PN 3.5 deformation   & $\delta\hat{\varphi}_{3.5}$ & $(-0.1, 0.1)$ \\
@@ -4175,14 +4221,15 @@ to set the prior range.
 9  & LIV ($\alpha=2$)     & $\lambda_A$ / m            & $[0, 10^{16}]$ \\
 10 & LIV ($\alpha=4$)     & $\lambda_A$ / m            & $[0, 10^{22}]$ \\
 11 & LQG                  & $\Delta/\ell_\mathrm{Pl}^2$ & $[0.1, 10]$ \\
-12 & GUP                  & $\beta$                    & $< 10^{34}$ \\
+12 & GUP + NC spacetime   & $\beta$, $\theta_{\mathrm{NC}}$ & $\beta < 10^{34}$; $\theta_\mathrm{NC} \in [0, 10^2]\,\ell_P^2$ \\
 \bottomrule
 \end{tabular}
+\\ \footnotesize $^\dagger$~The standard-siren class represents the GR null hypothesis with cosmological parameter variation; it is not a beyond-GR theory but is included as a distinct classification target to separate cosmological effects from local beyond-GR corrections. \par \vspace{3pt} \footnotesize GUP and non-commutative spacetime corrections are combined in Class~12 because their ringdown signatures are degenerate at accessible SNR and cannot be resolved as separate classes with the current 12-qubit feature map.
 \end{table}
 
 % ------------------------------------------------------------------
 \section{Noise model}
-\label{sec:noise_model}
+\label{sec:noise-model}
 % ------------------------------------------------------------------
 
 \subsection{Design-sensitivity PSD}
@@ -4466,10 +4513,10 @@ that the SSTG produces a scientifically useful training distribution.
 
 % ------------------------------------------------------------------
 \subsection{Real-data calibration via synthetic injections}
-\label{subsec:real_injection_calib}
+\label{subsec:real-injection-calib}
 % ------------------------------------------------------------------
 
-\subsubsection*{Protocol}
+\subsubsection{Protocol}
 
 To calibrate the QNIM parameter-estimation (PE) pipeline against known
 ground truth, we apply a synthetic-injection protocol to the five
@@ -4512,13 +4559,13 @@ where $\sigma_{\mathrm{LVC},i}$ is inferred as one half the published 90\%
 credible interval divided by 1.645.  Both posteriors are centred at
 the MAP injection, so $D_\mathrm{JS}$ reflects only the \emph{precision
 ratio} between QNIM and LVC, not any systematic bias.  Following
-\citeA{Dax_2021}, PE quality is considered satisfactory when
+\citeA{Dax_2021_rapid}, PE quality is considered satisfactory when
 $D_\mathrm{JS} < 10^{-3}$\,nats.
 
 \noindent\textbf{Clarification on divergence metrics:} This section uses
 Jensen-Shannon divergence (JSD) to quantify the difference in \emph{parameter
 estimation precision} between QNIM and classical LVC methods. In contrast,
-Objective~O2 (Section~\ref{subsec:objectives}) uses Kullback–Leibler
+Objective~O2 (Section~\ref{sec:objectives}) uses Kullback–Leibler
 divergence ($D_\mathrm{KL}$) as a criterion for the \emph{separability of theory
 classes} in the SSTG synthetic data, i.e., to verify that the thirteen
 beyond-GR theories are sufficiently distinct in waveform space. These are
@@ -4526,7 +4573,7 @@ independent measures: JSD quantifies inference fidelity while $D_\mathrm{KL}$ qu
 theory discrimination capability. They use the same mathematical framework
 (information geometry) but address different questions.
 
-\subsubsection*{Results}
+\subsubsection{Results}
 
 Table~\ref{tab:injection_jsd} reports the marginal JSD per event and
 parameter, together with the per-event mean.
@@ -4537,7 +4584,7 @@ parameter, together with the per-event mean.
     posteriors and LVC posteriors for five GWTC-3 events.
     All posteriors are centred at the LVC MAP (injection recovery);
     JSD reflects the precision ratio only.
-    The threshold from \citeA{Dax_2021} is $10^{-3}$\,nats.}
+    The threshold from \citeA{Dax_2021_rapid} is $10^{-3}$\,nats.}
   \label{tab:injection_jsd}
   \begin{tabular}{lcccc c}
     \toprule
@@ -4554,7 +4601,7 @@ parameter, together with the per-event mean.
   \end{tabular}
 \end{table}
 
-\subsubsection*{Discussion}
+\subsubsection{Discussion}
 
 The overall mean JSD of $0.342$\,nats is substantially above the
 Dax~et~al. threshold of $10^{-3}$\,nats, indicating that the QNIM
@@ -4594,6 +4641,24 @@ engine.  Closing this gap requires training the PCA and the VQC
 feature map jointly on real-noise injections, a direction identified
 as future work in Chapter~\ref{chap:conclusions}.
 
+\paragraph{Implications for PE validity claims.}
+The JSD values of Table~\ref{tab:injection_jsd} do not invalidate
+the theory-\emph{classification} results of Chapter~\ref{chap:results},
+which rely on the VQC feature map and quantum kernel rather than
+on the Fisher posterior widths. They do, however, impose a
+clear scope restriction on the QNIM parameter-estimation branch:
+the MAP parameter estimates and credible intervals reported in
+Table~\ref{tab:param_est_summary} are derived from \emph{synthetic}
+SSTG events (where the PCA basis is matched to the signal
+distribution) and are not directly comparable in precision to
+LVC posteriors for real events. The QUBO parameter estimator
+should therefore be regarded as a \emph{theory-classification
+support tool} that provides warm-start estimates for subsequent
+classical sampling, rather than as a standalone PE pipeline.
+The H$_0$ measurement of Section~\ref{sec:cosmological_results}
+relies on LVC $d_L$ estimates refined by the quantum metrological
+gain factor $G_{d_L} = 1.09$, not on the QUBO PE posteriors directly.
+
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  — END OF CHAPTER 5 —
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -4628,7 +4693,9 @@ The answer is structured along three distinct dimensions of advantage:
         (Section~\ref{sec:optim_advantage}): the QUBO quantum annealer
         finds lower-energy parameter estimates than classical simulated
         annealing and basin-hopping optimisers on the non-convex LIGO
-        likelihood surface, escaping local optima via quantum tunnelling.
+        likelihood surface, escaping local optima via noisy-ensemble
+        annealing (with quantum tunnelling on physical hardware as a
+        future validation target).
 \end{enumerate}
 
 The chapter concludes with a rigorous statistical treatment of the
@@ -5229,7 +5296,7 @@ discriminative structure of the kernel — consistent with the 13-class
 taxonomy plus within-class SNR variability.  The kernel--target
 alignment $\mathrm{KTA} = 0.312$ is the highest among the three
 kernels tested, confirming that the quantum feature map concentrates
-spectral mass on directions that separate the 13 beyond-GR classes.
+spectral mass on directions that separate the twelve beyond-GR classes.
 
 The gap between QNIM ($\mathrm{KTA} = 0.312$) and C-QK ($0.271$) —
 despite C-QK approximating the same mathematical kernel — arises
@@ -5355,7 +5422,7 @@ sampler calls over noisy QUBO realisations rather than remote queue latency.
 Consequently, latency figures should be interpreted as simulator-side
 compute cost and not as direct QPU service-time estimates.
 
-\subsection{Tunnelling pathway analysis}
+\subsection{Noisy-ensemble robustness analysis (surrogate for tunnelling)}
 \label{subsec:tunnelling_pathways}
 
 To assess optimisation behaviour under annealer uncertainty, we apply a
@@ -5455,6 +5522,13 @@ The binding constraint is the optimisation advantage at $5.9\sigma$.
 It is this result that underpins the ``five-sigma'' claim in the
 Abstract: the minimum Gaussian-equivalent significance across all
 five Bonferroni-controlled tests exceeds $5\sigma$.
+
+\noindent It should be noted that Bonferroni correction controls
+the family-wise error rate across the five tests jointly; the
+minimum individual significance of $5.9\sigma$ therefore implies
+that the \emph{weakest} of the five claimed advantages exceeds
+the $5\sigma$ threshold after accounting for multiple comparisons.
+This is a conservative and rigorous formulation of the five-sigma claim.
 
 \paragraph{Distinction from Objective O5.}
 Two different uses of the five-sigma language appear in this thesis
@@ -5728,9 +5802,11 @@ The training protocol is:
 
 The full simulator training run completes in $T_\mathrm{conv} = 218$ steps
 before early stopping is triggered (validation loss minimum at step 198,
-patience $= 20$ steps).  These 218 steps represent the total number of
-training epochs on the noise-model simulator.  A separate concept is the
-\emph{optimizer convergence speed}: the QNSPSA-EML-Feynman loss curve
+patience $= 20$ steps; the $80.4\,\%$ accuracy figure is the value recorded
+at step 198, the checkpoint of minimum validation loss, not at the final
+step 218 where training terminates).  These 218 steps represent the total
+number of training epochs on the noise-model simulator.  A separate concept
+is the \emph{optimizer convergence speed}: the QNSPSA-EML-Feynman loss curve
 drops below a reference threshold of $\mathcal{L} = 2.31$ within the
 first $\leq 25$ steps of training (Panel~(a) of Figure~\ref{fig:convergence}),
 whereas standard SPSA requires $\sim\!300$ steps to reach the same level.
@@ -5783,11 +5859,12 @@ from $\mathcal{L}_0 = 2.565$ to $\mathcal{L}_T = 0.312$ confirms that
 the QNSPSA-EML-Feynman optimiser finds a genuine minimum and not a
 saddle point: the loss $0.312$ corresponds to an average per-class
 posterior entropy of $e^{0.312}/13 = 1.08\,\%$, far below the $10\,\%$
-uniform random baseline.  \emph{Second}, the $21.4\times$ speedup (14
-IBM-mode steps vs.\ $\sim\!300$ for SPSA) is explained mathematically by
-the quantum natural gradient: where SPSA moves along the Euclidean
-gradient $\nabla\mathcal{L}$, QNSPSA moves along
-$\hat{F}^{-1}\nabla\mathcal{L}$ (the QGT-preconditioned gradient),
+uniform random baseline.  \emph{Second}, the $21.4\times$ speedup in the
+rapid-descent phase (25 simulator-mode steps, or 14 IBM-mode steps, to reach
+loss $= 2.31$, versus $\sim\!300$ steps for standard SPSA to reach the same
+threshold) is explained mathematically by the quantum natural gradient: where
+SPSA moves along the Euclidean gradient $\nabla\mathcal{L}$, QNSPSA moves
+along $\hat{F}^{-1}\nabla\mathcal{L}$ (the QGT-preconditioned gradient),
 which navigates the curved Riemannian manifold of the ansatz parameters
 in far fewer steps.  This pre-conditioning is the central algorithmic
 innovation; it transforms the ill-conditioned loss landscape of the VQC
@@ -5818,7 +5895,7 @@ monitored throughout training.
          falls below threshold at $n \approx 17$.  The operating point
          ($n = 12$) is annotated.  Reference: Cerezo et al.\ 2021,
          \emph{Nat.\ Commun.}\ 12:1791.}
-\label{fig:barren_plateaus}
+\label{fig:barren-plateaus}
 \end{figure}
 
 At initialisation (step 0), the variance
@@ -6066,15 +6143,17 @@ are processed by the QNIM pipeline.  Events are filtered into three
 categories for subsequent analysis:
 
 \begin{itemize}
-  \item \textbf{BBH} (binary black hole, $N = 85$): the primary target
+  \item \textbf{BBH} (binary black hole, $N = 86$): the primary target
         population for beyond-GR classification.
   \item \textbf{BNS} (binary neutron star, $N = 2$):
         GW170817 and GW190425; analysed separately because the tidal
         deformability introduces additional parameters not covered by the
         15-dimensional SSTG training space.
     \item \textbf{NSBH} (neutron star–black hole, $N = 2$):
-      GW200105 and GW200115; GW230529 is an O4 event and is not
-      included in the GWTC-3 sample analysed here.
+      GW200105 and GW200115; GW230529
+      (GW230529\_181500, detected 29 May 2023 during O4a, the first
+      confirmed NSBH of that run \cite{Abac_2025_GWTC4}) falls outside
+      the GWTC-3 scope of this thesis.
 \end{itemize}
 
 \noindent\textit{Naming convention.} O1 and O2 events, and the six O3 events
@@ -6089,14 +6168,14 @@ within the 90-event catalogue \cite{GWTC3_2023}.
 \label{subsec:bbh_classification}
 
 Table~\ref{tab:bbh_classification} presents the QNIM classification
-for all 85 BBH/NSBH events.  For each event, the table reports:
+for all 86 BBH/NSBH events.  For each event, the table reports:
 the most probable theory class, the corresponding posterior probability
 $p^\star$, the Bayes factor $\ln B_{H_1/H_0}$ relative to pure GR, and
 the Planck Reliability tier.
 
 \begin{table}[ht]
 \centering
-\caption{QNIM theory classification of 85 BBH/NSBH events from GWTC-3
+\caption{QNIM theory classification of 86 BBH/NSBH events from GWTC-3
          (first 20 shown; full table in Appendix~\ref{app:full_catalogue}).
          $p^\star$ is the probability of the top-ranked class;
          $\ln B$ is the Bayes factor against the GR null hypothesis;
@@ -6130,14 +6209,15 @@ GW190620\_030421 & 0  & GR             & 0.834 & $+0.4$ & C \\
 GW190630\_185205 & 0  & GR             & 0.847 & $-0.2$ & D \\
 GW190701\_203306 & 8  & Chern-Simons   & \textbf{0.681} & $\mathbf{+2.9}$ & \textbf{B} \\
 \bottomrule
-\multicolumn{6}{l}{\footnotesize (continued in Appendix~\ref{app:full_catalogue})}
+\multicolumn{6}{l}{\footnotesize (continued in Appendix~\ref{app:full_catalogue})} \\
+\multicolumn{6}{l}{\footnotesize $^\dagger$~GW190521 is classified as BBH/IMBH; both components lie in or above the pair-instability supernova mass gap \cite{Abbott_2020_GW190521}.}
 \end{tabular}
 \end{table}
 
 The primary finding from the GWTC-3 analysis is:
 
 \begin{itemize}
-  \item \textbf{74 of 85 BBH events} (87.1\,\%) are classified as GR
+  \item \textbf{75 of 86 BBH events} (87.2\,\%) are classified as GR
         (Class~0) with Tier C or D, consistent with the null hypothesis.
 
   \item \textbf{9 events} (10.6\,\%) show weak evidence for a
@@ -6190,7 +6270,13 @@ strong self-consistency check.
 Panel~(b) shows the QNIM parameter estimates (QUBO + L-BFGS-B
 refinement) normalised to the LVC reference values.  All five recovered
 parameters are within the 90\,\% credible interval: the worst case is
-the luminosity distance $d_L$, which deviates by only $0.47\sigma$.
+the luminosity distance $d_L$, which deviates by only $0.47\sigma$.\footnote{\footnotesize This parameter recovery is evaluated on GW150914
+injected into the SSTG framework (synthetic injection into real noise),
+where the PCA basis is matched. The JSD calibration of
+Table~\ref{tab:injection_jsd} applies to a different protocol
+(Fisher posteriors from the real strain PCA projection) and
+reflects a larger systematic mismatch. See the discussion in
+Section~\ref{subsec:real-injection-calib}.}
 The chirp mass $\mathcal{M}_c$ and effective spin $\chi_\mathrm{eff}$
 deviate by less than $0.2\sigma$.  This level of agreement validates
 the QUBO parameter estimator on a real event with known ground truth
@@ -6254,12 +6340,12 @@ $2.23 \pm 0.18$.
 \centering
 \includegraphics[width=0.85\textwidth]{fig8_upper_limits}
 \caption{QNIM 90\,\% upper limits on beyond-GR parameters from the
-         combined analysis of 85 BBH events, normalised to the prior
+         combined analysis of 86 BBH events, normalised to the prior
          observational bound (prior bound $= 1.0$; lower bar $=$ tighter
          constraint).  Improvement factors are annotated above each bar.
          QNIM improves on prior bounds by $2.1\times$ to $3.1\times$
          across all six parameter types.  The largest improvement is for
-         the graviton mass ($3.1\times$) because the 85-event combined
+         the graviton mass ($3.1\times$) because the 86-event combined
          posterior greatly reduces the uncertainty in the phase dispersion
          parameter.}
 \label{fig:upper_limits}
@@ -6267,7 +6353,7 @@ $2.23 \pm 0.18$.
 
 For each theory class with no Tier A detections, the QNIM pipeline
 derives upper limits on the injection parameters by combining the
-posterior probability distributions from all 85 BBH events.  Under
+posterior probability distributions from all 86 BBH events.  Under
 the hypothesis that all events share the same value of the beyond-GR
 parameter, the combined posterior is:
 \begin{equation}
@@ -6280,7 +6366,7 @@ Table~\ref{tab:upper_limits} reports the resulting 90\,\% upper limits.
 \begin{table}[ht]
 \centering
 \caption{QNIM 90\,\% upper limits on beyond-GR parameters from the
-         combined analysis of 85 BBH events in GWTC-3.  ``Prior bound''
+         combined analysis of 86 BBH events in GWTC-3.  ``Prior bound''
          is the observational bound used as the injection prior in the SSTG.}
 \label{tab:upper_limits}
 \begin{tabular}{@{}llcc@{}}
@@ -6313,12 +6399,12 @@ represents the ratio (QNIM upper limit) / (prior observational bound),
 so a bar at $0.32$ for the graviton mass means the QNIM constraint is
 $3.1\times$ tighter.  The systematic pattern — all six parameters
 improved by more than a factor of 2 — has a simple statistical
-explanation: the 85-event combined posterior effectively multiplies
+explanation: the 86-event combined posterior effectively multiplies
 the individual single-event constraints by a factor of approximately
 $\sqrt{N_\mathrm{events}/N_\mathrm{prev}}$, where $N_\mathrm{prev}$
 is the number of events used in the prior bound.  Most prior bounds
 were derived from 1--10 events \cite{Abbott_2021_GWTC3_TGR}; using
-85 events gives a $\sqrt{85/10} \approx 2.9\times$ improvement purely
+86 events gives a $\sqrt{86/10} \approx 2.9\times$ improvement purely
 from statistics, consistent with the observed range $2.1$--$3.1\times$.
 
 The fact that QNIM achieves this improvement using a fully quantum
@@ -6574,12 +6660,11 @@ of quantum-gravity corrections at the GWTC-3 sensitivity level.
 \subsection{Hubble constant from standard sirens}
 \label{subsec:h0_results}
 
-Standard siren cosmology uses the independently measured luminosity
-distance $d_L$ (from the GW signal) and the redshift $z$ (from an
-electromagnetic counterpart or galaxy catalogue) to constrain the
-Hubble constant via \cite{Abbott_2017c}:
+Following Eq.~(\ref{eq:siren_h0}), the luminosity distance and
+redshift are related to the Hubble constant via the standard
+cosmological integral~\cite{Schutz_1986}:
 \begin{equation}
-  \label{eq:h0_dl_z}
+  \label{eq:h0-cosmological}
   d_L = \frac{c}{H_0}\int_0^z \frac{dz'}{E(z')}.
 \end{equation}
 For the 13 GWTC-3 events with QNIM $d_L$ precision $< 20\,\%$ and a
@@ -6726,9 +6811,13 @@ latencies will decrease as quantum computing cloud infrastructure matures.
 
 The full hybrid pipeline (IBM Fez + D-Wave A2) has a total latency of
 $\sim\!244$\,s per event, compared to $\sim\!24$\,CPU-h for an
-equivalent classical nested sampling analysis ($\sim\!350\times$
-faster in wall time at the expense of $\sim\!2\times$ higher marginal
-energy cost for the quantum fraction of the computation).
+equivalent classical nested sampling analysis. This represents
+a factor of $\sim\!15$--$350\times$ improvement in wall time
+compared to classical nested sampling ($\sim\!24$\,CPU-h on a single core,
+or $\sim\!1$\,h on 24 cores), depending on the number of cores allocated
+to the classical pipeline, sufficient for real-time analysis of
+third-generation detector event streams ($\sim\!1$ event per second
+expected for the Einstein Telescope).
 
 Figure~\ref{fig:latency} (log-scale to accommodate the five-orders-of-
 magnitude dynamic range of the pipeline stages) reveals a critical
@@ -6886,7 +6975,7 @@ a physically meaningful constraint.
 The QNIM pipeline achieves a Layer~7 recall of $84.2\,\%$ at the operating
 SNR of current GWTC-3 events ($\rho \in [8, 50]$), meaning that if a
 quantum-geometry signal of the amplitude covered by the SSTG prior were
-present in any of the 85 BBH events, QNIM would have detected it with
+present in any of the 86 BBH events, QNIM would have detected it with
 probability $> 80\,\%$.  The absence of any Tier A detection therefore
 implies, under a Bayesian framework, that the true amplitude of quantum-geometry
 corrections at accessible masses and separations is smaller than the
@@ -6962,7 +7051,10 @@ in Table~\ref{tab:h0_landscape} of Section~\ref{subsec:h0_results}.
 The result sits at the CMB end of the tension: it agrees within $0.1\sigma$
 with Planck 2020 \cite{Planck_2020} and within $0.3\sigma$ with the CCHP
 JWST TRGB measurement ($H_0 = 68.81 \pm 2.21$\,km\,s$^{-1}$\,Mpc$^{-1}$,
-\cite{Freedman_2024}).  It is $0.6\sigma$ below the updated SH0ES value of
+\cite{Freedman_2024}).  It is $0.6\sigma$\footnote{Calculated as:
+$\Delta H_0 / \sqrt{\sigma_{\mathrm{QNIM}}^2 + \sigma_{\mathrm{SH0ES}}^2} =
+(73.17 - 68.3) / \sqrt{7.5^2 + 0.86^2} \approx 4.87/7.55 \approx 0.64\sigma$.}
+below the updated SH0ES value of
 $73.17 \pm 0.86$\,km\,s$^{-1}$\,Mpc$^{-1}$ \cite{Breuval_2024}.
 The large uncertainty (12\,\%) means the result cannot adjudicate among
 the distance ladders; this is not a shortcoming of QNIM but a consequence
@@ -7373,7 +7465,7 @@ distinguish DINGO/Dingo-T1 from QNIM:
         IMRPhenomXPHM.  Any beyond-GR deviation appears only
         indirectly as a degraded IS efficiency, with no ability to
         identify the responsible theory.  QNIM is explicitly
-        theory-aware: each of the 13 beyond-GR classes contributes a
+        theory-aware: each of the twelve beyond-GR classes contributes a
         dedicated feature channel, and the quantum kernel resolves
         theory-specific phase signatures that are invisible to
         classical normalising-flow embeddings.
@@ -8013,17 +8105,12 @@ and feasibility within the near-term hardware roadmap.
         and Rubin Observatory data to probe gravitational-electromagnetic
         speed differences at the $10^{-20}$ level.
 
-  \item Investigate whether the Berry--Keating--Connes conjecture
-        \cite{Berry_Keating_1999,Connes_1999} — which postulates a
-        self-adjoint operator whose eigenvalues are the imaginary parts
-        of the Riemann zeros — can be given an operational, falsifiable
-        interpretation in terms of QNM spectroscopy with a
-        third-generation detector network.  This would require a
-        statistical test of Montgomery pair-correlation in an ensemble
-        of $\gtrsim\!10^4$ QNM overtone measurements, which is not
-        feasible with current detector sensitivity
-        (see Appendix~\ref{app:bkc_speculative} for a full statement
-        of the conjecture and its current mathematical status).
+  \item The Berry--Keating--Connes conjecture~\cite{Berry_Keating_1999,Connes_1999}
+        and its potential connection to QNM spectra is discussed in
+        Appendix~\ref{app:bkc_speculative}; a falsifiable empirical test
+        via Montgomery pair-correlation statistics would require
+        $\gtrsim 10^4$ QNM overtone measurements, achievable only with
+        third-generation detectors.
 \end{itemize}
 
 \subsection{Closing remark}
@@ -8764,54 +8851,56 @@ $p^\star$ & $\ln B$ & \textbf{Tier} \\
 $p^\star$ & $\ln B$ & \textbf{Tier} \\
 \midrule
 \endhead
-\bottomrule
+\midrule
 \endfoot
-GW150914         & BBH  & GR             & 0.873 & $-0.4$ & D \\
+\bottomrule
+\endlastfoot
+GW150914$^\dagger$         & BBH  & GR             & 0.873 & $-0.4$ & D \\
 GW151012         & BBH  & GR             & 0.841 & $-0.2$ & D \\
-GW151226         & BBH  & GR             & 0.798 & $+0.3$ & C \\
-GW170104         & BBH  & GR             & 0.862 & $-0.1$ & D \\
-GW170608         & BBH  & GR             & 0.891 & $-0.5$ & D \\
+GW151226$^\dagger$         & BBH  & GR             & 0.798 & $+0.3$ & C \\
+GW170104$^\dagger$         & BBH  & GR             & 0.862 & $-0.1$ & D \\
+GW170608$^\dagger$         & BBH  & GR             & 0.891 & $-0.5$ & D \\
 GW170729         & BBH  & PN 3.5         & 0.621 & $+1.8$ & C \\
 GW170809         & BBH  & GR             & 0.854 & $-0.3$ & D \\
-GW170814         & BBH  & GR             & 0.867 & $-0.4$ & D \\
-GW170817         & BNS  & GR             & 0.901 & $-0.8$ & D \\
+GW170814$^\dagger$         & BBH  & GR             & 0.867 & $-0.4$ & D \\
+GW170817$^\dagger$         & BNS  & GR             & 0.901 & $-0.8$ & D \\
 GW170818         & BBH  & GR             & 0.849 & $-0.3$ & D \\
 GW170823         & BBH  & GR             & 0.831 & $-0.2$ & D \\
 GW190403\_051519 & BBH  & GR             & 0.815 & $-0.2$ & D \\
 GW190408\_181802 & BBH  & GR             & 0.844 & $+0.1$ & C \\
-GW190412         & BBH  & Extra dim.     & 0.591 & $+2.1$ & C \\
+GW190412$^\dagger$         & BBH  & Extra dim.     & 0.591 & $+2.1$ & C \\
 GW190413\_052954 & BBH  & GR             & 0.823 & $-0.1$ & D \\
 GW190413\_134308 & BBH  & GR             & 0.811 & $-0.2$ & D \\
 GW190421\_213856 & BBH  & GR             & 0.808 & $-0.1$ & D \\
-GW190425         & BNS  & GR             & 0.782 & $-0.6$ & D \\
+GW190425$^\dagger$         & BNS  & GR             & 0.782 & $-0.6$ & D \\
 GW190426\_190642 & BBH  & GR             & 0.804 & $-0.3$ & D \\
-GW190503\_185404 & BBH  & GR             & 0.819 & $+0.2$ & C \\
+GW190503\_185404$^\dagger$ & BBH  & GR             & 0.819 & $+0.2$ & C \\
 GW190512\_180714 & BBH  & GR             & 0.856 & $-0.1$ & D \\
 GW190513\_205428 & BBH  & LIV$\alpha{=}2$& 0.614 & $+2.4$ & C \\
 GW190514\_065416 & BBH  & GR             & 0.812 & $-0.3$ & D \\
-GW190517\_055101 & BBH  & GR             & 0.824 & $+0.1$ & D \\
+GW190517\_055101 & BBH  & GR             & 0.824 & $+0.1$ & C \\
 GW190519\_153544 & BBH  & GR             & 0.839 & $-0.2$ & D \\
-GW190521         & BBH  & Extra dim.     & \textbf{0.723} & $\mathbf{+3.8}$ & \textbf{B} \\
+GW190521         & BBH$^\dagger\ddagger$ & Extra dim.     & \textbf{0.723} & $\mathbf{+3.8}$ & \textbf{B} \\
 GW190521\_074359 & BBH  & GR             & 0.847 & $-0.3$ & D \\
-GW190527\_092055 & BBH  & GR             & 0.801 & $+0.2$ & D \\
+GW190527\_092055 & BBH  & GR             & 0.801 & $+0.2$ & C \\
 GW190602\_175927 & BBH  & GR             & 0.803 & $-0.3$ & D \\
 GW190620\_030421 & BBH  & GR             & 0.834 & $+0.4$ & C \\
 GW190630\_185205 & BBH  & GR             & 0.847 & $-0.2$ & D \\
 GW190701\_203306 & BBH  & CS             & \textbf{0.681} & $\mathbf{+2.9}$ & \textbf{B} \\
 GW190706\_222641 & BBH  & GR             & 0.819 & $-0.1$ & D \\
 GW190707\_093326 & BBH  & GR             & 0.862 & $-0.4$ & D \\
-GW190708\_232457 & BBH  & GR             & 0.843 & $+0.2$ & D \\
+GW190708\_232457 & BBH  & GR             & 0.843 & $+0.2$ & C \\
 GW190719\_215514 & BBH  & GR             & 0.831 & $-0.2$ & D \\
 GW190720\_000836 & BBH  & GR             & 0.855 & $-0.3$ & D \\
 GW190725\_174728 & BBH  & GR             & 0.827 & $-0.1$ & D \\
-GW190727\_060333 & BBH  & GR             & 0.824 & $+0.1$ & D \\
+GW190727\_060333 & BBH  & GR             & 0.824 & $+0.1$ & C \\
 GW190728\_064510 & BBH  & GR             & 0.871 & $-0.5$ & D \\
 GW190731\_140936 & BBH  & GR             & 0.818 & $-0.1$ & D \\
 GW190803\_022701 & BBH  & GR             & 0.807 & $+0.3$ & C \\
 GW190805\_211137 & BBH  & GR             & 0.833 & $-0.2$ & D \\
-GW190814         & NSBH & GR             & 0.876 & $-0.6$ & D \\
+GW190814$^\dagger$         & NSBH & GR             & 0.876 & $-0.6$ & D \\
 GW190828\_063405 & BBH  & GR             & 0.841 & $-0.1$ & D \\
-GW190828\_065509 & BBH  & GR             & 0.829 & $+0.2$ & D \\
+GW190828\_065509 & BBH  & GR             & 0.829 & $+0.2$ & C \\
 GW190910\_112807 & BBH  & GR             & 0.852 & $-0.3$ & D \\
 GW190915\_235702 & BBH  & GR             & 0.846 & $+0.1$ & D \\
 GW190916\_200658 & BBH  & GR             & 0.836 & $-0.2$ & D \\
@@ -8820,7 +8909,7 @@ GW190924\_021846 & BBH  & GR             & 0.868 & $-0.4$ & D \\
 GW190925\_232845 & BBH  & PN 3.5         & 0.584 & $+1.4$ & C \\
 GW190926\_050336 & BBH  & GR             & 0.813 & $-0.2$ & D \\
 GW190929\_012149 & BBH  & GR             & 0.821 & $-0.2$ & D \\
-GW190930\_133541 & BBH  & GR             & 0.838 & $+0.1$ & D \\
+GW190930\_133541 & BBH  & GR             & 0.838 & $+0.1$ & C \\
 GW191103\_012549 & BBH  & GR             & 0.859 & $-0.3$ & D \\
 GW191105\_143521 & BBH  & GR             & 0.843 & $-0.1$ & D \\
 GW191109\_010717 & BBH  & GR             & 0.825 & $+0.4$ & C \\
@@ -8835,35 +8924,46 @@ GW191216\_213338 & BBH  & GR             & 0.862 & $-0.5$ & D \\
 GW191219\_163120 & BBH  & GR             & 0.831 & $-0.2$ & D \\
 GW191222\_033537 & BBH  & GR             & 0.819 & $+0.3$ & C \\
 GW191230\_180458 & BBH  & GR             & 0.834 & $-0.2$ & D \\
-GW200105\_161121 & NSBH & GR             & 0.838 & $-0.4$ & D \\
+GW200105\_161121$^\dagger$ & NSBH & GR             & 0.838 & $-0.4$ & D \\
 GW200112\_155838 & BBH  & GR             & 0.841 & $-0.1$ & D \\
-GW200115\_042309 & NSBH & GR             & 0.873 & $-0.6$ & D \\
-GW200128\_022011 & BBH  & GR             & 0.826 & $+0.2$ & D \\
-GW200129\_065458 & BBH  & GR             & 0.851 & $-0.3$ & D \\
+GW200115\_042309$^\dagger$ & NSBH & GR             & 0.873 & $-0.6$ & D \\
+GW200128\_022011 & BBH  & GR             & 0.826 & $+0.2$ & C \\
+GW200129\_065458$^\dagger$ & BBH  & GR             & 0.851 & $-0.3$ & D \\
 GW200202\_154313 & BBH  & GR             & 0.844 & $-0.1$ & D \\
-GW200208\_130117 & BBH  & GR             & 0.828 & $+0.1$ & D \\
+GW200208\_130117 & BBH  & GR             & 0.828 & $+0.1$ & C \\
 GW200208\_222617 & BBH  & GR             & 0.817 & $-0.2$ & D \\
 GW200209\_085452 & BBH  & GR             & 0.839 & $-0.3$ & D \\
 GW200210\_092254 & BBH  & GR             & 0.862 & $-0.4$ & D \\
-GW200216\_220804 & BBH  & GR             & 0.831 & $+0.2$ & D \\
+GW200216\_220804 & BBH  & GR             & 0.831 & $+0.2$ & C \\
 GW200219\_094415 & BBH  & GR             & 0.848 & $-0.1$ & D \\
 GW200220\_061928 & BBH  & GR             & 0.819 & $-0.2$ & D \\
-GW200220\_124850 & BBH  & GR             & 0.807 & $+0.3$ & D \\
+GW200220\_124850 & BBH  & GR             & 0.807 & $+0.3$ & C \\
 GW200224\_222234 & BBH  & GR             & 0.854 & $-0.3$ & D \\
 GW200225\_060421 & BBH  & GR             & 0.843 & $-0.1$ & D \\
-GW200302\_015811 & BBH  & GR             & 0.831 & $+0.1$ & D \\
+GW200302\_015811 & BBH  & GR             & 0.831 & $+0.1$ & C \\
 GW200306\_093714 & BBH  & GR             & 0.818 & $-0.2$ & D \\
 GW200308\_173609 & BBH  & GR             & 0.829 & $-0.3$ & D \\
 GW200311\_115853 & BBH  & GR             & 0.862 & $-0.5$ & D \\
 GW200316\_215756 & BBH  & GR             & 0.847 & $-0.1$ & D \\
 GW200322\_091133 & BBH  & GR             & 0.834 & $+0.2$ & C \\
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
 \end{longtable}
 
+\noindent\multicolumn{6}{l}{\footnotesize $^\dagger$~Events used in the 
+QNIM Hubble constant measurement (Section~\ref{sec:cosmological_results}); 
+selected on the basis of QNIM $d_L$ precision $<20\,\%$ and 
+GLADE$+$ host galaxy candidate.} \\[0.2em]
+\noindent\multicolumn{6}{l}{\footnotesize $^\ddagger$~GW190521 is classified as BBH/IMBH; both components lie in or above the pair-instability supernova mass gap \cite{Abbott_2020_GW190521}.}
+
+\vspace{1em}
 \noindent\textbf{Summary (90 events, cumulative GWTC-3; Abbott et al.\ 2023):}
 Tier A: 0 events (0.0\,\%),
 Tier B: 2 events (2.2\,\%),
-Tier C: 11 events (12.2\,\%),
-Tier D: 77 events (85.6\,\%).
+Tier C: 22 events (24.4\,\%),
+Tier D: 66 events (73.3\,\%).
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % APPENDIX E — GLOSSARY OF ACRONYMS
@@ -9022,6 +9122,11 @@ result, classification, or parameter estimate in this thesis}.
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % BIBLIOGRAPHY
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CITATION NOTE: Dax_2021 refers to the NeurIPS 2021 conference
+% paper (rapid PE); Dax_2021_rapid refers to the same work's
+% arXiv preprint version. Throughout this document, Dax_2021_rapid
+% is used uniformly to refer to this work.
+
 \bibliographystyle{apacite}
 \bibliography{bibliografia}
 
