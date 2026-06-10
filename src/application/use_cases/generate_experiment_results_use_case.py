@@ -222,6 +222,17 @@ class GenerateExperimentResultsUseCase:
                 f"match={getattr(dwave_result, 'best_match', 'N/A')}, "
                 f"GR_consistent={getattr(dwave_result, 'is_gr_consistent', True)}"
             )
+            stability = getattr(dwave_result, "annealing_selection_stability", None)
+            if stability is not None:
+                logger.info(
+                    f"  D-Wave ruido: "
+                    f"σ(m1)={getattr(dwave_result, 'm1_std_msun', 0.0):.2f}, "
+                    f"σ(m2)={getattr(dwave_result, 'm2_std_msun', 0.0):.2f}, "
+                    f"σ(χ_eff)={getattr(dwave_result, 'chi_eff_std', 0.0):.3f}, "
+                    f"stability={stability:.2f}, "
+                    f"noise_model={getattr(dwave_result, 'noise_model', 'N/A')}, "
+                    f"n={getattr(dwave_result, 'n_noise_realizations', 'N/A')}"
+                )
         except Exception as exc:
             logger.warning(f"  D-Wave no disponible: {exc}")
 

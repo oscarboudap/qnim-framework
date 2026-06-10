@@ -5,6 +5,7 @@ CORREGIDO: templates proyectados al mismo espacio que observed_features.
 import numpy as np
 import logging
 from dataclasses import dataclass
+from typing import List, Tuple
 
 logger = logging.getLogger("qnim.infrastructure.qubo_match_ligo")
 
@@ -57,6 +58,8 @@ class LIGOMatchQUBOResult:
     qubo_linear: dict
     qubo_quadratic: dict
     is_gr_consistent: bool
+    template_bank: List[Tuple[float, float, float]]
+    template_matches: List[float]
 
 
 def build_ligo_match_qubo(observed_features: np.ndarray, n_templates: int = 64,
@@ -102,4 +105,6 @@ def build_ligo_match_qubo(observed_features: np.ndarray, n_templates: int = 64,
         best_match=best_match, best_template_idx=best_idx, snr_optimal=snr_estimate,
         qubo_linear=qubo_linear, qubo_quadratic=qubo_quadratic,
         is_gr_consistent=(best_match > 0.85),
+        template_bank=[(float(m1), float(m2), float(chi)) for (m1, m2, chi) in templates_params],
+        template_matches=[float(v) for v in matches],
     )
