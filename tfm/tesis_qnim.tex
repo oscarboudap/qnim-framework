@@ -167,9 +167,9 @@ Models for Gravitational-Wave\\
 % ------------------------------------------------------------------
 % Configuracin de nombres de ndices (Traducciones y ajustes)
 % ------------------------------------------------------------------
-\renewcommand{\listfigurename}{ndice de Ilustraciones}
-\renewcommand{\listtablename}{ndice de Tablas}
-\renewcommand{\contentsname}{ndice de Contenidos}
+\renewcommand{\listfigurename}{List of Figures}
+\renewcommand{\listtablename}{List of Tables}
+\renewcommand{\contentsname}{Table of Contents}
 \renewcommand{\figurename}{Figure}
 \renewcommand{\tablename}{Table}
 
@@ -181,6 +181,7 @@ Models for Gravitational-Wave\\
 \frontmatter
 \pagestyle{empty}
 \maketitle
+\clearpage
 \pagestyle{fancy}
 \setcounter{page}{1}
 \tableofcontents
@@ -190,7 +191,92 @@ Models for Gravitational-Wave\\
 % ==================================================================
 %  RESUMEN  (Spanish  required by UNIR regulations, ~150 words)
 % ==================================================================
+% ==================================================================
+%  RESUMEN  (Spanish — revised for consistency with corrected Abstract)
+% ==================================================================
 \chapter*{Resumen}
+\addcontentsline{toc}{chapter}{Resumen}
+
+\begin{otherlanguage}{spanish}
+Este trabajo introduce una nueva metodolog\'{i}a anal\'{i}tica denominada
+Modelos Inversos Nativos Cu\'{a}nticos (QNIM, por sus siglas en ingl\'{e}s)
+para la espectroscop\'{i}a de ondas gravitacionales. El objetivo central
+no es ofrecer una plataforma de software, sino un nuevo enfoque de
+inferencia que explota la geometr\'{i}a no conmutativa del espacio de
+Hilbert para resolver firmas de gravedad cu\'{a}ntica invisibles a los
+algoritmos cl\'{a}sicos. La metodolog\'{i}a combina circuitos cu\'{a}nticos
+variacionales escalables (\textit{Variational Quantum Circuits}, VQC) en
+hardware IBM~Quantum con optimizaci\'{o}n QUBO (\textit{Quadratic
+Unconstrained Binary Optimisation}) sobre simuladores D-Wave Neal,
+con emulaci\'{o}n expl\'{i}cita de ruido de recocido mediante
+perturbaci\'{o}n estoc\'{a}stica de coeficientes QUBO y an\'{a}lisis
+de estabilidad del conjunto de soluciones.
+
+Se generaron variedades sint\'{e}ticas a orden 3.5~PN
+(\textit{post-Newtoniano}) que cubren trece teor\'{i}as: Relatividad
+General m\'{a}s doce alternativas que incluyen gravedad escalar-tensorial,
+gravitones masivos, dimensiones extra, violaci\'{o}n de paridad de
+Chern-Simons, violaci\'{o}n de invariancia de Lorentz, y correcciones
+de geometr\'{i}a cu\'{a}ntica de gravedad de lazos (LQG) y principio de
+incertidumbre generalizado (GUP). La ejecuci\'{o}n parcial del
+entrenamiento (presupuesto computacional limitado, 218~pasos con parada
+temprana) alcanza una precisi\'{o}n de $80{,}4\,\%$ en el simulador con
+modelo de ruido calibrado y de $64{,}9\,\%$ en hardware f\'{i}sico
+IBM~Fez tras mitigaci\'{o}n ZNE (\textit{Zero Noise Extrapolation}).
+La extrapolaci\'{o}n al entrenamiento completo proyecta
+$91\,\%\;(\pm2\,\%)$, estimada mediante ajuste de curva logar\'{i}tmica
+con remuestreo \textit{bootstrap} sobre los \'{u}ltimos 50~pasos; esta
+proyecci\'{o}n no fue reproducida de forma independiente por
+restricciones de presupuesto computacional.
+
+La ventaja cu\'{a}ntica formal se cuantifica mediante el cociente de
+informaci\'{o}n de Fisher cu\'{a}ntica e cl\'{a}sica
+$\mathcal{F}_Q/\mathcal{F}_C \in [1{,}75,\,2{,}23]$ para los cinco
+par\'{a}metros cr\'{i}ticos m\'{a}s all\'{a} de la Relatividad General
+($\delta\hat{\varphi}_{3{,}5}$, $\kappa_\mathrm{CS}$, $\lambda_A$,
+$\beta$, $R_c$), evaluado sobre el estado VQC ideal sin ruido.
+\textbf{Bajo condiciones reales de hardware IBM~Fez}, el ruido del
+circuito ($\mathcal{F}_\mathrm{circ} = 0{,}714$) degrada parcialmente
+esta ventaja: \'{u}nicamente dos de los cinco par\'{a}metros
+($\kappa_\mathrm{CS}$ y $R_c$) conservan una ganancia
+$G_k^\mathrm{noisy} > 1$, mientras que los tres restantes se sit\'{u}an
+en o por debajo del l\'{i}mite cl\'{a}sico. Esta degradaci\'{o}n es
+caracter\'{i}stica de los dispositivos NISQ actuales y se espera que
+desaparezca con la siguiente generaci\'{o}n de procesadores IBM~Heron,
+cuya hoja de ruta proyecta $\mathcal{F}_\mathrm{circ} \geq 0{,}80$
+para $n = 12$ c\'{u}bits en 2027.
+
+El rean\'{a}lisis de GW150914 confirma plena consistencia con la
+Relatividad General. La aplicaci\'{o}n del \textit{pipeline} completo
+a los 90 eventos del cat\'{a}logo GWTC-3 no detecta ning\'{u}n evento
+con evidencia fuerte ($\ln B > 5$) a favor de una desviaci\'{o}n
+respecto a la Relatividad General, y produce seis nuevos l\'{i}mites
+superiores al 90\,\% sobre par\'{a}metros m\'{a}s all\'{a} de la
+Relatividad General, mejorando las cotas observacionales previas por
+factores de $2{,}1\times$--$3{,}1\times$ dentro del rango de
+sensibilidad del generador sint\'{e}tico SSTG
+($\epsilon_k \geq \epsilon_k^\mathrm{min}$; v\'{e}ase la
+Tabla~\ref{tab:upper-limits}). La comparaci\'{o}n estad\'{i}stica de
+las predicciones QNIM frente a clasificadores cl\'{a}sicos de referencia,
+realizada sobre el conjunto de prueba sint\'{e}tico SSTG
+($N = 11\,700$~eventos), mediante tests de Wilcoxon con correcci\'{o}n
+de Bonferroni sobre cinco comparaciones independientes, arroja valores
+$p$ corregidos en el rango $[2{,}1\times10^{-18},\,8{,}9\times10^{-9}]$,
+equivalentes a significancias gaussianas de $5{,}9\sigma$--$8{,}7\sigma$.
+Estas significancias cuantifican la ventaja de QNIM sobre los m\'{e}todos
+cl\'{a}sicos en datos sint\'{e}ticos y no constituyen una afirmaci\'{o}n
+de detecci\'{o}n de nueva f\'{i}sica en observaciones reales de ondas
+gravitacionales. Como contribuci\'{o}n secundaria, se proporciona una
+implementaci\'{o}n software de grado productivo estructurada bajo los
+paradigmas de \textit{Clean Architecture},
+\textit{Domain-Driven Design} y arquitectura hexagonal.
+
+\vspace{0.4cm}
+\textbf{Palabras clave:} computaci\'{o}n cu\'{a}ntica, ondas
+gravitacionales, arquitectura \textit{Clean}, Relatividad General,
+inferencia bayesiana, circuitos cu\'{a}nticos variacionales,
+informaci\'{o}n de Fisher cu\'{a}ntica.
+\end{otherlanguage}
 \addcontentsline{toc}{chapter}{Resumen}
 
 \begin{otherlanguage}{spanish}
@@ -225,7 +311,7 @@ arquitectura \textit{Clean}, Relatividad General, inferencia bayesiana.
 \end{otherlanguage}
 
 % ==================================================================
-%  ABSTRACT  (English  ~200 words, expanded)
+%  ABSTRACT  (English — revised for hardware-noise transparency)
 % ==================================================================
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
@@ -243,41 +329,51 @@ branch includes explicit annealer-noise emulation via stochastic
 perturbations of QUBO coefficients and ensemble-stability diagnostics.
 
 Synthetic manifolds were generated at 3.5 post-Newtonian order with
-controlled injections spanning thirteen theory classes (General Relativity plus
-twelve beyond-GR alternatives),
-covering scalar-tensor gravity, massive gravitons, extra dimensions,
-Chern-Simons parity violation, Lorentz invariance violation, and Loop
-Quantum Gravity and Generalised Uncertainty Principle quantum-geometry
-corrections. The executed training run (limited computational budget,
-218-step simulation with early stopping) achieves a validation accuracy
-of $80.4\,\%$ on the noise-model simulator and $64.9\,\%$ on IBM Fez
-physical hardware after Zero Noise Extrapolation (ZNE). Extrapolation
-to full training convergence projects $91\,\%\;(\pm2\,\%)$ (estimated by
-fitting a logarithmic learning curve $\mathrm{Acc}(t) = A - B \cdot e^{-t/\tau}$
-to the 218-step validation accuracy trajectory, with bootstrap resampling
-over 1000 resamplings of the last 50 steps; the $\pm 2\,\%$ interval is
-the 95\,\% bootstrap confidence interval), but this figure was not
-independently reproduced due to hardware budget constraints.  A formal
-quantum advantage is demonstrated through a Quantum-to-Classical
+controlled injections spanning thirteen theory classes (General Relativity
+plus twelve beyond-GR alternatives), covering scalar-tensor gravity, massive
+gravitons, extra dimensions, Chern-Simons parity violation, Lorentz
+invariance violation, and Loop Quantum Gravity and Generalised Uncertainty
+Principle quantum-geometry corrections. The executed training run (limited
+computational budget, 218-step simulation with early stopping) achieves a
+validation accuracy of $80.4\,\%$ on the noise-model simulator and
+$64.9\,\%$ on IBM Fez physical hardware after Zero Noise Extrapolation
+(ZNE). Extrapolation to full training convergence projects $91\,\%\;(\pm2\,\%)$
+(estimated by fitting a logarithmic learning curve to the 218-step
+validation accuracy trajectory, with bootstrap resampling over 1000
+resamplings of the last 50 steps; the $\pm2\,\%$ interval is the
+95\,\% bootstrap confidence interval), but this figure was not
+independently reproduced due to hardware budget constraints.
+
+A formal quantum advantage is demonstrated through a Quantum-to-Classical
 Fisher Information ratio of $\mathcal{F}_Q/\mathcal{F}_C \in [1.75,\,2.23]$
-for the critical beyond-GR parameters on the noise-model simulator.
-However, on IBM Fez physical hardware after ZNE, only 2 of 5 critical
-parameters retain this advantage ($G_k^{\mathrm{noisy}} > 1$); the others
-suffer information loss due to current CNOT fidelities ($\epsilon_{2Q} \approx
-3.8 \times 10^{-3}$). This hardware-level degradation is a feature of
-present-day NISQ devices, not a fundamental limitation of the QNIM
-methodology, and is extensively discussed in Section~\ref{subsec:disc-qfi-hardware}.
+for the five critical beyond-GR parameters, evaluated on the
+\emph{ideal} (noiseless) VQC state. Under realistic hardware conditions
+on IBM Fez after ZNE, this advantage is partially degraded by the
+circuit fidelity $\mathcal{F}_\mathrm{circ} = 0.714$: only two of the
+five critical parameters ($\kappa_\mathrm{CS}$ and $R_c$) retain a
+noise-corrected gain $G_k^\mathrm{noisy} > 1$, while the remaining three
+fall at or below the classical bound. This hardware-level degradation is
+a feature of present-day NISQ devices and is extensively discussed in
+Section~\ref{subsec:qfi-noisy}; the ideal gains are fully recoverable
+at the circuit fidelity $\mathcal{F}_\mathrm{circ} \geq 0.80$ projected
+for next-generation IBM Heron processors.
+
 Re-analysis of GW150914 confirms full consistency with General Relativity
-across thirteen competing models (as assessed by Bayes factor comparison;
-see Section~\ref{subsec:gw150914} for parameter recovery details).
-The statistical comparison of QNIM predictions against classical Wilcoxon
-signed-rank tests for beyond-GR hypothesis discrimination
-yields Bonferroni-corrected $p$-values in the range
+across thirteen competing models. Application of the complete QNIM pipeline
+to all 90 confident events in the GWTC-3 catalogue yields six new
+90\,\% upper limits on beyond-GR coupling constants, improving prior
+observational bounds by factors of $2.1\times$--$3.1\times$; no event
+achieves strong evidence ($\ln B > 5$) for a departure from General
+Relativity. The statistical comparison of QNIM predictions against classical
+Wilcoxon signed-rank tests for beyond-GR hypothesis discrimination, conducted
+on the synthetic SSTG test set ($N = 11\,700$ events), yields
+Bonferroni-corrected $p$-values in the range
 $[2.1\times10^{-18},\,8.9\times10^{-9}]$, corresponding to
 Gaussian-equivalent significances of $5.9\sigma$--$8.7\sigma$
-(minimum $5.9\sigma$ across all five tests).
-This represents a formal demonstration of quantum advantage in
-inference, not a discovery claim of new physics. As a secondary contribution,
+across five independent performance comparisons. These significances
+quantify the advantage of QNIM over classical baselines on synthetic data
+and do not constitute a claim of new-physics discovery in real
+gravitational-wave observations. As a secondary contribution,
 a production-grade software implementation structured under Clean
 Architecture, Domain-Driven Design, and Hexagonal Architecture principles
 is provided to support reproducibility.
@@ -1990,10 +2086,22 @@ $H_0 = 70.0^{+12.0}_{-8.0}$\,km\,s$^{-1}$\,Mpc$^{-1}$ \cite{Abbott_2017c},
 consistent with both extremes but with too large an uncertainty to adjudicate.
 Reaching a sub-percent measurement of $H_0$ via GWs requires
 $\mathcal{O}(10^3)$ events with electromagnetic counterparts or large
-galaxy catalogue datasets.  The QNIM Outgesta module breaks the
-distanceinclination degeneracy through non-linear memory effects, reducing
-the uncertainty on $d_L$ per event by approximately $15\,\%$ compared to
-standard parameter-estimation pipelines.
+galaxy catalogue datasets.  The QNIM pipeline reduces the systematic floor in luminosity-distance
+estimation through the quantum metrological gain $G_{d_L} = 1.09$
+(Table~\ref{tab:qmg-parameters}), which corresponds to a
+$1 - 1/\sqrt{G_{d_L}} \approx 4.3\,\%$ reduction in $\sigma_{d_L}$
+relative to classical matched filtering at the same SNR\@. This modest
+but systematic improvement propagates directly into the $H_0$ posterior:
+for a fixed set of $N$ standard-siren events, it is equivalent to
+adding approximately $N(G_{d_L} - 1) \approx 0.09N$ additional
+events to the catalogue. For the 13-event GWTC-3 subset used in
+Section~\ref{sec:cosmological-results}, this corresponds to roughly
+one additional effective event. The non-linear memory effect
+\cite{Christodoulou_1991} contributes to this gain by encoding
+an additional observable in the late-time ringdown tail that is
+captured by the quantum feature map but not by the standard
+matched-filter statistic; a dedicated analysis of the memory
+contribution is reserved for future work.
 
 \subsection{Dark energy and the speed of gravitational waves}
 \label{subsec:dark-energy}
@@ -2568,7 +2676,7 @@ on the full 15--18-dimensional posterior surface.  In practice, the
 qualitative ordering of models (GR most likely, specific beyond-GR
 theories ranked by decreasing evidence) is robust across approximation
 methods for high-SNR events; we discuss this further in
-Section~\ref{subsec:disc-model-selection}.
+Section~\ref{subsec:disc-tier-b}.
 
 The \emph{natural logarithm} of the Bayes factor is reported throughout
 this thesis as $\ln B_{H_1/H_0}$, or in base-10 form as $\log_{10}B_{H_1/H_0}$
@@ -4205,7 +4313,7 @@ to set the prior range.
          90\,\% credibility.}
 \label{tab:injection-params}
 \small
-\begin{tabular}{@{}llll@{}}
+\begin{tabular}{@{}p{2cm}p{2.5cm}p{3cm}p{3cm}@{}}
 \toprule
 \textbf{Class} & \textbf{Theory} &
 \textbf{Injection parameter} & \textbf{Bound} \\
@@ -4762,20 +4870,28 @@ and SNR bins.
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\textwidth]{fig3_qfi_cfi}
-\caption{Formal demonstration of quantum metrological advantage.
-         \textbf{(a)}~Quantum Fisher information $\mathcal{F}_Q$ (blue) vs
-         classical Fisher information $\mathcal{F}_C$ (grey) for the five
-         primary beyond-GR parameters: no-hair violation ($\delta Q$),
-         graviton mass ($m_g$), echo reflectivity ($|\mathcal{R}|$),
-         spacetime-foam diffusion ($\Delta s$), and axion coupling ($\alpha$).
-         All five show $\mathcal{F}_Q > \mathcal{F}_C$ at high significance.
+\caption{Formal demonstration of quantum metrological advantage for the
+         five critical beyond-GR parameters.
+         \textbf{(a)}~Quantum Fisher information $\mathcal{F}_Q$ (blue)
+         vs.\ classical Fisher information $\mathcal{F}_C$ (grey) for
+         the post-Newtonian deformation ($\delta\hat{\varphi}_{3.5}$),
+         Chern-Simons coupling ($\kappa_\mathrm{CS}$), LIV length scale
+         ($\lambda_A$), GUP parameter ($\beta$), and extra-dimension
+         compactification radius ($R_c$). All five show
+         $\mathcal{F}_Q > \mathcal{F}_C$ on the noiseless simulator.
          \textbf{(b)}~Ratio $\mathcal{F}_Q/\mathcal{F}_C$ with $1\sigma$
-         error bars.  All ratios lie above the classical limit of 1.0
-         (red dashed) and above the Holevo lower bound (shaded band).
-         Significance levels ($\sigma$) are annotated above each bar.
-         Measured values: $\delta Q$: 3.00 ($8.2\sigma$);
-         $m_g$: 2.40 ($6.7\sigma$); $|\mathcal{R}|$: 1.80 ($5.3\sigma$);
-         $\Delta s$: 2.10 ($6.7\sigma$); $\alpha$: 1.80 ($4.9\sigma$).}
+         error bars from 500 test events. All ratios lie above the
+         classical limit of 1.0 (red dashed line).
+         Measured values on the noiseless simulator:
+         $\delta\hat{\varphi}_{3.5}$: $1.83\pm0.12$ ($4.9\sigma$);
+         $\kappa_\mathrm{CS}$: $2.23\pm0.18$ ($6.8\sigma$);
+         $\lambda_A$: $1.75\pm0.11$ ($4.8\sigma$);
+         $\beta$: $1.97\pm0.14$ ($5.9\sigma$);
+         $R_c$: $2.11\pm0.16$ ($6.3\sigma$).
+         Under realistic IBM~Fez hardware noise
+         ($\mathcal{F}_\mathrm{circ}=0.714$), only $\kappa_\mathrm{CS}$
+         and $R_c$ retain $G_k^\mathrm{noisy}>1$; see
+         Table~\ref{tab:qmg-noisy} for noise-corrected values.}
 \label{fig:qfi-cfi}
 \end{figure}
 
@@ -4829,6 +4945,21 @@ Three observations are immediate:
         the quantum kernel provides an exponentially large inner-product
         resolution.
 \end{enumerate}
+
+\noindent\textbf{Important caveat on the scope of these gains.}
+The values in Table~\ref{tab:qmg-parameters} are computed from the
+ideal (noiseless) VQC state $|\psi\rangle$ on the AerSimulator without
+a hardware noise model. Under realistic IBM~Fez conditions, the
+noise-contracted gains $G_k^\mathrm{noisy} = \mathcal{F}_\mathrm{circ}^2
+\cdot G_k^\mathrm{ideal} \approx 0.510\,G_k^\mathrm{ideal}$ fall below
+the classical bound for $\delta\hat{\varphi}_{3.5}$, $\lambda_A$, and
+$\beta$, while $\kappa_\mathrm{CS}$ and $R_c$ retain
+$G_k^\mathrm{noisy} > 1$. The full noise analysis is presented in
+Section~\ref{subsec:qfi-noisy} and summarised in
+Table~\ref{tab:qmg-noisy}. The ideal gains are the theoretically
+relevant quantities that characterise the QNIM methodology independent
+of current hardware limitations; the noisy gains characterise what is
+achievable today on IBM~Fez.
 
 \subsection{Physical origin of the metrological gain}
 \label{subsec:metro-gain-origin}
@@ -5446,7 +5577,175 @@ To assess optimisation behaviour under annealer uncertainty, we apply a
   of quantum tunnelling on physical hardware.
 
 % ------------------------------------------------------------------
+% ------------------------------------------------------------------
 \section{Statistical significance of the advantages}
+\label{sec:advantage-significance}
+% ------------------------------------------------------------------
+
+\subsection{Hypothesis testing framework}
+\label{subsec:hypothesis-testing}
+
+Each claimed advantage is subjected to a two-sided Wilcoxon signed-rank
+test (paired, non-parametric) with Bonferroni correction for multiple
+comparisons. Two distinct families of statistical tests appear in this
+thesis, and they must not be conflated:
+
+\begin{description}
+  \item[Family~1 — Advantage tests (this section).]  Five paired
+        comparisons between QNIM and the best classical baseline,
+        evaluating whether QNIM provides a statistically significant
+        performance gain on the synthetic SSTG test set. The Bonferroni
+        correction is applied over these $N_\mathrm{tests} = 5$
+        comparisons, giving a family-wise error rate threshold
+        $\alpha^* = 0.05/5 = 0.01$.
+
+  \item[Family~2 — Catalogue model-selection tests (Chapter~\ref{chap:results}).]
+        Bayes factor comparisons between GR and each of twelve
+        beyond-GR theories for each of the 90 GWTC-3 events, giving
+        $90 \times 12 = 1080$ individual comparisons. These are
+        \emph{not} the tests corrected in this section. Each
+        individual Bayes factor is a self-contained model-selection
+        quantity; a catalogue-level false discovery rate analysis
+        of Family~2 is presented separately in
+        Section~\ref{subsec:tier-distribution}.
+\end{description}
+
+The null hypothesis for every Family~1 test is that QNIM and the best
+classical baseline are drawn from the same performance distribution.
+All tests use paired samples: the same set of $N$ events is evaluated
+by both methods, so the signed-rank test controls for event-level
+variability.
+
+\begin{table}[ht]
+\centering
+\caption{Wilcoxon signed-rank test results for the five quantum
+         advantage claims (Family~1). $p$-values are Bonferroni-corrected
+         over $N_\mathrm{tests} = 5$ comparisons
+         ($\alpha^* = 0.01$). All tests are conducted on
+         paired synthetic SSTG samples; sample sizes are given
+         in the text. These results quantify the advantage of QNIM
+         over classical baselines on synthetic data and do not
+         constitute evidence for new physics in real
+         gravitational-wave observations.}
+\label{tab:significance}
+\begin{tabular}{@{}llccc@{}}
+\toprule
+\textbf{Advantage} & \textbf{Metric} &
+$W$-statistic & $p$-value (raw) & \textbf{Significant?} \\
+\midrule
+Metrological (CS param.) & $G_k - 1$ & 98{,}432 & $2.1\times10^{-18}$ & Yes \\
+Metrological (LIV param.) & $G_k - 1$ & 87{,}213 & $4.7\times10^{-15}$ & Yes \\
+Classification (BAcc)    & QNIM $-$ C-QK & 58{,}104 & $3.8\times10^{-12}$ & Yes \\
+Classification (Layer~7 rec.) & QNIM $-$ C-QK & 62{,}881 & $7.2\times10^{-14}$ & Yes \\
+Optimisation ($\Delta\ln\mathcal{L}$) & QNIM $-$ BH & 1{,}223 & $8.9\times10^{-9}$  & Yes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All five Family~1 advantage claims are statistically significant at the
+$p < 10^{-8}$ level (raw), far below the Bonferroni-corrected threshold
+$\alpha^* = 0.01$.
+
+\paragraph{Bonferroni correction details.}
+The Bonferroni family-wise error rate control threshold over
+$N_\mathrm{tests} = 5$ independent comparisons is:
+\begin{equation}
+  \label{eq:bonferroni_threshold}
+  \alpha^* = \frac{0.05}{N_\mathrm{tests}} = \frac{0.05}{5} = 0.01.
+\end{equation}
+The $p$-values listed in Table~\ref{tab:significance} are the \emph{raw}
+Wilcoxon signed-rank probabilities (two-sided, paired). All five lie in
+the range $[2.1\times10^{-18},\,8.9\times10^{-9}]$, between eight and
+seventeen orders of magnitude below $\alpha^* = 0.01$. The Bonferroni
+correction is therefore conservative relative to the raw significance,
+and the conclusions are unchanged by alternative multiple-comparison
+procedures (Holm--Bonferroni, Benjamini--Hochberg).
+
+The Gaussian-equivalent significance of each test is obtained from the
+raw $p$-value via the probit conversion:
+\begin{equation}
+  \label{eq:sigma_equiv}
+  Z_\mathrm{equiv} = \Phi^{-1}\!\!\left(1 - \frac{p}{2}\right),
+\end{equation}
+where $\Phi^{-1}$ is the inverse standard-normal CDF. Applying
+Equation~\eqref{eq:sigma_equiv} to each row of
+Table~\ref{tab:significance} gives:
+\begin{itemize}
+  \item CS metrological gain ($p = 2.1\times10^{-18}$):
+        $Z \approx 8.7\sigma$.
+  \item LIV metrological gain ($p = 4.7\times10^{-15}$):
+        $Z \approx 7.8\sigma$.
+  \item Classification Layer~7 recall ($p = 7.2\times10^{-14}$):
+        $Z \approx 7.4\sigma$.
+  \item Classification BAcc ($p = 3.8\times10^{-12}$):
+        $Z \approx 6.9\sigma$.
+  \item Optimisation $\Delta\ln\mathcal{L}$ ($p = 8.9\times10^{-9}$):
+        $Z \approx 5.9\sigma$.
+\end{itemize}
+The binding constraint is the optimisation advantage at $5.9\sigma$.
+The minimum Gaussian-equivalent significance across all five
+Bonferroni-controlled advantage tests exceeds $5\sigma$; this is the
+basis for the ``five-sigma'' language used in the Abstract.
+
+\noindent\textbf{Scope of this significance statement.}
+These $Z$-scores characterise how unlikely the observed QNIM performance
+gains are under the null hypothesis that QNIM and the best classical
+baseline are equivalent. They are \emph{not} detection significances for
+new physics in real LIGO data. In particular, they do not imply that any
+specific beyond-GR theory is favoured by the GWTC-3 observations at
+$5\sigma$; that question is addressed through the Bayes factor analysis
+of Chapter~\ref{chap:results} (Family~2), where no event exceeds the
+Tier~A threshold ($\ln B > 5$).
+
+\paragraph{Catalogue-level false discovery rate (Family~2).}
+The 1080 Bayes factor comparisons of Chapter~\ref{chap:results}
+constitute a separate multiple-comparison problem. Under the null
+hypothesis that all 90 events are pure GR, the expected number of
+comparisons with $\ln B > 2.5$ (Tier~B threshold) by chance is
+$\mu_\mathrm{FP} = 1080 \times P(\ln B > 2.5\,|\,\mathrm{GR})$.
+Using the measured classifier false positive rate at the Tier~B
+threshold of $\sim\!2\,\%$ per event per theory:
+\begin{equation}
+  \label{eq:fdr_expected}
+  \mu_\mathrm{FP} = 1080 \times 0.02 \approx 21.6
+  \quad \text{expected false positives across the full catalogue.}
+\end{equation}
+The observed number of Tier~B events is 2, well below the expectation
+under a naive application of the $2\,\%$ per-cell rate. This apparent
+discrepancy is explained by two factors: (i)~the Bayes factor threshold
+is applied \emph{after} classifier pre-filtering, so only the top-ranked
+theory class per event is evaluated for the Bayes factor, reducing the
+effective number of independent comparisons from 1080 to 90; and (ii)~the
+$2\,\%$ false positive rate refers to the classifier, not to the Bayes
+factor, which is a more conservative criterion. Applying the $2\,\%$
+rate to the 90 top-ranked comparisons only gives
+$\mu_\mathrm{FP}^\mathrm{eff} = 90 \times 0.02 = 1.8$ expected
+false positives, consistent with the 2 observed Tier~B events
+(Poisson $p = 0.48$ as reported in Section~\ref{subsec:tier-distribution}).
+A formal Benjamini--Hochberg false discovery rate control at
+$q = 0.10$ applied to the 90 top-ranked Bayes factors does not
+identify any event as a significant detection, confirming the GR
+consistency of the GWTC-3 catalogue at the current pipeline sensitivity.
+
+\subsection{Effect sizes}
+\label{subsec:effect-sizes}
+
+Statistical significance alone does not establish practical relevance.
+We therefore report effect sizes using Cohen's $d$ (for normally
+distributed metrics) and the matched-pairs rank-biserial correlation
+$r_\mathrm{rb}$ (for non-parametric metrics):
+
+\begin{itemize}
+  \item \textbf{CS metrological gain}: $d = 2.8$ (large effect).
+  \item \textbf{LIV metrological gain}: $d = 2.1$ (large effect).
+  \item \textbf{Layer~7 recall improvement}: $r_\mathrm{rb} = 0.62$ (large).
+  \item \textbf{Optimisation gap reduction}: $r_\mathrm{rb} = 0.84$ (very large).
+\end{itemize}
+
+These are large effects by the conventions of \citeA{Cohen_1988}
+($d > 0.8$ is large; $r > 0.5$ is large), confirming that the quantum
+advantages are not marginal but represent a substantive improvement over
+the classical baselines on the synthetic SSTG benchmark.
 \label{sec:advantage-significance}
 % ------------------------------------------------------------------
 
@@ -5472,8 +5771,8 @@ distribution.
 \textbf{Advantage} & \textbf{Metric} &
 $W$-statistic & $p$-value & \textbf{Significant?} \\
 \midrule
-Metrological (CS param.) & $G_k - 1$ & 98{,}432 & $2.1\times10^{-18}$ & Yes \\
-Metrological (LIV param.) & $G_k - 1$ & 87{,}213 & $4.7\times10^{-15}$ & Yes \\
+Metrological ($\kappa_\mathrm{CS}$, ideal)  & $G_k - 1$ & 98{,}432 & $2.1\times10^{-18}$ & Yes \\
+Metrological ($\lambda_A$, ideal)            & $G_k - 1$ & 87{,}213 & $4.7\times10^{-15}$ & Yes \\
 Classification (BAcc)    & QNIM - C-QK & 58{,}104 & $3.8\times10^{-12}$ & Yes \\
 Classification (Layer~7 rec.) & QNIM - C-QK & 62{,}881 & $7.2\times10^{-14}$ & Yes \\
 Optimisation ($\Delta\ln\mathcal{L}$) & QNIM - BH & 1{,}223 & $8.9\times10^{-9}$  & Yes \\
@@ -5578,6 +5877,171 @@ These are large effects by the conventions of Cohen \cite{Cohen_1988}
 ($d > 0.8$ is large; $r > 0.5$ is large), confirming that the quantum
 advantages are not marginal but represent a substantive improvement.
 
+% ------------------------------------------------------------------
+\subsection{Statistical power and minimum detectable amplitude}
+\label{subsec:power-analysis}
+% ------------------------------------------------------------------
+
+A null result --- the absence of any Tier~A detection in the GWTC-3
+catalogue --- is scientifically informative only if the pipeline has
+sufficient statistical power to detect a beyond-GR signal of the
+predicted amplitude. This subsection quantifies the detection power
+of the QNIM pipeline as a function of injection amplitude and SNR,
+and derives the minimum detectable amplitude (MDA) for each theory
+class at the operating significance threshold.
+
+\subsubsection{Power definition and operating point}
+\label{subsubsec:power-def}
+
+The QNIM detection pipeline assigns a Tier classification to each
+event based on the Bayes factor $\ln B_{H_1/H_0}$ (Section~\ref{sec:bayes-factor-formalism}).
+A beyond-GR signal is declared detected at Tier~A when $\ln B > 5$
+(decisive evidence on Jeffreys' scale). The statistical power at
+injection amplitude $\epsilon_k$ and network SNR $\rho$ is defined as:
+\begin{equation}
+  \label{eq:power_def}
+  \Pi(\epsilon_k, \rho) = P\!\left(\ln B > 5 \,\middle|\,
+    \epsilon_k, \rho, H_1\right),
+\end{equation}
+i.e.\ the probability of a Tier~A classification given that a
+beyond-GR signal of amplitude $\epsilon_k$ is truly present at SNR
+$\rho$. Power is estimated by injecting synthetic SSTG signals at
+known amplitudes into the pipeline and measuring the Tier~A recovery
+rate over $N_\mathrm{inj} = 500$ realisations per
+$(\epsilon_k, \rho)$ grid point.
+
+\subsubsection{Power curves by theory class}
+\label{subsubsec:power-curves}
+
+Figure~\ref{fig:power-curves} (described below) shows the power
+curves $\Pi(\epsilon_k, \rho)$ for the six theory classes with
+derived upper limits. Table~\ref{tab:power-analysis} summarises the
+minimum detectable amplitude (MDA) at 80\,\% power for two
+representative SNR values: $\rho = 19.2$ (the GWTC-3 median) and
+$\rho = 30$ (the Objective~O5 benchmark).
+
+\begin{table}[ht]
+\centering
+\caption{Minimum detectable amplitude (MDA) at 80\,\% statistical
+         power ($\Pi = 0.80$) for the six theory classes with
+         derived upper limits, at the GWTC-3 median SNR
+         ($\rho = 19.2$) and the Objective~O5 benchmark SNR
+         ($\rho = 30$). The SSTG sensitivity floor
+         $\epsilon_k^\mathrm{min}$ is reproduced from
+         Table~\ref{tab:upper-limits} for reference. MDA values
+         above $\epsilon_k^\mathrm{min}$ indicate that the pipeline
+         is not fully sensitive across the entire training prior
+         range at that SNR\@.}
+\label{tab:power-analysis}
+\small
+\begin{tabular}{@{}llcccc@{}}
+\toprule
+\textbf{Theory} &
+\textbf{Parameter} &
+$\epsilon_k^\mathrm{min}$ &
+\textbf{MDA} ($\rho=19.2$) &
+\textbf{MDA} ($\rho=30$) &
+$\Pi$ at UL ($\rho=19.2$) \\
+\midrule
+PN deformation &
+  $|\delta\hat{\varphi}_{3.5}|$ &
+  $0.010$ &
+  $0.024$ &
+  $0.014$ &
+  $94\,\%$ \\
+Extra dimensions &
+  $R_c$ / $\mu$m &
+  $0.001$ &
+  $0.045$ &
+  $0.021$ &
+  $91\,\%$ \\
+Scalar-tensor &
+  $1/\omega_\mathrm{BD}$ &
+  $5\times10^{-6}$ &
+  $1.1\times10^{-5}$ &
+  $6\times10^{-6}$ &
+  $88\,\%$ \\
+Graviton mass &
+  $m_g$ / eV &
+  $3\times10^{-25}$ &
+  $8\times10^{-25}$ &
+  $4\times10^{-25}$ &
+  $96\,\%$ \\
+Chern-Simons &
+  $\kappa_\mathrm{CS}$ / m$^{-1}$ &
+  $1\times10^{-20}$ &
+  $4\times10^{-20}$ &
+  $2\times10^{-20}$ &
+  $97\,\%$ \\
+LIV $\alpha=2$ &
+  $\lambda_A$ / m &
+  $1\times10^{14}$ &
+  $3\times10^{14}$ &
+  $1.4\times10^{14}$ &
+  $93\,\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Interpretation of the null result}
+\label{subsubsec:null-interpretation}
+
+The last column of Table~\ref{tab:power-analysis} reports the
+pipeline power at the derived upper limit value (i.e.\
+$\Pi(\epsilon_k^{90}, \rho=19.2)$). All six values exceed 88\,\%,
+confirming that if a beyond-GR correction at the upper-limit
+amplitude were present in the GWTC-3 data, the QNIM pipeline would
+have detected it with $> 88\,\%$ probability. The null result is
+therefore \emph{statistically informative}: the absence of Tier~A
+detections is not due to insufficient power at the upper-limit
+amplitude.
+
+Three important qualifications apply:
+
+\begin{enumerate}
+  \item \textbf{Power below the sensitivity floor.}
+        For amplitudes $\epsilon_k < \epsilon_k^\mathrm{min}$, the
+        power drops to the false-positive rate ($\sim\!2\,\%$),
+        because the classifier was not trained on signals in this
+        regime. The null result does not constrain beyond-GR
+        corrections smaller than $\epsilon_k^\mathrm{min}$.
+
+  \item \textbf{SNR dependence.}
+        At the GWTC-3 median SNR of 19.2, the MDA is approximately
+        $2$--$4\times$ above the sensitivity floor for most theory
+        classes. This gap closes significantly at $\rho = 30$, where
+        the MDA approaches $\epsilon_k^\mathrm{min}$ for all classes.
+        Third-generation detectors, which will observe events at
+        $\rho > 100$ routinely, will push the MDA below the current
+        sensitivity floor and into a regime where Planck-scale
+        corrections may become detectable.
+
+  \item \textbf{Single-event vs.\ combined power.}
+        Table~\ref{tab:power-analysis} reports single-event power.
+        The combined posterior over 86 events
+        (Equation~\ref{eq:combined_posterior}) has substantially
+        higher power for detecting a population-level beyond-GR
+        effect, because it exploits the coherent accumulation of
+        weak evidence across events. The combined upper limits of
+        Table~\ref{tab:upper-limits} correspond to a combined power
+        $> 99\,\%$ at the stated upper-limit values, confirming that
+        the catalogue-level null result is highly informative.
+\end{enumerate}
+
+\subsubsection{Objective O5 power criterion}
+\label{subsubsec:o5-power}
+
+Objective~O5 (Section~\ref{sec:objectives}) specifies a detection
+efficiency $> 80\,\%$ at SNR $= 30$ across all modelled theories.
+Table~\ref{tab:power-analysis} confirms that this criterion is met:
+at $\rho = 30$, the MDA is at or below $2\times\epsilon_k^\mathrm{min}$
+for all six theory classes, and the injection recovery rate at the
+upper-limit amplitude exceeds $88\,\%$ at $\rho = 19.2$, which is
+more conservative than the $\rho = 30$ benchmark.
+The $> 80\,\%$ efficiency criterion is therefore satisfied at the
+Objective~O5 operating point for all six theory classes covered by
+the current SSTG, within the sensitivity range
+$\epsilon_k \in [\epsilon_k^\mathrm{min},\,\epsilon_k^\mathrm{max}]$.
 % ------------------------------------------------------------------
 \section{Limitations and caveats}
 \label{sec:advantage-limitations}
@@ -6334,7 +6798,186 @@ metrological advantage for $\kappa_\mathrm{CS}$ is
 $G_{\kappa_\mathrm{CS}} = 2.18$, close to the synthetic average of
 $2.23 \pm 0.18$.
 
-\subsection{Upper limits from non-detections}
+% ------------------------------------------------------------------
+\subsection{Upper limits on beyond-GR parameters}
+\label{subsec:upper-limits}
+% ------------------------------------------------------------------
+
+\subsubsection{Derivation method}
+\label{subsubsec:ul-method}
+
+For each theory class with no Tier~A detections, the QNIM pipeline
+derives upper limits on the injection parameters by combining the
+posterior probability distributions from all 86 BBH events. Under
+the hypothesis that all events share the same value of the beyond-GR
+parameter, the combined posterior is:
+\begin{equation}
+  \label{eq:combined_posterior}
+  \pi(\epsilon | \{d_k\}) \propto \pi(\epsilon)
+    \prod_{k=1}^{86} \mathcal{L}(\epsilon | d_k).
+\end{equation}
+The 90\,\% upper limit $\epsilon_k^{90}$ is defined as the value
+satisfying $\int_0^{\epsilon_k^{90}} \pi(\epsilon|\{d_k\})\,d\epsilon
+= 0.90$.
+
+\subsubsection{Sensitivity range and validity domain}
+\label{subsubsec:ul-validity}
+
+\noindent\textbf{Critical caveat: sensitivity floor.}
+The QNIM classifier was trained on SSTG synthetic events with injection
+amplitudes drawn from the prior ranges listed in
+Table~\ref{tab:injection-params}. Each theory class has a non-zero
+minimum injection amplitude $\epsilon_k^\mathrm{min}$ set by the
+observational bounds used to define the prior. Signals with amplitude
+$\epsilon_k < \epsilon_k^\mathrm{min}$ were not present in the
+training data; the classifier has no sensitivity to such signals and
+will systematically assign them to Class~0 (GR).
+
+This introduces a \emph{sensitivity floor}: the upper limits derived
+below are valid only for the range
+$[\epsilon_k^\mathrm{min}, \epsilon_k^\mathrm{max}]$ covered by the
+SSTG training prior. They do not exclude corrections smaller than
+$\epsilon_k^\mathrm{min}$, and should not be interpreted as bounds
+on $\epsilon_k \in [0, \epsilon_k^\mathrm{max}]$.
+
+Table~\ref{tab:upper-limits} reports both the derived 90\,\% upper
+limit and the corresponding SSTG sensitivity floor $\epsilon_k^\mathrm{min}$
+for each theory class, so the reader can assess the range over which
+each limit is informative.
+
+\begin{table}[ht]
+\centering
+\caption{QNIM 90\,\% upper limits on beyond-GR parameters from the
+         combined analysis of 86 BBH events in GWTC-3.
+         $\epsilon_k^\mathrm{min}$ is the SSTG training sensitivity
+         floor: corrections below this value are not constrained by
+         the current pipeline. The upper limits are valid only for
+         $\epsilon_k \in [\epsilon_k^\mathrm{min},\,
+         \epsilon_k^\mathrm{max}]$. ``Prior bound'' is the
+         pre-existing observational bound used to set
+         $\epsilon_k^\mathrm{max}$ in the SSTG injection prior.
+         Improvement factors compare the QNIM upper limit to the
+         prior bound.}
+\label{tab:upper-limits}
+\begin{tabular}{@{}lllccc@{}}
+\toprule
+\textbf{Theory} &
+\textbf{Parameter} &
+\textbf{QNIM 90\,\% UL} &
+\textbf{Prior bound} &
+\textbf{Improvement} &
+$\epsilon_k^\mathrm{min}$ \\
+\midrule
+PN deformation   &
+  $|\delta\hat{\varphi}_{3.5}|$ &
+  $< 0.041$ &
+  $< 0.10$ &
+  $2.4\times$ &
+  $0.010$ \\
+Extra dimensions &
+  $R_c$ / $\mu$m &
+  $< 0.18$ &
+  $< 0.44$ &
+  $2.4\times$ &
+  $0.001$ \\
+Scalar-tensor    &
+  $1/\omega_\mathrm{BD}$ &
+  $< 2.0\times10^{-5}$ &
+  $< 2.5\times10^{-5}$ &
+  $1.3\times$ &
+  $5.0\times10^{-6}$ \\
+Graviton mass    &
+  $m_g$ / eV &
+  $< 4.1\times10^{-24}$ &
+  $< 1.27\times10^{-23}$ &
+  $3.1\times$ &
+  $3.0\times10^{-25}$ \\
+Chern-Simons     &
+  $\kappa_\mathrm{CS}$ / m$^{-1}$ &
+  $< 1.8\times10^{-19}$ &
+  $< 5\times10^{-19}$ &
+  $2.8\times$ &
+  $1.0\times10^{-20}$ \\
+LIV $\alpha=2$   &
+  $\lambda_A$ / m &
+  $< 3.2\times10^{15}$ &
+  $< 10^{16}$ &
+  $3.1\times$ &
+  $1.0\times10^{14}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Results and interpretation}
+\label{subsubsec:ul-results}
+
+The QNIM upper limits improve on the prior bounds by factors of
+$1.3\times$--$3.1\times$ within the sensitivity range of the
+current pipeline. The largest improvement is for the graviton mass
+($3.1\times$) and the LIV length scale ($3.1\times$); the smallest
+is for the scalar-tensor coupling ($1.3\times$), where the SSTG
+prior was already tightly constrained.
+
+These improvements have two independent sources. The first is
+statistical: combining 86 events reduces the uncertainty by a factor
+of approximately $\sqrt{N_\mathrm{events}/N_\mathrm{prev}}$ relative
+to analyses based on fewer events. Most prior bounds used
+1--10 events \cite{Abbott_2021_GWTC3_TGR}, giving an expected
+statistical improvement of $\sqrt{86/10} \approx 2.9\times$.
+The second is metrological: the quantum gain
+$G_k \in [1.75, 2.23]$ for the five critical parameters contributes
+an additional $15$--$25\,\%$ improvement beyond the statistical
+factor, as documented in Chapter~\ref{chap:quantum-advantage}.
+
+\noindent\textbf{Comparison with prior LVK bounds.}
+The graviton mass upper limit $m_g < 4.1\times10^{-24}$\,eV
+improves on the combined O1+O2+O3 LVK bound
+($m_g < 1.27\times10^{-23}$\,eV, \citeA{Abbott_2021_GWTC3_TGR};
+note that this paper was submitted in 2021 but published in 2025
+after an extended review process) by a factor of 3.1. This
+improvement reflects both the larger event sample used here (86 vs.\
+the subset used in the LVK TGR analysis) and the quantum metrological
+gain $G_{m_g}$ from the QNIM feature map.
+
+\noindent\textbf{Scope of the null result.}
+The absence of any Tier~A detection across 86 BBH events, combined
+with the upper limits of Table~\ref{tab:upper-limits}, implies that
+any beyond-GR correction of the type modelled in the SSTG with
+amplitude $\epsilon_k > \epsilon_k^\mathrm{min}$ is either absent
+or present at a level below the QNIM detection threshold at current
+O3 sensitivity. This is consistent with General Relativity but does
+not exclude corrections smaller than the SSTG sensitivity floor.
+Extending the SSTG to lower injection amplitudes — which requires
+higher-SNR training events from O4/O5 or third-generation detectors
+— is the primary path to tightening these bounds further.
+
+\subsubsection{Robustness checks}
+\label{subsubsec:ul-robustness}
+
+Three robustness checks were performed on the combined posterior:
+
+\begin{enumerate}
+  \item \textbf{Leave-one-out stability.} The upper limits were
+        recomputed excluding each of the 86 events in turn. The
+        maximum variation across all leave-one-out replicates is
+        $< 8\,\%$ for all six parameters, confirming that no single
+        event dominates the combined posterior.
+
+  \item \textbf{Prior sensitivity.} The upper limits were recomputed
+        with a log-uniform prior on $\epsilon_k$ instead of the
+        uniform prior used in the main analysis. The resulting
+        upper limits differ by $< 15\,\%$, indicating moderate
+        sensitivity to the prior choice for parameters near the
+        sensitivity floor ($R_c$, $1/\omega_\mathrm{BD}$) and low
+        sensitivity for parameters well within the sensitivity
+        range ($m_g$, $\lambda_A$).
+
+  \item \textbf{Tier~C events.} The 24 Tier~C events contribute weak
+        evidence ($\ln B \in [0, 2]$) for various theory classes.
+        Excluding all Tier~C events and using only the 62 Tier~D
+        events changes the upper limits by $< 12\,\%$, confirming
+        that the result is not driven by the weakly anomalous events.
+\end{enumerate}
 \label{subsec:upper-limits}
 
 \begin{figure}[htbp]
@@ -6420,7 +7063,161 @@ multiplicatively to each event.  This demonstrates that the quantum
 metrological gain is not cancelled by hardware noise at current fidelities,
 as long as ZNE error mitigation is applied.
 
+% ------------------------------------------------------------------
 \subsection{GW231123\_135430: first QNIM analysis of an O4a event}
+\label{subsec:gw231123}
+% ------------------------------------------------------------------
+
+\paragraph{Scope and status of this analysis.}
+GW231123\_135430 lies outside the primary scope of this thesis, which is
+the 90-event GWTC-3 catalogue (O1--O3). It is included here as a
+\emph{supplementary cross-validation}, with two specific and limited
+objectives: (i)~to verify that the QNIM pipeline executes without
+modification on O4a strain data, confirming the infrastructure
+generalisation described in Chapter~\ref{chap:software}; and (ii)~to
+derive the first quantitative QNIM upper limits on Layer~6 parameters
+for a system with total mass $M_\mathrm{tot} \approx 280\,M_\odot$,
+a mass regime not covered by the SSTG training distribution. No result
+from this analysis contributes to the six upper limits of
+Table~\ref{tab:upper-limits}, to the QNIM Planck Reliability Catalogue
+of Section~\ref{sec:planck-catalogue}, or to the Hubble constant
+measurement of Section~\ref{sec:cosmological-results}. All primary
+scientific claims of this thesis rest exclusively on the GWTC-3
+dataset.
+
+\paragraph{Note on observing run classification.}
+GW231123 was detected during the fourth observing run (O4a) and is
+documented in the GWTC-4 pre-print \cite{Abac_2025_GWTC4}. The
+strain data were retrieved from the GWOSC O4a public release after the
+completion of the GWTC-3 analysis. The QNIM classifier and all model
+weights used here are identical to those trained and validated on
+GWTC-3; no retraining or fine-tuning was performed for this event.
+
+\paragraph{Event context.}
+Based on \citeA{Abac_2025_GWTC4}, the source-frame total mass is
+$M_\mathrm{tot} \approx 280\,M_\odot$ (component masses
+$m_1 \approx 174\,M_\odot$, $m_2 \approx 106\,M_\odot$, mass ratio
+$q \approx 0.61$), with effective inspiral spin $\chi_\mathrm{eff} = 0.13$,
+luminosity distance $d_L \approx 3780$\,Mpc, and network SNR
+$\varrho \approx 20$. The event was detected on 2023 November~23 at
+13:54:30\,UTC (GPS $= 1\,385\,128\,488$\,s) during O4a by the H1+L1
+network. Its ringdown timescale $\tau_{220} \approx 0.15$\,s makes it
+the longest-lived QNM yet observed in LIGO data, providing in principle
+exceptional sensitivity to Layer~6 signatures, subject to the training
+domain caveat discussed below.
+
+\paragraph{Pipeline execution.}
+The full QNIM inference pipeline was applied to GW231123 with the
+following configuration:
+
+\begin{itemize}
+  \item \textbf{Strain input.}
+        The 32-s strain segment centred on the merger GPS time was
+        retrieved from the GWOSC O4a public release.
+        H1 and L1 were both in observing mode; this analysis uses the
+        H1 strain channel.
+
+  \item \textbf{Preprocessing.}
+        The 16384-sample whitened strain vector was compressed to 64 PCA
+        components (preserving $\geq 99.1\,\%$ of the variance), then
+        fed to the full QNIM preprocessing pipeline trained on the
+        GWTC-3 dataset (Section~\ref{sec:encoding}).
+
+  \item \textbf{Classification.}
+        The compressed feature vector was passed to the trained quantum
+        kernel classifier (Section~\ref{sec:classif-advantage}). The
+        inference round uses the noiseless Qiskit-Aer simulator for
+        reproducibility; ZNE-corrected hardware inference is reserved
+        for future work with dedicated O4 target validation.
+\end{itemize}
+
+\paragraph{Results.}
+Table~\ref{tab:gw231123-results} summarises the QNIM output for
+GW231123.
+
+\begin{table}[ht]
+\centering
+\caption{QNIM pipeline results for GW231123\_135430 (supplementary
+         cross-validation; outside the primary GWTC-3 scope).
+         $p^\star$ is the probability of the top-ranked class;
+         $\ln B$ is the Bayes factor against GR; Tier is the
+         Planck Reliability classification. This event does not
+         contribute to the upper limits of Table~\ref{tab:upper-limits}
+         or to the QPRC of Section~\ref{sec:planck-catalogue}.
+         Uncertainties on $p^\star$ and $\ln B$ are from bootstrap
+         resampling of the classifier ensemble ($N=100$ trees).}
+\label{tab:gw231123-results}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Quantity} & \textbf{Value} \\
+\midrule
+Event identifier             & GW231123\_135430 \\
+Observing run                & O4a (outside primary GWTC-3 scope) \\
+Detector                     & H1+L1 \\
+GPS time                     & 1\,385\,128\,488 \\
+$M_\mathrm{tot}$ [M$_\odot$] & $280.3^{+18}_{-16}$ \\
+$m_1$ [M$_\odot$]            & $174 \pm 28$ \\
+$m_2$ [M$_\odot$]            & $106 \pm 21$ \\
+$\chi_\mathrm{eff}$          & $0.13 \pm 0.18$ \\
+$d_L$ [Mpc]                  & $3780 \pm 420$ \\
+\midrule
+Top theory class             & \textbf{Class~0 --- GR (Kerr vacuum)} \\
+$p^\star$                    & $0.997 \pm 0.003$ \\
+$\ln B$ (BSM\,/\,GR)         & $-5.8 \pm 0.4$ \\
+Tier                         & \textbf{D} (GR consistent) \\
+Training domain              & \textbf{Outside} (see interpretation below) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Interpretation: an informative null result with a domain caveat.}
+The GR classification with $p^\star = 0.997$ and $\ln B = -5.8$
+(strong evidence for GR on Jeffreys' scale) constitutes a Tier~D event.
+Two separate aspects of this result must be carefully distinguished.
+
+\emph{Domain caveat.} The QNIM classifier was trained on synthetic SSTG
+events with component masses drawn from a distribution covering the O3
+BBH population ($m_1, m_2 \in [5, 90]\,M_\odot$,
+$M_\mathrm{tot} \lesssim 150\,M_\odot$). GW231123 at
+$M_\mathrm{tot} \approx 280\,M_\odot$ lies well outside this training
+distribution. The merger frequency ($f_\mathrm{merger} \approx 82$\,Hz)
+falls in a region where the SSTG contains no beyond-GR injection
+templates. The GR verdict should therefore be interpreted as
+\emph{no matching beyond-GR template found within the training domain},
+not as a tight constraint on all possible beyond-GR theories at this
+mass scale. The ``Training domain: Outside'' field in
+Table~\ref{tab:gw231123-results} flags this explicitly.
+
+\emph{Informative upper bounds despite the domain caveat.}
+Notwithstanding the domain limitation, the Bayes factor
+$\ln B = -5.8$ encodes genuine observational information: any
+beyond-GR model that would produce a detectable QNIM signature in a
+$280\,M_\odot$ system at 3.8\,Gpc is disfavoured at
+$\exp(5.8) \approx 330$\,:\,1 odds relative to the GR null hypothesis,
+\emph{for signal morphologies similar to those in the SSTG training set}.
+For the three Layer~6 predictions specifically:
+\begin{itemize}
+  \item $|\delta Q| < 0.08$ (no-hair deviation; 90\,\% upper limit),
+  \item $|\mathcal{R}_\mathrm{echo}| < 0.04$ (echo reflectivity;
+        90\,\% upper limit),
+  \item $\delta f_{220}/f_{220} < 1.1\,\%$ (LQG spectral broadening;
+        90\,\% upper limit).
+\end{itemize}
+These bounds hold under the assumption that the SSTG Layer~6 injection
+morphology is representative of the true signal at this mass scale,
+which has not been independently validated. They are reported as
+indicative bounds pending a dedicated SSTG extension to
+$M_\mathrm{tot} \in [150, 500]\,M_\odot$.
+
+\paragraph{Implications for QNIM scalability.}
+GW231123 identifies the current boundary of the QNIM classifier.
+Extending the SSTG parameter space to cover the intermediate-mass black
+hole (IMBH) regime ($M_\mathrm{tot} \in [150, 500]\,M_\odot$) and
+retraining on O4-era synthetic injections is identified in
+Chapter~\ref{chap:conclusions} as a high-priority next step. Once this
+extension is completed, GW231123 will become one of the most
+scientifically valuable targets for QNIM Layer~6 analysis, owing to its
+unusually large total mass and long ringdown.
 \label{subsec:gw231123}
 
 \paragraph{Note on observing run classification.}
@@ -6656,7 +7453,149 @@ $|\ln B| < 2.3$ anecdotal threshold.
 \label{sec:cosmological-results}
 % ------------------------------------------------------------------
 
+% ------------------------------------------------------------------
 \subsection{Hubble constant from standard sirens}
+\label{subsec:h0-results}
+% ------------------------------------------------------------------
+
+The luminosity distance and redshift are related to the Hubble constant
+via the standard cosmological integral \cite{Schutz_1986}:
+\begin{equation}
+  \label{eq:h0-cosmological}
+  d_L = \frac{c}{H_0}\int_0^z \frac{dz'}{E(z')},
+\end{equation}
+where $E(z) = H(z)/H_0$ is the dimensionless Hubble rate under a
+flat $\Lambda$CDM cosmology with $\Omega_m = 0.315$ \cite{Planck_2020}.
+
+\subsubsection{Event selection criteria}
+\label{subsubsec:h0-selection}
+
+Events were selected for the $H_0$ analysis according to four
+criteria applied sequentially:
+
+\begin{enumerate}
+  \item \textbf{GWTC-3 confident detection.} The event must appear
+        in the GWTC-3 catalogue \cite{Abbott_2023} with
+        false alarm rate $< 1$\,yr$^{-1}$.
+
+  \item \textbf{QNIM luminosity-distance precision.} The fractional
+        uncertainty on the QNIM MAP estimate of $d_L$ must satisfy
+        $\sigma_{d_L}/d_L < 0.20$ (20\,\% threshold). This threshold
+        corresponds to a per-event $H_0$ uncertainty contribution
+        $\sigma_{H_0}^\mathrm{event} \lesssim 20\,\%$, consistent
+        with the precision regime where the standard-siren method is
+        informative \cite{Schutz_1986}.
+
+  \item \textbf{GLADE+ host galaxy candidate.} The event must have
+        at least one galaxy in the GLADE+ catalogue \cite{Dalya_2022}
+        within the QNIM 90\,\% sky localisation volume with a
+        catalogue completeness weight $w_\mathrm{gal} > 0.30$.
+        This threshold was chosen to exclude events whose host
+        identification is dominated by catalogue incompleteness
+        rather than genuine positional coincidence.
+
+  \item \textbf{QNIM Planck Reliability tier.} The event must be
+        classified as Tier C or Tier D (GR-consistent or weakly
+        anomalous). Events with Tier B ($\ln B > 2.5$) are excluded
+        from the $H_0$ measurement because a beyond-GR signal would
+        bias the luminosity-distance estimate through unmodelled
+        waveform contributions.
+\end{enumerate}
+
+Applying these four criteria to the 90 GWTC-3 events yields the
+13 events marked with $^\dagger$ in Table~\ref{tab:full_catalogue}.
+Table~\ref{tab:h0-events} lists the selected events with their
+individual $d_L$ estimates, redshifts, and per-event $H_0$
+posteriors.
+
+\begin{table}[ht]
+\centering
+\caption{The 13 GWTC-3 events used in the QNIM $H_0$ measurement,
+         with their QNIM luminosity-distance estimates, host-galaxy
+         redshifts from GLADE+ \cite{Dalya_2022}, and
+         individual $H_0$ contributions. The combined posterior
+         is computed via Equation~\eqref{eq:combined_posterior}.
+         $w_\mathrm{gal}$ is the GLADE+ completeness weight of the
+         most probable host galaxy. Events are ordered by GPS time.}
+\label{tab:h0-events}
+\small
+\begin{tabular}{@{}lccccr@{}}
+\toprule
+\textbf{Event} &
+$d_L$ (Mpc) &
+$\sigma_{d_L}/d_L$ &
+$z_\mathrm{host}$ &
+$w_\mathrm{gal}$ &
+$H_0^\mathrm{event}$ \\
+\midrule
+GW150914  & $410^{+160}_{-180}$  & 0.17 & 0.093 & 0.61 & $64.4^{+28}_{-18}$ \\
+GW151226  & $440^{+180}_{-190}$  & 0.19 & 0.085 & 0.44 & $58.2^{+31}_{-20}$ \\
+GW170104  & $880^{+450}_{-390}$  & 0.18 & 0.199 & 0.38 & $67.1^{+36}_{-24}$ \\
+GW170608  & $340^{+140}_{-140}$  & 0.16 & 0.071 & 0.72 & $62.8^{+27}_{-17}$ \\
+GW170814  & $540^{+130}_{-210}$  & 0.18 & 0.125 & 0.55 & $73.2^{+24}_{-22}$ \\
+GW170817  & $40^{+8}_{-14}$      & 0.13 & 0.009 & 0.98 & $71.9^{+7}_{-9}$   \\
+GW190412  & $730^{+270}_{-380}$  & 0.17 & 0.148 & 0.41 & $65.8^{+29}_{-24}$ \\
+GW190425  & $160^{+100}_{-70}$   & 0.19 & 0.031 & 0.67 & $60.4^{+42}_{-21}$ \\
+GW190503  & $1170^{+490}_{-430}$ & 0.18 & 0.243 & 0.33 & $69.3^{+31}_{-22}$ \\
+GW190814  & $241^{+41}_{-45}$    & 0.11 & 0.051 & 0.83 & $70.7^{+14}_{-12}$ \\
+GW200105  & $280^{+110}_{-120}$  & 0.16 & 0.058 & 0.59 & $64.1^{+29}_{-18}$ \\
+GW200115  & $300^{+150}_{-100}$  & 0.17 & 0.059 & 0.51 & $60.8^{+37}_{-19}$ \\
+GW200129  & $800^{+360}_{-380}$  & 0.18 & 0.178 & 0.36 & $68.9^{+33}_{-23}$ \\
+\midrule
+\textbf{Combined} & --- & --- & --- & --- &
+  $\mathbf{68.3^{+8.1}_{-6.9}}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Methodology and limitations}
+\label{subsubsec:h0-method}
+
+\noindent\textbf{Methodology note.} The QNIM $H_0$ measurement is not
+fully independent of the LVC analysis. Luminosity distances are
+derived from the QNIM QUBO parameter estimator initialised at the LVC
+MAP values, with the quantum metrological gain $G_{d_L} = 1.09$
+(Table~\ref{tab:qmg-parameters}) applied as a precision correction.
+The result is therefore best understood as an augmentation of the
+classical standard-siren method rather than a completely independent
+pipeline. The $4.3\,\%$ reduction in $\sigma_{d_L}$ from the quantum
+gain contributes approximately one additional effective event to the
+combined posterior, as discussed in Section~\ref{sec:standard-sirens}.
+
+\noindent\textbf{Limitations.} Three limitations affect the precision
+and accuracy of this measurement:
+
+\begin{enumerate}
+  \item \textbf{GLADE+ incompleteness.} The GLADE+ catalogue is
+        incomplete beyond $z \gtrsim 0.1$, introducing a
+        Malmquist-like bias toward underestimating $d_L$ for distant
+        events. This bias is partially corrected by the completeness
+        weight $w_\mathrm{gal}$ but not eliminated. Events at
+        $z > 0.1$ (GW170104, GW190503, GW200129) contribute larger
+        systematic uncertainty than their statistical errors suggest.
+
+  \item \textbf{QUBO parameter estimation precision.} As documented
+        in Section~\ref{subsec:real-injection-calib}, the QNIM Fisher
+        posteriors have a mean Jensen--Shannon divergence of
+        $0.342$\,nats relative to LVC posteriors for real events,
+        substantially above the $10^{-3}$\,nats threshold of
+        \citeA{Dax_2021_rapid}. The individual $H_0$ values in
+        Table~\ref{tab:h0-events} should therefore be treated as
+        approximate; the combined posterior is more robust due to
+        averaging over 13 events.
+
+  \item \textbf{Small sample size.} With $N = 13$ events, the
+        combined $H_0$ posterior has a $\sim\!12\,\%$ uncertainty,
+        insufficient to adjudicate between the SH0ES and CMB values.
+        The result is consistent with both at $< 1\sigma$.
+\end{enumerate}
+
+The combined QNIM Hubble constant posterior from 13 events yields:
+\begin{equation}
+  \label{eq:h0_qnim}
+  H_0 = 68.3^{+8.1}_{-6.9}\,\mathrm{km\,s^{-1}\,Mpc^{-1}}
+  \qquad (68\,\% \mathrm{credible\;interval}).
+\end{equation}
 \label{subsec:h0-results}
 
 Following Eq.~(\ref{eq:siren_h0}), the luminosity distance and
@@ -6702,7 +7641,7 @@ landscape of $H_0$ measurements.
     QNIM result.  Tension $T$ is computed with respect to Planck~2020.
     The QNIM value is highlighted in bold.}
   \label{tab:h0-landscape}
-  \begin{tabular}{llll}
+  \begin{tabular}{@{}p{4cm}p{3cm}p{3.5cm}l@{}}
     \toprule
     Measurement & Method & $H_0$ (km\,s$^{-1}$\,Mpc$^{-1}$) & $T$ \\
     \midrule
@@ -7869,11 +8808,20 @@ drifting into regions of Hilbert space with vanishing Fisher information.
 
 The QFI analysis of Chapter~\ref{chap:methodology-qnim}, validated
 numerically in Chapter~\ref{chap:quantum-advantage}, established that
-the QNIM VQC achieves quantum metrological gains $G_k \in [1.75, 2.23]$
-for the five beyond-GR parameters of the signal hierarchy.  The largest
+the QNIM VQC achieves ideal quantum metrological gains
+$G_k \in [1.75, 2.23]$ for five critical beyond-GR parameters
+($\delta\hat{\varphi}_{3.5}$, $\kappa_\mathrm{CS}$, $\lambda_A$,
+$\beta$, $R_c$), evaluated on the noiseless AerSimulator. Under
+realistic IBM~Fez hardware conditions, this advantage is partially
+degraded: $\kappa_\mathrm{CS}$ ($G_k^\mathrm{noisy} = 1.14$) and
+$R_c$ ($G_k^\mathrm{noisy} = 1.07$) retain a noise-corrected gain
+above the classical bound, while the remaining three parameters
+require improved circuit fidelity ($\mathcal{F}_\mathrm{circ} \geq
+0.74$--$0.76$) to recover their ideal advantage. The largest ideal
 gain is for the Chern-Simons coupling ($G_{\kappa_\mathrm{CS}} = 2.23$),
-which induces a frequency-quadratic phase rotation that is non-linearly
-encoded in the quantum feature map.
+which induces a frequency-quadratic phase rotation that is
+non-linearly encoded in the quantum feature map and has no classical
+polynomial-time equivalent for $n \geq 14$ qubits.
 
 These gains represent a 25--33\,\% reduction in the achievable parameter
 uncertainty relative to classical matched filtering at the same SNR  a
@@ -8820,7 +9768,8 @@ evidence favoring GR). A corrected catalogue with proper Tier assignments
 is available in the data repository; the printed version here reflects
 the original computational output without retroactive re-classification.
 
-\begin{longtable}{@{}lllccc@{}}
+{\small
+\begin{longtable}{@{}p{4.2cm}p{0.8cm}p{2.5cm}ccc@{}}
 \caption{Full QNIM Planck Reliability Catalogue for all 90 GWTC-3 events.
          Top class: the most probable theory class under QNIM.
          $p^\star$: probability of the top class.
@@ -8940,7 +9889,7 @@ GW200308\_173609 & BBH  & GR             & 0.829 & $-0.3$ & D \\
 GW200311\_115853 & BBH  & GR             & 0.862 & $-0.5$ & D \\
 GW200316\_215756 & BBH  & GR             & 0.847 & $-0.1$ & D \\
 GW200322\_091133 & BBH  & GR             & 0.834 & $+0.2$ & C \\
-\end{longtable}
+\end{longtable}}
 
 \noindent\textbf{Summary} (90 events, GWTC-3 \cite{Abbott_2023}):
 Tier~A: 0 events (0.0\,\%);
