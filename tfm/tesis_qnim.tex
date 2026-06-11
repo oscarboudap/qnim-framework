@@ -54,8 +54,7 @@
 % ------------------------------------------------------------------
 % Algorithms and code listings
 % ------------------------------------------------------------------
-\usepackage{algorithm}
-\usepackage{algorithmic}
+
 \usepackage{listings}
 \usepackage{xcolor}
 
@@ -71,6 +70,7 @@
 % Hyperlinks (loaded last)
 % ------------------------------------------------------------------
 \usepackage{hyperref}
+\usepackage[noend,ruled,vlined,algo2e]{algorithm2e}
 
 % ------------------------------------------------------------------
 % Listings configuration (Python and Bash)
@@ -162,9 +162,6 @@ Models for Gravitational-Wave\\
 % ------------------------------------------------------------------
 % Configuración de nombres de índices (Traducciones y ajustes)
 % ------------------------------------------------------------------
-\makeatletter
-\renewcommand{\es@scroman}[1]{#1}
-\makeatother
 \renewcommand{\listfigurename}{Índice de Ilustraciones}
 \renewcommand{\listtablename}{Índice de Tablas}
 \renewcommand{\contentsname}{Índice de Contenidos}
@@ -1124,14 +1121,13 @@ The six primary scientific contributions of this thesis are:
         future quantum astrophysics software.
 \end{description}
 
-All six contributions are subject to the hardware limitations
-discussed in Section~\ref{sec:disc_nisq}: contributions 1--4
+All six contributions are subject to hardware limitations: contributions 1--4
 hold unconditionally on the noise-model simulator; contribution 3
 (metrological gains) holds on physical hardware only for
 $\kappa_\mathrm{CS}$ and $R_c$ at current IBM Fez fidelity
 (Table~\ref{tab:qmg_noisy}); contribution 5 (observational bounds)
 assumes the validity of the Laplace approximation for Bayes factors
-as discussed in Section~\ref{sec:bayes_factor_formalism}.
+as discussed in the methodology chapters.
 
 \section{Research objectives}
 \label{sec:objectives}
@@ -2134,7 +2130,7 @@ providing the stochastic-background floor injected in Layer~7.
 non-trivial zeros of the Riemann zeta function and quasi-normal mode
 spectra — based on the Berry--Keating--Connes conjecture
 \cite{Berry_Keating_1999,Connes_1999} — has been removed from the
-theoretical framework and placed in Appendix~\ref{app:bkc-speculative},
+theoretical framework and placed in Appendix~\ref{app:bkc_speculative},
 where its speculative status and lack of experimental grounding are
 explicitly flagged.  No result in this thesis depends on that analogy.
 
@@ -4499,7 +4495,7 @@ to real O3 noise segments. The classifier's task is to classify a set of
 injected signals with controlled amplitude and duration in an otherwise
 uncontrolled noise background. By contrast, the $80.4\,\%$ on the
 simulator is measured across the entire SSTG validation set (11,700 events),
-where the noise model calibration to ibm_fez hardware introduces systematic
+where the noise model calibration to \texttt{ibm\_fez} hardware introduces systematic
 model discrepancies that are not present in the idealized O3 injection scenario.
 Furthermore, the O3 injection distribution is likely more separable than
 the balanced SSTG distribution because injections are not drawn from the
@@ -4584,7 +4580,7 @@ parameter, together with the per-event mean.
     posteriors and LVC posteriors for five GWTC-3 events.
     All posteriors are centred at the LVC MAP (injection recovery);
     JSD reflects the precision ratio only.
-    The threshold from \citeA{Dax_2021_rapid} is $10^{-3}$\,nats.}
+    The threshold from \protect\cite{Dax_2021_rapid} is $10^{-3}$\,nats.}
   \label{tab:injection_jsd}
   \begin{tabular}{lcccc c}
     \toprule
@@ -6510,7 +6506,7 @@ Tier                        & \textbf{D} (GR consistent) \\
 \paragraph{Interpretation: an informative null result.}
 The GR classification with $p^\star = 0.997$ and $\ln B = -5.8$ (strong
 evidence for GR on Jeffreys' scale: $|{\ln B}| > 5$ corresponds to
-$\gtarrow 150$:1 odds) constitutes a Tier~D event — GR consistent.
+${\gtrsim}\,150$:1 odds) constitutes a Tier~D event — GR consistent.
 This is both the physically expected outcome and an informative
 result for two distinct reasons:
 
@@ -8629,38 +8625,27 @@ Algorithm~\ref{alg:qnspsa} gives the complete pseudocode of the
 QNSPSA-EML-Feynman optimiser as implemented in the QNIM codebase
 (\texttt{src/domain/services/qnspsa\_eml\_feynman.py}).
 
-\begin{algorithm}[ht]
-\caption{QNSPSA-EML-Feynman optimiser}
-\label{alg:qnspsa}
-\begin{algorithmic}[1]
-\Require Initial parameters $\boldsymbol{\theta}_0$, schedules $\{a_t\}$,
-         $\{c_t\}$, ZNE factors $\{\lambda_k\}$, Feynman weight $\lambda_R$,
-         inverse QGT initialisation $\hat{H}^{-1}_0 = \mathbf{I}_p$
-\Ensure Optimised parameters $\boldsymbol{\theta}^\star$
-\For{$t = 0, 1, \ldots, T-1$}
-  \State Sample $\boldsymbol{\Delta}_t, \boldsymbol{\Delta}'_t \in \{-1,+1\}^p$ (Rademacher)
-  \For{each $\lambda_k \in \{\lambda_1, \lambda_2, \lambda_3\}$}
-    \State $f_+^{(k)} \leftarrow \texttt{eval\_circuit}(\boldsymbol{\theta}_t + c_t\boldsymbol{\Delta}_t,
-           \lambda_k)$
-    \State $f_-^{(k)} \leftarrow \texttt{eval\_circuit}(\boldsymbol{\theta}_t - c_t\boldsymbol{\Delta}_t,
-           \lambda_k)$
-  \EndFor
-  \State $\hat{g}_t \leftarrow \sum_k c_k \cdot (f_+^{(k)} - f_-^{(k)}) /
-         (2c_t\boldsymbol{\Delta}_t)$ \Comment{ZNE gradient}
-  \State Repeat above with $\boldsymbol{\Delta}'_t$ to obtain $\hat{g}'_t$
-  \State $\hat{F}_t \leftarrow \frac{1}{2}(\hat{g}_t\hat{g}_t^\top + \hat{g}'_t\hat{g}'^{\top}_t)$
-  \State $\hat{H}^{-1}_{t+1} \leftarrow \hat{H}^{-1}_t -
-         \hat{H}^{-1}_t\hat{F}_t\hat{H}^{-1}_t /
-         (1 + \mathrm{Tr}(\hat{H}^{-1}_t\hat{F}_t))$
-         \Comment{SMW update}
-  \State $\mathcal{R}_t \leftarrow \texttt{curvature\_regulariser}(\boldsymbol{\theta}_t)$
-  \State $\hat{g}^\mathrm{total}_t \leftarrow \hat{g}_t + \lambda_R\nabla\mathcal{R}_t$
-  \State $\boldsymbol{\theta}_{t+1} \leftarrow \boldsymbol{\theta}_t -
-         a_t\,\hat{H}^{-1}_{t+1}\,\hat{g}^\mathrm{total}_t$
-\EndFor
-\State \Return $\boldsymbol{\theta}_T$
-\end{algorithmic}
-\end{algorithm}
+\begin{figure}[ht]
+\begin{verbatim}
+Input: theta_0, schedules {a_t}, {c_t}, ZNE factors, lambda_R
+Output: theta*
+
+For t = 0, 1, ..., T-1:
+  Sample Delta_t, Delta'_t in {-1,+1}^p
+  For each lambda_k in {1,2,3}:
+    f+ = eval_circuit(theta_t + c_t*Delta_t, lambda_k)
+    f- = eval_circuit(theta_t - c_t*Delta_t, lambda_k)
+  g_t = sum_k c_k*(f+ - f-)/(2*c_t*Delta_t)   % ZNE gradient
+  Repeat with Delta'_t to get g'_t
+  F_t = (g_t g_t^T + g'_t g'^T_t) / 2
+  H^{-1}_{t+1} = H^{-1}_t - H^{-1}_t F_t H^{-1}_t / (1 + Tr(H^{-1}_t F_t))
+  R_t = curvature_regulariser(theta_t)
+  g_total = g_t + lambda_R * grad(R_t)
+  theta_{t+1} = theta_t - a_t * H^{-1}_{t+1} * g_total
+Return theta_T
+\end{verbatim}
+\caption{QNSPSA-EML-Feynman optimiser pseudocode.}\label{alg:qnspsa}
+\end{figure}
 
 \section{Convergence guarantees}
 \label{app:qnspsa_convergence}
@@ -8952,11 +8937,15 @@ GW200322\_091133 & BBH  & GR             & 0.834 & $+0.2$ & C \\
 \endlastfoot
 \end{longtable}
 
-\noindent\multicolumn{6}{l}{\footnotesize $^\dagger$~Events used in the 
-QNIM Hubble constant measurement (Section~\ref{sec:cosmological_results}); 
-selected on the basis of QNIM $d_L$ precision $<20\,\%$ and 
-GLADE$+$ host galaxy candidate.} \\[0.2em]
-\noindent\multicolumn{6}{l}{\footnotesize $^\ddagger$~GW190521 is classified as BBH/IMBH; both components lie in or above the pair-instability supernova mass gap \cite{Abbott_2020_GW190521}.}
+\begin{flushleft}
+\footnotesize $^\dagger$~Events used in the QNIM Hubble constant measurement
+(Section~\ref{sec:cosmological_results}); selected on the basis of QNIM
+$d_L$ precision $<20\,\%$ and GLADE$+$ host galaxy candidate.
+\end{flushleft}
+\begin{flushleft}
+\footnotesize $^\ddagger$~GW190521 is classified as BBH/IMBH; both components
+lie in or above the pair-instability supernova mass gap \cite{Abbott_2020_GW190521}.
+\end{flushleft}
 
 \vspace{1em}
 \noindent\textbf{Summary (90 events, cumulative GWTC-3; Abbott et al.\ 2023):}
@@ -9089,7 +9078,7 @@ lists this structural correspondence as a dictionary of analogies.
 \caption{Formal analogy between properties of the Riemann zeta function
          and gravitational-physics concepts.
          \textbf{This table describes an unverified speculative
-         correspondence \cite{Berry_Keating_1999,Connes_1999};
+         correspondence \protect\cite{Berry_Keating_1999,Connes_1999};
          no entry has been derived from the other.
          No QNIM result depends on any entry except the Casimir
          energy (third row), which is independently derived in
@@ -9118,7 +9107,6 @@ quantum field theory in curved spacetime \cite{Hawking_1975} entirely
 independent of the Berry--Keating conjecture.  All remaining entries
 are motivational background that \textbf{does not influence any
 result, classification, or parameter estimate in this thesis}.
-
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % BIBLIOGRAPHY
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -9129,5 +9117,4 @@ result, classification, or parameter estimate in this thesis}.
 
 \bibliographystyle{apacite}
 \bibliography{bibliografia}
-
 \end{document}
