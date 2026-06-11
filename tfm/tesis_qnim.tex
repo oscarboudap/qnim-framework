@@ -277,38 +277,7 @@ gravitacionales, arquitectura \textit{Clean}, Relatividad General,
 inferencia bayesiana, circuitos cu\'{a}nticos variacionales,
 informaci\'{o}n de Fisher cu\'{a}ntica.
 \end{otherlanguage}
-\addcontentsline{toc}{chapter}{Resumen}
 
-\begin{otherlanguage}{spanish}
-Este trabajo introduce una nueva metodolog\'{i}a anal\'{i}tica denominada
-Modelos Inversos Nativos Cu\'{a}nticos (QNIM) para la espectroscop\'{i}a de
-ondas gravitacionales. El objetivo central no es ofrecer una plataforma de
-software, sino un nuevo enfoque de inferencia que explota la geometr\'{i}a del
-espacio de Hilbert para resolver firmas de gravedad cu\'{a}ntica invisibles a
-los algoritmos cl\'{a}sicos. La metodolog\'{i}a combina circuitos cu\'{a}nticos
-variacionales escalables (VQC) en hardware IBM Quantum con optimizaci\'{o}n
-QUBO sobre simuladores D-Wave Neal con emulaci\'{o}n expl\'{i}cita de ruido
-de recocido mediante perturbaci\'{o}n de coeficientes QUBO y an\'{a}lisis de
-estabilidad del conjunto de soluciones. Se generaron variedades sint\'{e}ticas a
-3.5PN que cubren trece teor\'{i}as m\'{a}s all\'{a} de la Relatividad General.
-La ejecuci\'{o}n parcial del entrenamiento (presupuesto computacional
-limitado, 218\,pasos con parada temprana) alcanza una precisi\'{o}n de
-$80{,}4\,\%$ en el simulador con modelo de ruido y de $64{,}9\,\%$ en
-hardware f\'{i}sico IBM\,Fez tras mitigaci\'{o}n ZNE. La extrapolaci\'{o}n
-al entrenamiento completo proyecta $91\,\%\;(\pm2\,\%)$, sin reproducci\'{o}n
-independiente por restricciones de c\'{o}mputo. La ventaja cu\'{a}ntica formal
-se confirma con $\mathcal{F}_Q/\mathcal{F}_C\in[1.75,\,2.23]$.
-El re-an\'{a}lisis de GW150914 confirma consistencia plena con la
-Relatividad General. El pipeline alcanza valores $p$ corregidos por Bonferroni en el
-rango $[2{,}1\times10^{-18},\,8{,}9\times10^{-9}]$, equivalentes
-a significancias gaussianas de $5{,}9\sigma$--$8{,}7\sigma$. Como soporte computacional, se provee una implementaci\'{o}n
-software estructurada bajo los paradigmas \textit{Clean Architecture},
-\textit{Domain-Driven Design} y arquitectura hexagonal.
-
-\vspace{0.4cm}
-\textbf{Palabras clave:} computaci\'{o}n cu\'{a}ntica, ondas gravitacionales,
-arquitectura \textit{Clean}, Relatividad General, inferencia bayesiana.
-\end{otherlanguage}
 
 % ==================================================================
 %  ABSTRACT  (English — revised for hardware-noise transparency)
@@ -538,7 +507,7 @@ quality and astrophysical diversity.
 \textbf{Event} & \textbf{Type} & \textbf{$m_1\;(M_\odot)$} &
 \textbf{$m_2\;(M_\odot)$} & \textbf{$d_L\;(\mathrm{Mpc})$} &
 \textbf{SNR} & \textbf{GR consistency} \\ \midrule
-GW150914 & BBH & 35.6 & 30.6 & 440  & 24.0 & High \\
+GW150914 & BBH & 35.6 & 30.6 & 410  & 24.0 & High \\
 GW170817 & BNS & 1.46 & 1.27 & 40   & 32.4 & Exceptional
                                                ($c_\mathrm{GW}=c$) \\
 GW190412 & BBH & 30.1 & 8.3  & 730  & 19.0 & Higher harmonics \\
@@ -806,10 +775,12 @@ where the Quantum Fisher Information (QFI) is:
 The fundamental inequality $\mathcal{F}_Q \geq \mathcal{F}_C$ holds
 for all parameter values and all quantum states, establishing a
 provable hierarchy in which quantum estimators occupy the top of the
-metrological pyramid.  Chapter~\ref{chap:quantum-advantage} provides
-empirical confirmation of this advantage, with $\mathcal{F}_Q/\mathcal{F}_C$
-consistently in the range $[1.75,\,2.23]$ for the critical beyond-GR
-parameters.
+metrological pyramid.  Chapter~\ref{chap:quantum-advantage} provides empirical confirmation
+of this advantage on the noiseless simulator, with
+$\mathcal{F}_Q/\mathcal{F}_C \in [1.75,\,2.23]$ for the five critical
+beyond-GR parameters; under realistic IBM~Fez hardware conditions
+only $\kappa_\mathrm{CS}$ and $R_c$ retain $G_k^\mathrm{noisy} > 1$
+(Section~\ref{subsec:qfi-noisy}).
 
 \subsection{Hybrid quantum-classical inference}
 \label{subsec:hybrid}
@@ -1185,12 +1156,17 @@ The six primary scientific contributions of this thesis are:
         Figure~\ref{fig:barren-plateaus}.
 
   \item[Quantum metrological gains for beyond-GR parameters.]
-        The QNIM VQC achieves a Quantum-to-Classical Fisher Information
-        ratio $\mathcal{F}_Q/\mathcal{F}_C \in [1.75,\,2.23]$ for the
-        five critical beyond-GR parameters, yielding 25--33\,\% tighter
-        estimation bounds than classical matched filtering at the same
-        SNR\@.  This advantage is a theorem of quantum mechanics and
-        holds regardless of classical computational power.
+        The QNIM VQC achieves ideal quantum metrological gains
+        $G_k \in [1.75,\,2.23]$ for the five critical beyond-GR parameters,
+        evaluated on the noiseless AerSimulator, yielding 25--33\,\% tighter
+        estimation bounds than classical matched filtering at the same SNR\@.
+        Under realistic IBM~Fez hardware conditions
+        ($\mathcal{F}_\mathrm{circ} = 0.714$), this advantage is partially
+        degraded: only $\kappa_\mathrm{CS}$ and $R_c$ retain
+        $G_k^\mathrm{noisy} > 1$ at current fidelity; the remaining three
+        parameters recover their advantage at
+        $\mathcal{F}_\mathrm{circ} \geq 0.74$, projected for the next
+        IBM~Heron generation (Table~\ref{tab:qmg-noisy}).
 
   \item[SSTG synthetic data generator.]
         The Synthetic Signal and Theory Generator produces physically
@@ -5746,118 +5722,6 @@ These are large effects by the conventions of \citeA{Cohen_1988}
 ($d > 0.8$ is large; $r > 0.5$ is large), confirming that the quantum
 advantages are not marginal but represent a substantive improvement over
 the classical baselines on the synthetic SSTG benchmark.
-\label{sec:advantage-significance}
-% ------------------------------------------------------------------
-
-\subsection{Hypothesis testing framework}
-\label{subsec:hypothesis-testing}
-
-Each claimed advantage is subjected to a two-sided Wilcoxon signed-rank
-test (paired, non-parametric) with Bonferroni correction for multiple
-comparisons across the five metrics.  The null hypothesis is that QNIM
-and the best classical baseline are drawn from the same performance
-distribution.
-
-\begin{table}[ht]
-\centering
-\caption{Wilcoxon signed-rank test results for the three quantum
-         advantage claims.  $p$-values are Bonferroni-corrected for
-         the total number of tests.  All results are on paired samples
-         ($N = 500$ test events for metrological tests; $N = 11{,}700$
-         for classification; $N = 50$ for optimisation).}
-\label{tab:significance}
-\begin{tabular}{@{}llccc@{}}
-\toprule
-\textbf{Advantage} & \textbf{Metric} &
-$W$-statistic & $p$-value & \textbf{Significant?} \\
-\midrule
-Metrological ($\kappa_\mathrm{CS}$, ideal)  & $G_k - 1$ & 98{,}432 & $2.1\times10^{-18}$ & Yes \\
-Metrological ($\lambda_A$, ideal)            & $G_k - 1$ & 87{,}213 & $4.7\times10^{-15}$ & Yes \\
-Classification (BAcc)    & QNIM - C-QK & 58{,}104 & $3.8\times10^{-12}$ & Yes \\
-Classification (Layer~7 rec.) & QNIM - C-QK & 62{,}881 & $7.2\times10^{-14}$ & Yes \\
-Optimisation ($\Delta\ln\mathcal{L}$) & QNIM - BH & 1{,}223 & $8.9\times10^{-9}$  & Yes \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-All five advantage claims are statistically significant at the
-$p < 10^{-8}$ level after Bonferroni correction.
-
-\paragraph{Bonferroni correction details.}
-Table~\ref{tab:significance} covers $N_\mathrm{tests} = 5$ independent
-comparisons (one per row: two metrological, two classification, one
-optimisation).  The Bonferroni family-wise error rate control threshold
-is therefore:
-\begin{equation}
-  \label{eq:bonferroni_threshold}
-  \alpha^* = \frac{0.05}{N_\mathrm{tests}} = \frac{0.05}{5} = 0.01.
-\end{equation}
-The $p$-values listed in Table~\ref{tab:significance} are the \emph{raw}
-Wilcoxon signed-rank probabilities (two-sided, paired).  All five lie in
-the range $[2.1\times10^{-18},\,8.9\times10^{-9}]$, between eight and
-seventeen orders of magnitude below $\alpha^* = 0.01$.
-
-The Gaussian-equivalent significance of each test is obtained from the
-raw $p$-value via the probit conversion:
-\begin{equation}
-  \label{eq:sigma_equiv}
-  Z_\mathrm{equiv} = \Phi^{-1}\!\!\left(1 - \frac{p}{2}\right),
-\end{equation}
-where $\Phi^{-1}$ is the inverse standard-normal CDF (probit function).
-Applying Equation~\eqref{eq:sigma_equiv} to each row of
-Table~\ref{tab:significance} gives:
-\begin{itemize}
-  \item CS metrological gain ($p = 2.1\times10^{-18}$):
-        $Z \approx 8.7\sigma$.
-  \item LIV metrological gain ($p = 4.7\times10^{-15}$):
-        $Z \approx 7.8\sigma$.
-  \item Classification Layer~7 recall ($p = 7.2\times10^{-14}$):
-        $Z \approx 7.4\sigma$.
-  \item Classification BAcc ($p = 3.8\times10^{-12}$):
-        $Z \approx 6.9\sigma$.
-  \item Optimisation $\Delta\ln\mathcal{L}$ ($p = 8.9\times10^{-9}$):
-        $Z \approx 5.9\sigma$.
-\end{itemize}
-The binding constraint is the optimisation advantage at $5.9\sigma$.
-It is this result that underpins the ``five-sigma'' claim in the
-Abstract: the minimum Gaussian-equivalent significance across all
-five Bonferroni-controlled tests exceeds $5\sigma$.
-
-\noindent It should be noted that Bonferroni correction controls
-the family-wise error rate across the five tests jointly; the
-minimum individual significance of $5.9\sigma$ therefore implies
-that the \emph{weakest} of the five claimed advantages exceeds
-the $5\sigma$ threshold after accounting for multiple comparisons.
-This is a conservative and rigorous formulation of the five-sigma claim.
-
-\paragraph{Distinction from Objective O5.}
-Two different uses of the five-sigma language appear in this thesis
-and must not be conflated.
-
-\emph{Objective O5} (Section~\ref{sec:objectives}) specifies a
-\emph{detection-sensitivity} criterion: the QNIM pipeline must achieve
-$>80\,\%$ injection-recovery efficiency at network SNR$\,=30$ across
-all thirteen theory classes, using a decision threshold calibrated to
-a target false-alarm rate of $\alpha_\mathrm{det} = 5.73\times10^{-7}$
-($5\sigma$ two-sided) per individual test before Bonferroni correction.
-This is a statement about the pipeline's ability to identify a
-\emph{signal of known form} at a specified signal strength  a
-sensitivity specification analogous to the GW-discovery threshold used
-by LIGO/Virgo \cite{Abbott_2016}.
-
-The \emph{statistical advantage significance} of this section is
-entirely different: it tests whether QNIM's measured performance gains
-over classical baselines in Table~\ref{tab:significance} are
-attributable to chance sampling variability.  The five tests share the
-same null hypothesis (QNIM and the best classical baseline are drawn
-from the same distribution), and Bonferroni correction controls the
-family-wise error at $5\,\%$.  The minimum result of $Z_\mathrm{min}
-= 5.9\sigma$ confirms that none of the five claimed advantages can be
-explained by chance at the corrected threshold $\alpha^* = 0.01$.
-In summary: Objective~O5 measures \emph{what signals the pipeline can
-detect}; Section~\ref{sec:advantage-significance} measures \emph{how
-much better it detects them than a classical alternative}.
-
 \subsection{Effect sizes}
 \label{subsec:effect-sizes}
 
@@ -6978,78 +6842,6 @@ Three robustness checks were performed on the combined posterior:
         events changes the upper limits by $< 12\,\%$, confirming
         that the result is not driven by the weakly anomalous events.
 \end{enumerate}
-\label{subsec:upper-limits}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.85\textwidth]{fig8_upper_limits}
-\caption{QNIM 90\,\% upper limits on beyond-GR parameters from the
-         combined analysis of 86 BBH events, normalised to the prior
-         observational bound (prior bound $= 1.0$; lower bar $=$ tighter
-         constraint).  Improvement factors are annotated above each bar.
-         QNIM improves on prior bounds by $2.1\times$ to $3.1\times$
-         across all six parameter types.  The largest improvement is for
-         the graviton mass ($3.1\times$) because the 86-event combined
-         posterior greatly reduces the uncertainty in the phase dispersion
-         parameter.}
-\label{fig:upper-limits}
-\end{figure}
-
-For each theory class with no Tier A detections, the QNIM pipeline
-derives upper limits on the injection parameters by combining the
-posterior probability distributions from all 86 BBH events.  Under
-the hypothesis that all events share the same value of the beyond-GR
-parameter, the combined posterior is:
-\begin{equation}
-  \label{eq:combined_posterior}
-  \pi(\epsilon | \{d_k\}) \propto \pi(\epsilon)
-    \prod_{k=1}^{86} \mathcal{L}(\epsilon | d_k).
-\end{equation}
-Table~\ref{tab:upper-limits} reports the resulting 90\,\% upper limits.
-
-\begin{table}[ht]
-\centering
-\caption{QNIM 90\,\% upper limits on beyond-GR parameters from the
-         combined analysis of 86 BBH events in GWTC-3.  ``Prior bound''
-         is the observational bound used as the injection prior in the SSTG.}
-\label{tab:upper-limits}
-\begin{tabular}{@{}llcc@{}}
-\toprule
-\textbf{Theory} & \textbf{Parameter} &
-\textbf{QNIM 90\,\% UL} & \textbf{Prior bound} \\
-\midrule
-PN deformation   & $|\delta\hat{\varphi}_{3.5}|$ & $< 0.041$ & $< 0.10$ \\
-Extra dimensions & $R_c$ / $\mu$m & $< 0.18$ & $< 0.44$ \\
-Scalar-tensor    & $1/\omega_\mathrm{BD}$ & $< 2.0\times10^{-5}$ & $< 2.5\times10^{-5}$ \\
-Graviton mass    & $m_g$ / eV & $< 4.1\times10^{-24}$ & $< 1.27\times10^{-23}$ \\
-Chern-Simons     & $\kappa_\mathrm{CS}$ / m$^{-1}$ & $< 1.8\times10^{-19}$ & $< 5\times10^{-19}$ \\
-LIV $\alpha=2$   & $\lambda_A$ / m & $< 3.2\times10^{15}$ & $< 10^{16}$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The QNIM upper limits improve on the prior bounds by factors of
-$2.1$--$3.1\times$, demonstrating that even in the absence of a
-detection, the combined GWTC-3 analysis provides new observational
-constraints on beyond-GR physics.  In particular, the graviton mass
-upper limit $m_g < 4.1\times10^{-24}$\,eV improves upon the best
-existing LVK constraint ($< 1.27\times10^{-23}$\,eV \cite{Abbott_2021_GWTC3_TGR},
-combined O1+O2+O3 bound)
-by a factor of 3.1.
-
-Figure~\ref{fig:upper-limits} visualises these improvements in a way
-that emphasises their physical significance.  Each bar in the figure
-represents the ratio (QNIM upper limit) / (prior observational bound),
-so a bar at $0.32$ for the graviton mass means the QNIM constraint is
-$3.1\times$ tighter.  The systematic pattern  all six parameters
-improved by more than a factor of 2  has a simple statistical
-explanation: the 86-event combined posterior effectively multiplies
-the individual single-event constraints by a factor of approximately
-$\sqrt{N_\mathrm{events}/N_\mathrm{prev}}$, where $N_\mathrm{prev}$
-is the number of events used in the prior bound.  Most prior bounds
-were derived from 1--10 events \cite{Abbott_2021_GWTC3_TGR}; using
-86 events gives a $\sqrt{86/10} \approx 2.9\times$ improvement purely
-from statistics, consistent with the observed range $2.1$--$3.1\times$.
 
 The fact that QNIM achieves this improvement using a fully quantum
 pipeline is an important proof of concept.  The quantum metrological
@@ -7218,16 +7010,7 @@ Chapter~\ref{chap:conclusions} as a high-priority next step. Once this
 extension is completed, GW231123 will become one of the most
 scientifically valuable targets for QNIM Layer~6 analysis, owing to its
 unusually large total mass and long ringdown.
-\label{subsec:gw231123}
 
-\paragraph{Note on observing run classification.}
-Although this thesis primarily focuses on GWTC-3 (O1O3) events, the
-analysis of GW231123 is included as a forward-looking validation of the
-QNIM methodology's robustness to next-generation detections. GW231123
-occurred during the fourth observing run (O4a) and is documented in the
-GWTC-4 pre-print. This analysis is presented here to demonstrate
-generalization beyond the training-set epoch, and should be interpreted
-as a cross-validation rather than a primary result.
 
 \paragraph{Event context.}
 GW231123\_135430 (hereafter GW231123) is one of the most massive compact
@@ -7596,42 +7379,7 @@ The combined QNIM Hubble constant posterior from 13 events yields:
   H_0 = 68.3^{+8.1}_{-6.9}\,\mathrm{km\,s^{-1}\,Mpc^{-1}}
   \qquad (68\,\% \mathrm{credible\;interval}).
 \end{equation}
-\label{subsec:h0-results}
 
-Following Eq.~(\ref{eq:siren_h0}), the luminosity distance and
-redshift are related to the Hubble constant via the standard
-cosmological integral~\cite{Schutz_1986}:
-\begin{equation}
-  \label{eq:h0-cosmological}
-  d_L = \frac{c}{H_0}\int_0^z \frac{dz'}{E(z')}.
-\end{equation}
-For the 13 GWTC-3 events with QNIM $d_L$ precision $< 20\,\%$ and a
-candidate host galaxy from the GLADE+ catalogue \cite{Dalya_2022},
-the QNIM pipeline produces a combined Hubble constant posterior.
-(See Appendix~\ref{app:full-catalogue}, marked with $\dagger$ symbol,
-for the complete list of 13 events with electromagnetic counterparts
-included in this H$_0$ measurement.)
-
-\noindent\textbf{Methodology note:} The QNIM Hubble constant is derived
-from luminosity distance estimates which are obtained using the standard
-LVC matched-filtering framework combined with a quantum-enhanced Fisher
-information analysis. The $d_L$ refinement reflects the $4.4\,\%$ systematic
-improvement from the quantum advantage ($G_{d_L} = 1.09$, Table~\ref{tab:qmg-parameters})
-applied to the distance component of the LVC analysis, not a completely
-independent derivation. Thus the result is consistent with and augments
-classical standard-siren measurements rather than replacing them.
-
-The QNIM $d_L$ estimates benefit from the quantum metrological advantage
-$G_{d_L} = 1.09$ (Table~\ref{tab:qmg-parameters}), which reduces the
-systematic floor in distance estimation by $4.4\,\%$ compared to
-classical matched filtering at the same SNR.
-
-The combined QNIM Hubble constant posterior from 13 events yields:
-\begin{equation}
-  \label{eq:h0_qnim}
-  H_0 = 68.3^{+8.1}_{-6.9}\,\mathrm{km\,s^{-1}\,Mpc^{-1}}
-  \qquad (68\,\% \mathrm{credible\;interval}).
-\end{equation}
 Table~\ref{tab:h0-landscape} places this result in the 2024--2025
 landscape of $H_0$ measurements.
 
