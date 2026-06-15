@@ -1,0 +1,126 @@
+{
+  "execution_date_utc": "2026-06-15T17:27:35.844512",
+  "backend": "ibm_fez",
+  "shots_per_circuit": 4096,
+  "job_ids": {
+    "gw150914_zne": "d8o394bqv2lc7389if80",
+    "synthetic_zne": "d8o398bqv2lc7389ifjg",
+    "synthetic_nozne": "d8o39s032u0s73fd60r0"
+  },
+  "balanced_accuracy": {
+    "hardware_with_zne": 0.0513,
+    "hardware_without_zne": 0.0513
+  },
+  "thesis_table_ablation": {
+    "noiseless_simulator": 0.913,
+    "simulator_noise_model": 0.804,
+    "hardware_with_zne": 0.051,
+    "hardware_without_zne": 0.051
+  },
+  "calibration_snapshot": {
+    "backend_name": "ibm_fez",
+    "num_qubits": 156,
+    "timestamp_utc": "2026-06-15T17:21:08.825121",
+    "T1_us": [
+      {
+        "qubit": 0,
+        "T1_us": null
+      },
+      {
+        "qubit": 1,
+        "T1_us": null
+      },
+      {
+        "qubit": 2,
+        "T1_us": null
+      },
+      {
+        "qubit": 3,
+        "T1_us": null
+      },
+      {
+        "qubit": 4,
+        "T1_us": null
+      },
+      {
+        "qubit": 5,
+        "T1_us": null
+      },
+      {
+        "qubit": 6,
+        "T1_us": null
+      },
+      {
+        "qubit": 7,
+        "T1_us": null
+      },
+      {
+        "qubit": 8,
+        "T1_us": null
+      },
+      {
+        "qubit": 9,
+        "T1_us": null
+      },
+      {
+        "qubit": 10,
+        "T1_us": null
+      },
+      {
+        "qubit": 11,
+        "T1_us": null
+      }
+    ],
+    "T2_us": [
+      {
+        "qubit": 0,
+        "T2_us": null
+      },
+      {
+        "qubit": 1,
+        "T2_us": null
+      },
+      {
+        "qubit": 2,
+        "T2_us": null
+      },
+      {
+        "qubit": 3,
+        "T2_us": null
+      },
+      {
+        "qubit": 4,
+        "T2_us": null
+      },
+      {
+        "qubit": 5,
+        "T2_us": null
+      },
+      {
+        "qubit": 6,
+        "T2_us": null
+      },
+      {
+        "qubit": 7,
+        "T2_us": null
+      },
+      {
+        "qubit": 8,
+        "T2_us": null
+      },
+      {
+        "qubit": 9,
+        "T2_us": null
+      },
+      {
+        "qubit": 10,
+        "T2_us": null
+      },
+      {
+        "qubit": 11,
+        "T2_us": null
+      }
+    ],
+    "cx_gate_errors": []
+  }
+}

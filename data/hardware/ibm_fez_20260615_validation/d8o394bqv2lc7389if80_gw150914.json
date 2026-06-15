@@ -1,0 +1,13 @@
+{
+  "job_id": "d8o394bqv2lc7389if80",
+  "label": "GW150914_ZNE",
+  "backend": "ibm_fez",
+  "shots": 4096,
+  "zne_enabled": true,
+  "resilience_level": 2,
+  "num_circuits": 1,
+  "timestamp_utc": "2026-06-15T17:21:32.331418",
+  "predictions": [
+    8
+  ]
+}
