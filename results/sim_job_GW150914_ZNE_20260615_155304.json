@@ -1,0 +1,79 @@
+{
+  "job_id": "sim_job_GW150914_ZNE_20260615_155304",
+  "backend_name": "aer_simulator_statevector",
+  "timestamp_iso": "2026-06-15T15:53:04.999356+00:00",
+  "backend_properties": {
+    "backend_name": "aer_simulator_statevector",
+    "num_qubits": 12,
+    "basis_gates": [
+      "id",
+      "rz",
+      "sx",
+      "x",
+      "cx"
+    ],
+    "t1_times": {
+      "q0": 1000000.0,
+      "q1": 1000000.0,
+      "q2": 1000000.0,
+      "q3": 1000000.0,
+      "q4": 1000000.0,
+      "q5": 1000000.0,
+      "q6": 1000000.0,
+      "q7": 1000000.0,
+      "q8": 1000000.0,
+      "q9": 1000000.0,
+      "q10": 1000000.0,
+      "q11": 1000000.0
+    },
+    "t2_times": {
+      "q0": 1000000.0,
+      "q1": 1000000.0,
+      "q2": 1000000.0,
+      "q3": 1000000.0,
+      "q4": 1000000.0,
+      "q5": 1000000.0,
+      "q6": 1000000.0,
+      "q7": 1000000.0,
+      "q8": 1000000.0,
+      "q9": 1000000.0,
+      "q10": 1000000.0,
+      "q11": 1000000.0
+    },
+    "n1_error_rates": {
+      "x_q0": 0.0,
+      "x_q1": 0.0,
+      "x_q2": 0.0,
+      "x_q3": 0.0,
+      "x_q4": 0.0,
+      "x_q5": 0.0,
+      "x_q6": 0.0,
+      "x_q7": 0.0,
+      "x_q8": 0.0,
+      "x_q9": 0.0,
+      "x_q10": 0.0,
+      "x_q11": 0.0
+    },
+    "n2_error_rates": {}
+  },
+  "resilience_level": 2,
+  "zne_enabled": true,
+  "num_shots": 8192,
+  "amplification_factors": [
+    1,
+    2,
+    3
+  ],
+  "num_circuits": 1,
+  "results": [
+    {
+      "circuit_index": 0,
+      "feature_label": "GW150914",
+      "expectation_value_z": 0.3111714153011233,
+      "raw_measurement_counts": {
+        "000000000000": 2821,
+        "111111111111": 5370
+      }
+    }
+  ]
+}

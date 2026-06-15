@@ -1,0 +1,49 @@
+{
+  "experiment_timestamp": "2026-06-14T18:13:40.684221+00:00",
+  "backend_name": "ibm_fez",
+  "total_jobs": 3,
+  "job_ids": [
+    "d8neqir2d42s73cdpb9g",
+    "d8neqmb2d42s73cdpbeg",
+    "d8nesmo32u0s73fcc3k0"
+  ],
+  "job_summaries": [
+    {
+      "job_name": "Job 1: GW150914 + ZNE",
+      "job_ids": [
+        "d8neqir2d42s73cdpb9g"
+      ],
+      "use_zne": true,
+      "n_events": 1,
+      "metrics": {}
+    },
+    {
+      "job_name": "Job 2: 100 Events + ZNE",
+      "job_ids": [
+        "d8neqmb2d42s73cdpbeg"
+      ],
+      "use_zne": true,
+      "n_events": 100,
+      "metrics": {
+        "balanced_accuracy": 0.5,
+        "precision": 0.52,
+        "recall": 1.0,
+        "f1_score": 0.6842105263157895
+      }
+    },
+    {
+      "job_name": "Job 3: 100 Events - No ZNE",
+      "job_ids": [
+        "d8nesmo32u0s73fcc3k0"
+      ],
+      "use_zne": false,
+      "n_events": 100,
+      "metrics": {
+        "balanced_accuracy": 0.5,
+        "precision": 0.52,
+        "recall": 1.0,
+        "f1_score": 0.6842105263157895
+      }
+    }
+  ]
+}

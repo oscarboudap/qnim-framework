@@ -1,0 +1,106 @@
+{
+  "backend_name": "ibm_fez",
+  "num_qubits": 156,
+  "timestamp_utc": "2026-06-15T17:21:08.825121",
+  "T1_us": [
+    {
+      "qubit": 0,
+      "T1_us": null
+    },
+    {
+      "qubit": 1,
+      "T1_us": null
+    },
+    {
+      "qubit": 2,
+      "T1_us": null
+    },
+    {
+      "qubit": 3,
+      "T1_us": null
+    },
+    {
+      "qubit": 4,
+      "T1_us": null
+    },
+    {
+      "qubit": 5,
+      "T1_us": null
+    },
+    {
+      "qubit": 6,
+      "T1_us": null
+    },
+    {
+      "qubit": 7,
+      "T1_us": null
+    },
+    {
+      "qubit": 8,
+      "T1_us": null
+    },
+    {
+      "qubit": 9,
+      "T1_us": null
+    },
+    {
+      "qubit": 10,
+      "T1_us": null
+    },
+    {
+      "qubit": 11,
+      "T1_us": null
+    }
+  ],
+  "T2_us": [
+    {
+      "qubit": 0,
+      "T2_us": null
+    },
+    {
+      "qubit": 1,
+      "T2_us": null
+    },
+    {
+      "qubit": 2,
+      "T2_us": null
+    },
+    {
+      "qubit": 3,
+      "T2_us": null
+    },
+    {
+      "qubit": 4,
+      "T2_us": null
+    },
+    {
+      "qubit": 5,
+      "T2_us": null
+    },
+    {
+      "qubit": 6,
+      "T2_us": null
+    },
+    {
+      "qubit": 7,
+      "T2_us": null
+    },
+    {
+      "qubit": 8,
+      "T2_us": null
+    },
+    {
+      "qubit": 9,
+      "T2_us": null
+    },
+    {
+      "qubit": 10,
+      "T2_us": null
+    },
+    {
+      "qubit": 11,
+      "T2_us": null
+    }
+  ],
+  "cx_gate_errors": []
+}
