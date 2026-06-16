@@ -1,0 +1,39 @@
+[1/5] Generating genuine controlled-injection dataset ...
+      dataset: X=(195, 12), classes=13
+      train=146, test=49
+/mnt/c/Users/oscar/Desktop/TFM/qnim/scripts/train_vqc_genuine.py:202: DeprecationWarning: The class ``qiskit.circuit.library.data_preparation._zz_feature_map.ZZFeatureMap`` is deprecated as of Qiskit 2.1. It will be removed in Qiskit 3.0. Use the zz_feature_map function as a replacement. Note that this will no longer return a BlueprintCircuit, but just a plain QuantumCircuit.
+  fmap = ZZFeatureMap(feature_dimension=n_qubits, reps=2, entanglement="linear")
+/mnt/c/Users/oscar/Desktop/TFM/qnim/scripts/train_vqc_genuine.py:203: DeprecationWarning: The class ``qiskit.circuit.library.n_local.efficient_su2.EfficientSU2`` is deprecated as of Qiskit 2.1. It will be removed in Qiskit 3.0. Use the function qiskit.circuit.library.efficient_su2 instead.
+  ansatz = EfficientSU2(num_qubits=n_qubits, reps=1, entanglement="linear")
+[2/5] VQC: 12 qubits, ansatz params=48 (feature-map params=12)
+[3/5] Precomputing data-encoded statevectors ...
+      encoded 195 states in 1.1s (5.5 ms/state)
+[4/5] Training with QNSPSA-EML-Feynman ...
+      iter=  5  loss=3.3736  0.4s/iter  evals=10
+      iter= 10  loss=2.9478  0.3s/iter  evals=20
+      iter= 15  loss=3.2540  0.4s/iter  evals=30
+      iter= 20  loss=3.1471  0.4s/iter  evals=40
+      iter= 25  loss=3.0306  0.4s/iter  evals=50
+      iter= 30  loss=3.0473  0.4s/iter  evals=60
+      iter= 35  loss=3.0203  0.4s/iter  evals=70
+      iter= 40  loss=3.1979  0.4s/iter  evals=80
+      iter= 45  loss=3.0020  0.4s/iter  evals=90
+      iter= 50  loss=2.9109  0.4s/iter  evals=100
+      iter= 55  loss=2.9666  0.4s/iter  evals=110
+      iter= 60  loss=3.0948  0.4s/iter  evals=120
+[5/5] Evaluating genuine held-out accuracy ...
+
+=== GENUINE RESULTS ===
+  test accuracy      : 6.12%
+  balanced accuracy  : 7.05%
+  macro F1           : 0.0470
+  chance (1/13)       : 7.69%
+  optimizer n_iter   : 60
+  speedup vs SPSA    : 1.0x
+  wall time          : 143.7s
+Traceback (most recent call last):
+  File "/mnt/c/Users/oscar/Desktop/TFM/qnim/scripts/train_vqc_genuine.py", line 426, in <module>
+    main()
+  File "/mnt/c/Users/oscar/Desktop/TFM/qnim/scripts/train_vqc_genuine.py", line 410, in main
+    "loss_history": [float(v) for v in result.loss_history],
+AttributeError: '_R' object has no attribute 'loss_history'

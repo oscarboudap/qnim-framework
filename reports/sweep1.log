@@ -1,0 +1,104 @@
+
+======================================================================
+[SWEEP] n_qubits = 4
+======================================================================
+[1/5] Generating genuine controlled-injection dataset ...
+      dataset: X=(390, 12), classes=13
+      train=292, test=98, encoded_dims=4
+/mnt/c/Users/oscar/Desktop/TFM/qnim/scripts/train_vqc_genuine.py:202: DeprecationWarning: The class ``qiskit.circuit.library.data_preparation._zz_feature_map.ZZFeatureMap`` is deprecated as of Qiskit 2.1. It will be removed in Qiskit 3.0. Use the zz_feature_map function as a replacement. Note that this will no longer return a BlueprintCircuit, but just a plain QuantumCircuit.
+  fmap = ZZFeatureMap(feature_dimension=n_qubits, reps=2, entanglement="linear")
+/mnt/c/Users/oscar/Desktop/TFM/qnim/scripts/train_vqc_genuine.py:203: DeprecationWarning: The class ``qiskit.circuit.library.n_local.efficient_su2.EfficientSU2`` is deprecated as of Qiskit 2.1. It will be removed in Qiskit 3.0. Use the function qiskit.circuit.library.efficient_su2 instead.
+  ansatz = EfficientSU2(num_qubits=n_qubits, reps=ansatz_reps, entanglement="linear")
+[2/5] VQC: 4 qubits, ansatz params=24 (feature-map params=4)
+[3/5] Precomputing data-encoded statevectors ...
+      encoded 390 states in 0.5s (1.2 ms/state)
+[4/5] Training with QNSPSA-EML-Feynman ...
+      iter= 40  loss=2.6270  0.6s/iter  evals=80
+      iter= 80  loss=2.5470  0.7s/iter  evals=160
+      iter=120  loss=2.5833  0.7s/iter  evals=240
+[5/5] Evaluating genuine held-out accuracy ...
+
+=== GENUINE RESULTS ===
+  test accuracy      : 8.16%
+  balanced accuracy  : 8.24%
+  macro F1           : 0.0605
+  chance (1/13)       : 7.69%
+  optimizer n_iter   : 120
+  speedup vs SPSA    : 1.0x
+  wall time          : 210.1s
+
+[OK] results -> /mnt/c/Users/oscar/Desktop/TFM/qnim/qnim/reports/genuine_vqc_results.json
+[SWEEP] n_qubits=4  bacc=0.08241758241758242
+
+======================================================================
+[SWEEP] n_qubits = 6
+======================================================================
+[1/5] Generating genuine controlled-injection dataset ...
+      dataset: X=(390, 12), classes=13
+      train=292, test=98, encoded_dims=6
+/mnt/c/Users/oscar/Desktop/TFM/qnim/scripts/train_vqc_genuine.py:202: DeprecationWarning: The class ``qiskit.circuit.library.data_preparation._zz_feature_map.ZZFeatureMap`` is deprecated as of Qiskit 2.1. It will be removed in Qiskit 3.0. Use the zz_feature_map function as a replacement. Note that this will no longer return a BlueprintCircuit, but just a plain QuantumCircuit.
+  fmap = ZZFeatureMap(feature_dimension=n_qubits, reps=2, entanglement="linear")
+/mnt/c/Users/oscar/Desktop/TFM/qnim/scripts/train_vqc_genuine.py:203: DeprecationWarning: The class ``qiskit.circuit.library.n_local.efficient_su2.EfficientSU2`` is deprecated as of Qiskit 2.1. It will be removed in Qiskit 3.0. Use the function qiskit.circuit.library.efficient_su2 instead.
+  ansatz = EfficientSU2(num_qubits=n_qubits, reps=ansatz_reps, entanglement="linear")
+[2/5] VQC: 6 qubits, ansatz params=36 (feature-map params=6)
+[3/5] Precomputing data-encoded statevectors ...
+      encoded 390 states in 1.0s (2.6 ms/state)
+[4/5] Training with QNSPSA-EML-Feynman ...
+      iter= 40  loss=2.5726  1.2s/iter  evals=80
+      iter= 80  loss=2.5667  1.0s/iter  evals=160
+      iter=120  loss=2.5513  1.0s/iter  evals=240
+[5/5] Evaluating genuine held-out accuracy ...
+
+=== GENUINE RESULTS ===
+  test accuracy      : 10.20%
+  balanced accuracy  : 10.58%
+  macro F1           : 0.1036
+  chance (1/13)       : 7.69%
+  optimizer n_iter   : 120
+  speedup vs SPSA    : 1.0x
+  wall time          : 125.0s
+
+[OK] results -> /mnt/c/Users/oscar/Desktop/TFM/qnim/qnim/reports/genuine_vqc_results.json
+[SWEEP] n_qubits=6  bacc=0.10576923076923077
+
+======================================================================
+[SWEEP] n_qubits = 8
+======================================================================
+[1/5] Generating genuine controlled-injection dataset ...
+      dataset: X=(390, 12), classes=13
+      train=292, test=98, encoded_dims=8
+/mnt/c/Users/oscar/Desktop/TFM/qnim/scripts/train_vqc_genuine.py:202: DeprecationWarning: The class ``qiskit.circuit.library.data_preparation._zz_feature_map.ZZFeatureMap`` is deprecated as of Qiskit 2.1. It will be removed in Qiskit 3.0. Use the zz_feature_map function as a replacement. Note that this will no longer return a BlueprintCircuit, but just a plain QuantumCircuit.
+  fmap = ZZFeatureMap(feature_dimension=n_qubits, reps=2, entanglement="linear")
+/mnt/c/Users/oscar/Desktop/TFM/qnim/scripts/train_vqc_genuine.py:203: DeprecationWarning: The class ``qiskit.circuit.library.n_local.efficient_su2.EfficientSU2`` is deprecated as of Qiskit 2.1. It will be removed in Qiskit 3.0. Use the function qiskit.circuit.library.efficient_su2 instead.
+  ansatz = EfficientSU2(num_qubits=n_qubits, reps=ansatz_reps, entanglement="linear")
+[2/5] VQC: 8 qubits, ansatz params=48 (feature-map params=8)
+[3/5] Precomputing data-encoded statevectors ...
+      encoded 390 states in 1.1s (2.9 ms/state)
+[4/5] Training with QNSPSA-EML-Feynman ...
+      iter= 40  loss=2.5490  1.5s/iter  evals=80
+      iter= 80  loss=2.5316  1.6s/iter  evals=160
+      iter=120  loss=2.6303  1.2s/iter  evals=240
+[5/5] Evaluating genuine held-out accuracy ...
+
+=== GENUINE RESULTS ===
+  test accuracy      : 4.08%
+  balanced accuracy  : 4.40%
+  macro F1           : 0.0299
+  chance (1/13)       : 7.69%
+  optimizer n_iter   : 120
+  speedup vs SPSA    : 1.0x
+  wall time          : 172.3s
+
+[OK] results -> /mnt/c/Users/oscar/Desktop/TFM/qnim/qnim/reports/genuine_vqc_results.json
+[SWEEP] n_qubits=8  bacc=0.04395604395604395
+
+
+================  QUBIT SWEEP RANKING  ================
+chance (1/13) = 7.69%
+
+qubits   bal_acc  test_acc   macroF1     loss  params    sec
+     6    10.58%    10.20%    0.1036   2.5513     127    125
+     4     8.24%     8.16%    0.0605   2.5443      89    211
+     8     4.40%     4.08%    0.0299   2.5234     165    172
+
+[BEST] n_qubits=6  balanced_accuracy=10.58%

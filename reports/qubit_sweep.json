@@ -1,0 +1,60 @@
+{
+  "generated_utc": "2026-06-16T04:40:29Z",
+  "base_env": {
+    "PER_CLASS": "30",
+    "MAXITER": "120",
+    "CB_EVERY": "40",
+    "OPT": "spsa",
+    "READOUT": "zexp",
+    "FULLBATCH": "1",
+    "ANSATZ_REPS": "2",
+    "N_FEYNMAN": "2",
+    "LR": "0.1",
+    "PERT": "0.1",
+    "LAMBDA_EML": "0.01"
+  },
+  "qubit_grid": [
+    4,
+    6,
+    8
+  ],
+  "chance_level": 0.07692307692307693,
+  "results": [
+    {
+      "n_qubits": 4,
+      "test_accuracy": 0.08163265306122448,
+      "balanced_accuracy": 0.08241758241758242,
+      "macro_f1": 0.06048242778892933,
+      "final_loss": 2.544272349619355,
+      "n_total_params": 89,
+      "elapsed_s": 210.60968732833862
+    },
+    {
+      "n_qubits": 6,
+      "test_accuracy": 0.10204081632653061,
+      "balanced_accuracy": 0.10576923076923077,
+      "macro_f1": 0.1036016974478513,
+      "final_loss": 2.5513292591129506,
+      "n_total_params": 127,
+      "elapsed_s": 125.07197499275208
+    },
+    {
+      "n_qubits": 8,
+      "test_accuracy": 0.04081632653061224,
+      "balanced_accuracy": 0.04395604395604395,
+      "macro_f1": 0.0299305957200694,
+      "final_loss": 2.523448053686664,
+      "n_total_params": 165,
+      "elapsed_s": 172.3981738090515
+    }
+  ],
+  "best": {
+    "n_qubits": 6,
+    "test_accuracy": 0.10204081632653061,
+    "balanced_accuracy": 0.10576923076923077,
+    "macro_f1": 0.1036016974478513,
+    "final_loss": 2.5513292591129506,
+    "n_total_params": 127,
+    "elapsed_s": 125.07197499275208
+  }
+}

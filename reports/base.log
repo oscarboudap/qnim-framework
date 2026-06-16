@@ -1,0 +1,7 @@
+dataset: X=(1300, 12), classes=13
+RandomForest : acc=57.8%  bacc=57.8%
+/mnt/c/Users/oscar/Desktop/TFM/qnim/.venv/lib/python3.10/site-packages/sklearn/linear_model/_logistic.py:1272: FutureWarning: 'multi_class' was deprecated in version 1.5 and will be removed in 1.8. From then on, it will always use 'multinomial'. Leave it to its default value to avoid this warning.
+  warnings.warn(
+LogReg       : acc=55.7%  bacc=55.7%
+chance = 7.7%
+RF on tanh-squashed: acc=58.5%

@@ -1,0 +1,14 @@
+[1/5] Generating genuine controlled-injection dataset ...
+      dataset: X=(130, 12), classes=13
+      train=97, test=33
+/mnt/c/Users/oscar/Desktop/TFM/qnim/scripts/train_vqc_genuine.py:202: DeprecationWarning: The class ``qiskit.circuit.library.data_preparation._zz_feature_map.ZZFeatureMap`` is deprecated as of Qiskit 2.1. It will be removed in Qiskit 3.0. Use the zz_feature_map function as a replacement. Note that this will no longer return a BlueprintCircuit, but just a plain QuantumCircuit.
+  fmap = ZZFeatureMap(feature_dimension=n_qubits, reps=2, entanglement="linear")
+/mnt/c/Users/oscar/Desktop/TFM/qnim/scripts/train_vqc_genuine.py:203: DeprecationWarning: The class ``qiskit.circuit.library.n_local.efficient_su2.EfficientSU2`` is deprecated as of Qiskit 2.1. It will be removed in Qiskit 3.0. Use the function qiskit.circuit.library.efficient_su2 instead.
+  ansatz = EfficientSU2(num_qubits=n_qubits, reps=ansatz_reps, entanglement="linear")
+[2/5] VQC: 12 qubits, ansatz params=96 (feature-map params=12)
+[3/5] Precomputing data-encoded statevectors ...
+      encoded 130 states in 1.6s (12.6 ms/state)
+[4/5] Training with QNSPSA-EML-Feynman ...
+      iter=  3  loss=3.1611  16.1s/iter  evals=40
+      iter=  6  loss=3.1435  15.5s/iter  evals=79
+      iter=  9  loss=3.1291  14.8s/iter  evals=118

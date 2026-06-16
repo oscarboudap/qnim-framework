@@ -1,0 +1,33 @@
+[1/5] Generating genuine controlled-injection dataset ...
+      dataset: X=(195, 12), classes=13
+      train=146, test=49
+/mnt/c/Users/oscar/Desktop/TFM/qnim/scripts/train_vqc_genuine.py:202: DeprecationWarning: The class ``qiskit.circuit.library.data_preparation._zz_feature_map.ZZFeatureMap`` is deprecated as of Qiskit 2.1. It will be removed in Qiskit 3.0. Use the zz_feature_map function as a replacement. Note that this will no longer return a BlueprintCircuit, but just a plain QuantumCircuit.
+  fmap = ZZFeatureMap(feature_dimension=n_qubits, reps=2, entanglement="linear")
+/mnt/c/Users/oscar/Desktop/TFM/qnim/scripts/train_vqc_genuine.py:203: DeprecationWarning: The class ``qiskit.circuit.library.n_local.efficient_su2.EfficientSU2`` is deprecated as of Qiskit 2.1. It will be removed in Qiskit 3.0. Use the function qiskit.circuit.library.efficient_su2 instead.
+  ansatz = EfficientSU2(num_qubits=n_qubits, reps=ansatz_reps, entanglement="linear")
+[2/5] VQC: 12 qubits, ansatz params=72 (feature-map params=12)
+[3/5] Precomputing data-encoded statevectors ...
+      encoded 195 states in 2.3s (11.9 ms/state)
+[4/5] Training with QNSPSA-EML-Feynman ...
+      iter=  4  loss=2.5577  28.8s/iter  evals=85
+      iter=  8  loss=2.5566  26.6s/iter  evals=169
+      iter= 12  loss=2.5562  24.2s/iter  evals=253
+      iter= 16  loss=2.5533  23.8s/iter  evals=337
+      iter= 20  loss=2.5509  24.0s/iter  evals=421
+      iter= 24  loss=2.5485  24.0s/iter  evals=505
+      iter= 28  loss=2.5465  23.9s/iter  evals=589
+      iter= 32  loss=2.5460  23.9s/iter  evals=673
+      iter= 36  loss=2.5449  23.9s/iter  evals=757
+      iter= 40  loss=2.5444  25.7s/iter  evals=841
+[5/5] Evaluating genuine held-out accuracy ...
+
+=== GENUINE RESULTS ===
+  test accuracy      : 4.08%
+  balanced accuracy  : 3.85%
+  macro F1           : 0.0462
+  chance (1/13)       : 7.69%
+  optimizer n_iter   : 40
+  speedup vs SPSA    : 7.5x
+  wall time          : 1086.4s
+
+[OK] results -> /mnt/c/Users/oscar/Desktop/TFM/qnim/qnim/reports/genuine_vqc_results.json

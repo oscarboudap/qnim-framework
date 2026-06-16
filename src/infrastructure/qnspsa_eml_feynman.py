@@ -91,6 +91,17 @@ class QNSPSAConfig:
     min_improvement: float = 1e-3
     maxiter: int = 100
     seed: int = 42
+    # ── Numerical-stability controls (anti-explosion) ──────────────────────
+    # EML anti-barren-plateau term: spectrum-RELATIVE singular-floor + hard cap
+    # so the boost stays bounded even when the QGT is near-singular (plateau).
+    eml_eps: float = 1e-2          # floor for lambda_min as a fraction of lambda_max
+    eml_boost_cap: float = 3.0     # hard cap on the EML amplification factor
+    # Natural-gradient preconditioner: running-average (EMA) QGT estimate that
+    # is inverted with Tikhonov regularisation each step (stable replacement for
+    # the rank-accumulating Sherman-Morrison, which collapsed H^{-1} -> 0).
+    qgt_ema: float = 0.7           # EMA weight on the previous QGT estimate
+    qgt_reg: float = 1e-2          # Tikhonov ridge for inverting the QGT
+    feynman_step: float = 0.1      # half-width of the Gauss-Legendre derivative stencil
 
 
 @dataclass
@@ -178,10 +189,14 @@ class QNSPSAEMLFeynman:
         n = len(x0)
         theta = x0.copy().astype(float)
 
-        # Inicializar inversa del QGT: H^{-1}_0 = a0 · I
-        # a0 pequeño para no dar pasos grandes al inicio
-        a0 = self.cfg.lr * 0.1
-        self._H_inv = a0 * np.eye(n)
+        # Running-average estimate of the Quantum Geometric Tensor (Fubini-Study
+        # metric). Initialised to the identity prior so the first step behaves
+        # like plain (well-scaled) SPSA and then adapts as curvature is observed.
+        # This EMA estimate is inverted with Tikhonov regularisation every step,
+        # which is numerically stable — unlike the previous rank-accumulating
+        # Sherman-Morrison update that drove H^{-1} -> 0 and froze training.
+        self._F_bar = np.eye(n)
+        self._H_inv = self.cfg.lr * 0.1 * np.eye(n)  # kept for backward compat
 
         result = QNSPSAResult(optimal_params=theta.copy())
         best_loss = float("inf")
@@ -214,9 +229,13 @@ class QNSPSAEMLFeynman:
             # F̂ ≈ 0.5 (ĝ⊗ĝ + ĝ₂⊗ĝ₂)  (Stokes et al. 2020, Eq. 9)
             F_hat = 0.5 * (np.outer(g_hat, g_hat) + np.outer(g_hat2, g_hat2))
 
-            # ── PASO 3: Actualización Sherman-Morrison de H^{-1} ─────────
-            # Permite actualizar la inversa en O(n²) sin recomputarla
-            self._sherman_morrison_update(F_hat)
+            # ── PASO 3: QGT como media móvil (EMA) estable ───────────────
+            # F̄_t = γ F̄_{t-1} + (1-γ) F̂_t   (media móvil de la métrica)
+            # Se invierte con regularización de Tikhonov al calcular el paso
+            # natural (PASO 7). Reemplaza la actualización Sherman-Morrison
+            # acumulativa, que colapsaba H^{-1} → 0 y congelaba el entrenamiento.
+            g_ema = self.cfg.qgt_ema
+            self._F_bar = g_ema * self._F_bar + (1.0 - g_ema) * F_hat
 
             # ── PASO 4: Gradiente Feynman-GL para feature map ─────────────
             # Para los primeros n_feynman_params parámetros (feature map),
@@ -230,19 +249,36 @@ class QNSPSAEMLFeynman:
             g_spsa_ansatz = g_hat.copy()
             g_spsa_ansatz[:self.cfg.n_feynman_params] = 0.0  # Ya cubierto por Feynman
 
-            # ── PASO 5: EML anti-plateau term ─────────────────────────────
-            # R_curv = -log(λ_min(F̂) + ε): penaliza barren plateaus
+            # ── PASO 5: EML anti-plateau term (ACOTADO) ──────────────────
+            # R_curv = -λ log(λ_min(F̂)+ε): penaliza barren plateaus. El factor
+            # de amplificación es RELATIVO al espectro (λ_min/λ_max) y se ACOTA
+            # con eml_boost_cap para que NUNCA explote cuando F̂ es casi singular
+            # (antes: λ/λ_min con λ_min~1e-8 → factor ~1e6 → paso rechazado).
             eigvals = np.linalg.eigvalsh(F_hat + 1e-8 * np.eye(n))
-            lambda_min = max(eigvals.min(), 1e-10)
-            # Gradiente del término EML: ∂R/∂θ ≈ -1/λ_min · g (approx)
-            eml_grad = -(self.cfg.lambda_eml / lambda_min) * g_hat
+            lambda_max = max(float(eigvals.max()), 1e-12)
+            lambda_min = max(float(eigvals.min()), 1e-12)
+            eml_factor = (self.cfg.lambda_eml * lambda_max
+                          / (lambda_min + self.cfg.eml_eps * lambda_max))
+            eml_factor = float(min(eml_factor, self.cfg.eml_boost_cap))
+            # Amplifica el gradiente de descenso en regiones planas (mismo signo
+            # que el gradiente de ascenso ĝ → mayor paso de descenso), acotado.
+            eml_grad = eml_factor * g_hat
 
             # ── PASO 6: Gradiente total ────────────────────────────────────
             g_total = g_feynman + g_spsa_ansatz + eml_grad
 
-            # ── PASO 7: Paso de gradiente natural ─────────────────────────
-            # θ_{t+1} = θ_t - a_t H^{-1} g_total
-            natural_grad = self._H_inv @ g_total
+            # ── PASO 7: Paso de gradiente natural (regularizado) ──────────
+            # θ_{t+1} = θ_t - a_t (F̄ + β I)^{-1} g_total
+            F_reg = self._F_bar + self.cfg.qgt_reg * np.eye(n)
+            try:
+                natural_grad = np.linalg.solve(F_reg, g_total)
+            except np.linalg.LinAlgError:
+                natural_grad = g_total
+            # Recorte de norma para robustez frente a estimaciones ruidosas
+            ng_norm = float(np.linalg.norm(natural_grad))
+            max_norm = 10.0 * (float(np.linalg.norm(g_total)) + 1e-12)
+            if ng_norm > max_norm:
+                natural_grad = natural_grad * (max_norm / ng_norm)
             theta_new = theta - a_t * natural_grad
 
             # ── PASO 8: Blocking step (estabilidad) ───────────────────────
@@ -337,15 +373,19 @@ class QNSPSAEMLFeynman:
 
         Para el feature map de Chebyshev, la función de coste tiene la forma
         f(θ_k) = A cos(θ_k + φ) + B sin(θ_k + φ) + C (suave, analítica).
-        La derivada ∂f/∂θ_k se puede aproximar con alta precisión via:
+        La derivada ∂f/∂θ_k se obtiene con la combinación ANTISIMÉTRICA de los
+        nodos de Gauss-Legendre (que son simétricos en [-1,1]):
 
-            ∂f/∂θ_k ≈ Σ_i w_i f(θ_k + (π/2) t_i) × (π/2)
+            ∂f/∂θ_k ≈ (3 / (2 s)) · Σ_i w_i t_i f(θ + s t_i ê_k)
 
-        donde (t_i, w_i) son los nodos y pesos de GL-8.
+        Derivación: con f(θ+s t)=Σ_m f^(m)(s t)^m/m!, y como GL-8 integra exacto
+        polinomios hasta grado 15, Σ_i w_i t_i^{m+1} = ∫_{-1}^1 t^{m+1}dt, que se
+        anula para m par y vale 2/3 para m=1. Por tanto
+            Σ_i w_i t_i f(θ+s t_i) = (2/3) s f' + O(s³ f''')
+        y despejando f' se cancelan TODOS los términos de orden par → precisión
+        O(s²) con cancelación de alto orden (≪ que diferencias finitas O(h²)).
 
-        Esto da precisión O(h^16) vs O(h^2) de diferencias finitas.
-        El coste es 8 evaluaciones por parámetro del feature map.
-        Para n_feynman=12: 96 evaluaciones totales.
+        El coste es n_gl_points evaluaciones por parámetro del feature map.
 
         Returns:
             (gradient_estimate, n_evaluations)
@@ -353,25 +393,17 @@ class QNSPSAEMLFeynman:
         n = len(theta)
         grad = np.zeros(n)
         n_evals = 0
-        integration_half = np.pi / 2.0  # Intervalo de integración para cada param
+        s = self.cfg.feynman_step  # semiancho del stencil de integración
 
         for k in range(min(n_feynman, n)):
-            integral = 0.0
-            for xi, wi in zip(_GL8_NODES, _GL8_WEIGHTS):
-                # Mapeo [-1,1] → [-π/2, π/2]
-                shift = integration_half * xi
+            deriv = 0.0
+            for ti, wi in zip(_GL8_NODES, _GL8_WEIGHTS):
                 theta_shifted = theta.copy()
-                theta_shifted[k] += shift
-                integral += wi * loss_fn(theta_shifted)
+                theta_shifted[k] += s * ti
+                deriv += wi * ti * loss_fn(theta_shifted)
                 n_evals += 1
-            # La derivada es la integral sobre el intervalo
-            # ∂f/∂θ_k ≈ (π/2) Σ_i w_i f(θ + (π/2)t_i × ê_k)
-            # Pero aquí usamos la integral como proxy de la derivada
-            # (la función es suave, el gradiente es proporcional a la variación)
-            baseline = loss_fn(theta)
-            n_evals += 1
-            # Gradiente: diferencia ponderada respecto al baseline
-            grad[k] = (integral - 2.0 * baseline) * integration_half
+            # f' ≈ (3 / (2 s)) Σ_i w_i t_i f(θ + s t_i ê_k)
+            grad[k] = (3.0 / (2.0 * s)) * deriv
 
         return grad, n_evals
 
