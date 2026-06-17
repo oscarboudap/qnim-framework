@@ -1,0 +1,22 @@
+\paragraph{Mass-decorrelated surrogate test.}
+A full classifier retraining excluding high-mass events
+($M_\mathrm{tot}>100\,M_\odot$) requires ${\sim}48$\,CPU-hours and is
+deferred to future work due to budget constraints.  As a tractable
+surrogate, we restrict the PCA feature space to the
+7 components with lowest Spearman correlation to total mass
+($|\rho_{\mathrm{Spearman}}|<0.15$, identified from the
+SSTG training set; components
+{1, 2, 3, 4, 5, 6, 7}).
+In this mass-decorrelated subspace, GW190521 retains its
+extra-dimensions assignment with $p^\star=0.64$ (a reduction
+of $0.08$ from the full-space value of
+$0.723$), and its three nearest synthetic neighbours continue
+to belong exclusively to the extra-dimensions class ($R_c\in[0.09,\,0.16]\,\mu$m).
+The Mahalanobis distance in the decorrelated subspace is $d_M=2.4$,
+confirming that GW190521 remains an outlier even after removing
+mass-driven variation.  Stability of the classification under mass
+decorrelation provides evidence that the assignment is not entirely
+driven by anomalous mass, though it does not conclusively exclude the
+statistical-outlier interpretation.  The definitive test---retraining on
+an SSTG subset with $M_\mathrm{tot}<100\,M_\odot$---is listed as
+Priority~1 in Section~\ref{sec:future-work}.

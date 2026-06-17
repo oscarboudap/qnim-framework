@@ -1,0 +1,27 @@
+{
+  "event": "GW190521",
+  "full_space": {
+    "p_star": 0.723,
+    "class": "extra-dimensions",
+    "d_M": 3.2
+  },
+  "decorrelated_subspace": {
+    "p_star": 0.643,
+    "class": "GR",
+    "d_M": 2.35,
+    "n_dims": 7,
+    "components": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "threshold_rho": 0.15,
+    "all_neighbours_extra_dims": false
+  },
+  "stable": false,
+  "p_star_reduction": 0.08
+}
