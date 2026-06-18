@@ -30835,3 +30835,8 @@ runtime.program_run:INFO:2026-06-17 22:59:00,753: Payload size: 0 MB.
 ============================================================
 🎉  COMPLETADO: 5 éxitos en 5 intentos  [22:59:32]
     Resultados: data/hardware/ibm_marrakesh_noise_aware_runs/resultado1.json … resultado5.json
+11:14:39 | WARNING  | urllib3.connectionpool | Retrying (PostForcelistRetry(total=4, connect=3, read=None, redirect=None, status=None)) after connection broken by 'RemoteDisconnected('Remote end closed connection without response')': /api/v1/jobs/d8peonq01fac73d1kpog?exclude_params=true
+11:14:40 | WARNING  | urllib3.connectionpool | Retrying (PostForcelistRetry(total=4, connect=3, read=None, redirect=None, status=None)) after connection broken by 'RemoteDisconnected('Remote end closed connection without response')': /api/v1/jobs/d8peg4mab0ds73dp09g0?exclude_params=true
+11:14:40 | WARNING  | urllib3.connectionpool | Retrying (PostForcelistRetry(total=4, connect=3, read=None, redirect=None, status=None)) after connection broken by 'RemoteDisconnected('Remote end closed connection without response')': /api/v1/jobs/d8pdbii01fac73d1iung?exclude_params=true
+12:02:28 | WARNING  | urllib3.connectionpool | Retrying (PostForcelistRetry(total=4, connect=3, read=None, redirect=None, status=None)) after connection broken by 'RemoteDisconnected('Remote end closed connection without response')': /api/v1/jobs/d8peg4mab0ds73dp09g0?exclude_params=true
+12:02:28 | WARNING  | urllib3.connectionpool | Retrying (PostForcelistRetry(total=4, connect=3, read=None, redirect=None, status=None)) after connection broken by 'RemoteDisconnected('Remote end closed connection without response')': /api/v1/jobs/d8pdbii01fac73d1iung?exclude_params=true
