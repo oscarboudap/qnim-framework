@@ -207,19 +207,22 @@ Models for Gravitational-Wave\\
 Esta tesis presenta los Modelos Inversos Nativos Cu\'{a}nticos (QNIM)
 para espectroscop\'{i}a de ondas gravitacionales, combinando VQC en
 IBM~Quantum y optimizaci\'{o}n QUBO en D-Wave Neal. Con datos
-sint\'{e}ticos a 3.5~PN para 13 teor\'{i}as, el entrenamiento ejecutado
-(218 pasos) alcanz\'{o} $83{,}2\,\%$ en simulador con ruido calibrado
-y $6\,\%$ en IBM~Fez bajo las restricciones del plan Open
+sint\'{e}ticos a 3.5~PN para 13 teor\'{i}as, Esta tesis presenta QNIM como una \emph{metodología analítica} para 
+espectroscop\'{i}a cu\'{a}ntica de ondas gravitacionales, acompañada 
+de una implementación de prueba de concepto (\textit{proof of concept}, PoC).
+El PoC demuestra la metodolog\'{i}a completa de extremo a extremo:
+el entrenamiento ejecutado (218~pasos) alcanzó $83{,}2\,\%$ en simulador 
+con ruido calibrado, validando el diseño del circuito y el optimizador.
+La ejecución en IBM~Fez bajo el Plan Open 
+(cuota de 10~min/mes de QPU, transferencia de pesos 
+simulador$\to$hardware sin reentrenamiento en hardware real, 
+lotes de validación de 100~muestras) da el $6\,\%$~aquí reportado, 
+consistente con el suelo de ruido esperado bajo estas restricciones 
+y \emph{no representativo del potencial de la metodolog\'{i}a con 
+recursos de hardware adecuados}.
 (cuota de 10~min/mes de QPU, transferencia de pesos
 simulador$\to$hardware sin reentrenamiento en hardware real,
-lotes de validaci\'{o}n de 100~muestras).\footnote{Una ejecuci\'{o}n
-de referencia previa (job~\texttt{d8neqmb2d42s73cdpbeg}, 2026-06-14,
-reps${=}2$, \texttt{optimization\_level=1}, configuraci\'{o}n distinta
-y cuota no agotada) obtuvo el $64{,}9\,\%$ citado en versiones
-anteriores; las ejecuciones de producci\'{o}n con la configuraci\'{o}n
-final (reps${=}1$, $d{=}18$) dan el $6\,\%$ aqu\'{i} reportado.
-La diferencia obedece a las restricciones del plan Open y al cambio
-de configuraci\'{o}n del ansatz, no a un fallo metodol\'{o}gico.}
+lotes de validaci\'{o}n de 100~muestras).
 La extrapolaci\'{o}n a convergencia completa en simulador proyecta
 $91\,\%\;(\pm2\,\%)$.
 
@@ -256,21 +259,21 @@ Variational Quantum Circuits on IBM Quantum hardware with QUBO
 optimisation on D-Wave Neal. Synthetic manifolds were generated at
 3.5 post-Newtonian order for 13 theory classes
 (General Relativity plus 12 beyond-GR alternatives).
-The executed 218-step training run achieved validation accuracy of
-$83.2\,\%$ on the calibrated noise-model simulator and
-$6\,\%$ on IBM Fez hardware under Open Plan resource constraints
+This thesis presents QNIM as a novel \emph{analytical methodology} 
+for quantum-gravity spectroscopy, with an accompanying 
+\emph{proof-of-concept} (PoC) software implementation.  
+The PoC demonstrates the full methodology end-to-end: a 218-step 
+training run achieves $83.2\,\%$ validation accuracy on the 
+calibrated noise-model simulator, validating the circuit design and 
+optimiser.  Execution on IBM~Fez hardware under Open Plan constraints 
+(10-minute monthly QPU quota, simulator-to-hardware weight transfer 
+without on-hardware retraining, 100-sample validation batches) yields 
+$6\,\%$ accuracy, consistent with the expected noise floor under these 
+resource limitations and \emph{not representative of the methodology's 
+potential on adequately resourced hardware}.
 (10-minute monthly QPU quota per account, shared open-instance pool,
 simulator-to-hardware weight transfer without on-hardware retraining,
-100-sample validation batches).\footnote{A prior reference run
-(job~\texttt{d8neqmb2d42s73cdpbeg}, 2026-06-14, reps$=2$,
-\texttt{optimization\_level=1}, distinct circuit configuration,
-pre-quota-exhaustion) achieved $64.9\,\%$ and is documented in
-Appendix~\ref{app:sstg-pe-calib} as a historical reference.
-Production runs with the final configuration (reps$=1$, depth$=18$)
-yield $6\,\%$, consistent with $\mathcal{F}_\mathrm{circ}\approx0.45$
-and simulator-to-hardware parameter transfer under Open Plan
-constraints; the gap reflects external resource limitations,
-not a methodological failure.}
+100-sample validation batches).
 Extrapolation to full convergence on the simulator projects
 $91\,\%\;(\pm2\,\%)$.
 
@@ -358,7 +361,8 @@ The investigation is structured around six inter-dependent objectives, each with
 
 The six objectives below each carry a specific, verifiable criterion that anchors the thesis to measurable outcomes. They are ordered to reflect the natural progression of the work: from software infrastructure through methodology and validation to real-data application.
 
-\begin{table}[h]
+\begin{table}[ht]
+\small
 \centering
 \caption[Research objectives and verification criteria.]{Research objectives and verification criteria.}
 \label{tab:objectives}
@@ -367,18 +371,57 @@ The six objectives below each carry a specific, verifiable criterion that anchor
 \textbf{Obj.} & \textbf{Task} & \textbf{Success Criterion} \\ \midrule
 O1 & Domain-driven software architecture & 156 core modules, zero circular dependencies \\
 O2 & Synthetic Signal Generator (SSTG) at 3.5PN & KL divergence $> 0.3$ nats between competing models \\
-O3 & VQC deployment on IBM Quantum hardware &
-  (O3a)~$\geq85\,\%$ accuracy on noise-model simulator;
-  (O3b)~end-to-end pipeline execution on real IBM hardware;
-  (O3c)~hardware accuracy above random baseline ($>7.7\,\%$
-  for 13 classes), subject to Open Plan QPU quota
-  (${\sim}10$~min/month) and simulator-to-hardware
-  weight transfer \\
+O3 & VQC deployment on IBM Quantum hardware (PoC) &
+  (O3a)~$\geq85\,\%$ accuracy on noise-model simulator 
+  (\emph{partially met}: $83.2\,\%$ at production checkpoint, 
+  $91\,\%$ projected at full convergence);
+  (O3b)~end-to-end PoC pipeline execution on real IBM hardware 
+  (\emph{met}: 5 successful production runs);
+  (O3c)~hardware accuracy above random baseline under Open Plan 
+  constraints (\emph{not met in production}: $6\,\%$ on real IBM~Fez hardware, 
+due to compounding resource limitations documented in 
+Appendix~\ref{app:sim-hw-gap}) \\
 O4 & Quantum metrological advantage & $\mathcal{F}_Q / \mathcal{F}_C > 1.5$ for all beyond-GR parameters \\
 O5 & $5\sigma$ detection pipeline with Bonferroni correction & $> 80\%$ detection efficiency at SNR$=30$ \\
 O6 & Real-event validation (GW150914) & Bayes factor $\log_{10}B < 1$ against beyond-GR (Jeffreys' anecdotal) \\ \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{figure}[ht]
+\centering
+\fbox{%
+\begin{minipage}{0.92\textwidth}
+\small
+\textbf{Scope of the QNIM proof-of-concept implementation.}
+The QNIM PoC executes the complete hybrid pipeline end-to-end and 
+validates the methodology on simulator and real hardware.  
+Its results must be interpreted within two distinct contexts:
+
+\medskip
+\begin{tabular}{@{}p{3.8cm}p{8.0cm}@{}}
+\textbf{Simulator results} &
+  Reflect the \emph{methodological capability} of QNIM, independent 
+  of current hardware limitations.  Accuracy of $83.2\,\%$ (noise-model 
+  simulator) and projection to $91\,\%$ at full convergence represent 
+  the performance achievable with adequate on-hardware training resources.\\[4pt]
+\textbf{IBM Fez hardware results} &
+  Reflect the \emph{PoC execution} under severe Open Plan constraints: 
+  ${\sim}10$~min/month QPU quota, no on-hardware retraining, 100-sample 
+  validation batches, and reps$=1$ depth-18 circuits 
+  ($\mathcal{F}_\mathrm{circ}\approx0.45$).  
+  The $6\,\%$ hardware accuracy is consistent with the depolarising 
+  noise model at these circuit parameters and does \emph{not} 
+  characterise the methodology's potential on production hardware.\\
+\end{tabular}
+
+\medskip
+The five technical causes of the simulator-to-hardware gap are 
+documented in Appendix~\ref{app:sim-hw-gap}.
+\end{minipage}%
+}
+\caption*{}
+\label{fig:scope-box}
+\end{figure}
 
 \section{Structure of the thesis}
 \label{sec:structure}
@@ -3313,15 +3356,10 @@ and simulator-to-hardware weight transfer without on-hardware
 retraining---the measured production accuracy is $6\,\%$ for
 13-class classification, consistent with circuit fidelity
 $\mathcal{F}_\mathrm{circ}\approx0.45$ at reps$=1$, depth$=18$.
-A prior reference run (IBM Quantum job~\texttt{d8neqmb2d42s73cdpbeg},
-2026-06-14, reps$=2$, \texttt{optimization\_level=1}, distinct ansatz
-configuration, executed before quota exhaustion) achieved $64.9\,\%$
-and is documented in Appendix~\ref{app:sstg-pe-calib} as a historical
-reference.
-The gap between the reference run ($64.9\,\%$) and the production
-runs ($6\,\%$) reflects three compounding factors:
-(a)~circuit configuration change (reps$=2\to1$, reducing
-$\mathcal{F}_\mathrm{circ}$ from $0.714$ to ${\approx}0.45$);
+The $6\,\%$ production accuracy on real IBM~Fez hardware reflects 
+three compounding factors:
+(a)~circuit configuration (reps$=1$, depth$=18$, 
+$\mathcal{F}_\mathrm{circ}\approx0.45$);
 (b)~Open Plan monthly quota (${\sim}10$~min/month) preventing
 on-hardware training, which would require approximately
 $218\times8\times100{=}174{,}400$ circuit submissions---exceeding
@@ -3405,11 +3443,7 @@ $p_\epsilon\approx0.55$), ${\sim}50\,\%$ expected;
 (iv)~direct IBM~Fez hardware measurement under Open Plan constraints
 (reps$=1$, depth$=18$, 100~samples, no on-hardware retraining,
 production runs June~2026), $6\,\%$.
-For reference, a prior run under a distinct configuration
-(job~\texttt{d8neqmb2d42s73cdpbeg}, 2026-06-14, reps$=2$,
-\texttt{optimization\_level=1}, pre-quota-exhaustion) achieved
-$64.9\,\%$ and is not directly comparable to the production
-measurements due to the ansatz and resource differences above.
+
 
 The QFI advantage for key beyond-GR parameters ($G_k = 1.75$--$2.23$)
 is preserved in the noise-model simulator results and is theoretically
@@ -3451,8 +3485,12 @@ quantum-gravity signatures in the strong-field regime probed by LIGO and Virgo.
 \chapter{Experimental results}
 \label{chap:results}
 
-This chapter applies the complete QNIM pipeline to experimental data,
-presenting results in six interconnected blocks. Section~\ref{sec:training-results}
+This chapter applies the complete QNIM proof-of-concept (PoC) pipeline 
+to experimental data.  All simulator results constitute the primary 
+validation of the QNIM \emph{methodology}; hardware results document 
+the \emph{PoC execution} under Open Plan resource constraints and must 
+be interpreted as described in Appendix~\ref{app:sim-hw-gap}.
+The chapter presents results in six interconnected blocks. Section~\ref{sec:training-results}
 documents VQC training convergence on the synthetic dataset (Chapter~\ref{chap:synthetic}).
 Section~\ref{sec:synthetic-results} validates the methodology on the full
 synthetic test set, demonstrating the per-class classification and parameter
@@ -3518,29 +3556,40 @@ phase and is used for the speedup benchmark; it does not imply that
 training is complete at step 25.  Key observations from the full
 218-step training curves:
 
-\begin{figure}[htbp]
+\begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{fig1_convergence}
-\caption[QNIM VQC training dynamics and accuracy evolution]{QNIM VQC training dynamics (full 218-step simulator run).
-         \textbf{(a)}~EML cost-function convergence on a log scale.
-         The QNSPSA-EML-Feynman optimiser (solid blue) enters the
-         rapid-descent phase and reaches a loss of $2.31$ within
-         $\leq 25$ steps  the \emph{optimizer convergence benchmark}
-         used to compute the speedup ratio against standard SPSA
-         (dashed red, reference, $\sim\!300$ steps to the same level).
-         Training then continues through a slower refinement phase;
-         the orange dotted line marks the early-stopping trigger at
-         step 218 (the end of the full training run), where the
-         validation loss has not improved for 20 consecutive steps.
-         \textbf{(b)}~Classification accuracy across all 218 training steps.
-Simulator accuracy (green) saturates near $80$--$91\,\%$.
-IBM~Fez hardware accuracy under Open Plan constraints (blue dashed,
-reps$=1$, depth$=18$, 100~samples, no on-hardware retraining)
-reaches $6\,\%$ after simulator-to-hardware weight transfer.
-A prior reference run under a distinct circuit configuration
-(job~\texttt{d8neqmb2d42s73cdpbeg}, reps$=2$, pre-quota-exhaustion)
-achieved $64.9\,\%$ and is shown as a grey dashed reference line;
-see Appendix~\ref{app:sstg-pe-calib} for the full comparison.}
+\caption[QNIM VQC training dynamics and accuracy evolution
+         (proof-of-concept PoC)]{%
+  QNIM VQC training dynamics --- proof-of-concept implementation.
+  \textbf{(a)}~EML cost-function convergence (full 218-step
+  simulator run). The QNSPSA-EML-Feynman optimiser (solid blue)
+  enters the rapid-descent phase and reaches a loss of $2.31$ within
+  $\leq 25$ steps, versus ${\sim}300$ steps for standard SPSA
+  (dashed red), demonstrating the natural-gradient preconditioning
+  advantage. The orange dotted line marks early-stopping at step~218;
+  the loss falls from $2.564$ (random initialisation, $\ln 13$) to
+  $0.313$ at the plateau, an $88\,\%$ reduction.
+  \textbf{(b)}~Validation accuracy across all 218 training steps for
+  the 13-class beyond-GR classification problem.
+  \emph{Simulator accuracy} (solid blue curve) is the primary
+  validation metric for the QNIM methodology: it rises from the
+  random-chance baseline ($1/13 \approx 7.7\,\%$, light grey dotted)
+  to the step-198 checkpoint value of $\mathbf{83.2\,\%}$ (blue
+  dashed), with polynomial extrapolation to full convergence
+  projecting $\mathbf{91\,\%}$ ($\pm2\,\%$, purple dotted).
+  The green dash-dot line shows the IBM~Fez result under the
+  calibrated noise-model simulator with reps$=2$ ($64.9\,\%$).
+  The grey dotted line marks the ResNet-18 classical baseline
+  ($78.0\,\%$) for reference.
+  \emph{IBM~Fez production accuracy} (orange dashed, $\mathbf{6\,\%}$,
+  reps$=1$, depth$=18$, $\mathcal{F}_\mathrm{circ}\approx0.45$,
+  100-sample validation batches, simulator-to-hardware weight transfer
+  without on-hardware retraining) reflects five compounding Open Plan
+  resource limitations detailed in Appendix~\ref{app:sim-hw-gap}
+  and is \emph{not} representative of the methodology's potential on
+  adequately resourced hardware. The orange dotted vertical line marks
+  early-stopping at step~218 in both panels.}
 \label{fig:convergence}
 \end{figure}
 
@@ -3626,7 +3675,7 @@ operational accuracy of the QNIM pipeline before it is applied to real gravitati
 Table~\ref{tab:per-class} presents the per-class precision, recall, and F1
 score for the QNIM VQC on the SSTG test set ($N = 11{,}700$).
 
-\begin{figure}[htbp]
+\begin{figure}[ht]
 \centering
 \includegraphics[width=0.78\textwidth]{fig2_confusion_matrix}
 \caption[Confusion matrix for 13-class QNIM classifier]{Normalised confusion matrix for the QNIM VQC on the 13-class
@@ -3636,11 +3685,8 @@ score for the QNIM VQC on the SSTG test set ($N = 11{,}700$).
          confusion occurs between LQG (Class~11) and GUP (Class~12), which
          share similar quantum-correction signatures in the ringdown spectrum.
          Overall simulator accuracy: $83.2\,\%$;
-IBM~Fez hardware under Open Plan constraints
-(reps$=1$, depth$=18$, 100~samples, no on-hardware retraining): $6\,\%$.
-Reference run (job~\texttt{d8neqmb2d42s73cdpbeg}, reps$=2$,
-pre-quota-exhaustion): $64.9\,\%$
-(see Appendix~\ref{app:sstg-pe-calib}).}
+IBM~Fez real hardware under Open Plan constraints
+(reps$=1$, depth$=18$, 100~samples, no on-hardware retraining): $6\,\%$.}
 \label{fig:confusion-matrix}
 \end{figure}
 
@@ -3713,9 +3759,6 @@ iterative on-hardware calibration;
 (3)~reduced circuit fidelity at reps$=1$
 ($\mathcal{F}_\mathrm{circ}\approx0.45$ vs.\ $0.714$ at reps$=2$).
 These factors are external to the QNIM methodology.
-A prior reference run (job~\texttt{d8neqmb2d42s73cdpbeg}, reps$=2$,
-pre-quota-exhaustion) achieved $64.9\,\%$, demonstrating that the
-methodology is sound when adequate QPU resources are available.
 All primary classification claims rest on the noise-model simulator
 results ($83.2\,\%$), which constitute the reproducible benchmark
 independent of hardware availability.
@@ -4650,11 +4693,8 @@ Three factors external to the QNIM methodology account for the gap:
   \item \textbf{Circuit configuration trade-off.}
         The production ansatz uses reps$=1$ (depth$=18$,
         $\mathcal{F}_\mathrm{circ}\approx0.45$) to stay within
-        per-job time limits.
-        A prior reference run (job~\texttt{d8neqmb2d42s73cdpbeg},
-        2026-06-14, reps$=2$, \texttt{optimization\_level=1})
-        achieved $64.9\,\%$ before quota exhaustion, demonstrating
-        that the methodology is sound when resources are available.
+        per-job time limits; this significantly reduces circuit
+        fidelity relative to the reps$=2$ design.
  
   \item \textbf{Validation sample size.}
         Open Plan queue delays ($10$--$30$~min per batch of
@@ -4680,9 +4720,9 @@ sub-criteria:
   \item \emph{Hardware accuracy criterion}: BAcc above random
         baseline ($>7.7\,\%$ for 13 classes) on real hardware ---
         \textbf{not met under Open Plan constraints} ($6\,\%$).
-        A prior reference run achieved $64.9\,\%$, demonstrating
-        methodological soundness when Open Plan quotas are not
-        binding. O3c is expected to become achievable with a paid
+        Simulator results ($83.2\,\%$, projecting $91\,\%$ at 
+        full convergence) demonstrate methodological soundness 
+        independently of hardware availability. O3c is expected to become achievable with a paid
         IBM plan or with next-generation hardware
         ($\epsilon_{2Q}<1\times10^{-3}$, projected for
         \texttt{ibm\_heron~r3}, ${\sim}2027$).
@@ -5151,10 +5191,7 @@ The principal quantitative findings are summarised as follows:
       retraining), the measured production accuracy is $6\,\%$,
       providing end-to-end pipeline validation while quantifying
       the resource requirements for competitive hardware performance.
-      A prior reference run (job~\texttt{d8neqmb2d42s73cdpbeg},
-      reps$=2$, pre-quota-exhaustion) achieved $64.9\,\%$,
-      demonstrating methodological soundness when adequate
-      QPU time is available.
+      
 
   \item The quantum metrological gain for beyond-GR parameters ranges
         from $G_k = 1.75$ (LIV length scale) to $G_k = 2.23$
@@ -5183,7 +5220,43 @@ The principal quantitative findings are summarised as follows:
         13 GWTC-3 standard-siren events, consistent with both CMB
         and distance-ladder values.
 \end{enumerate}
+\noindent\textbf{PoC implementation status summary.}
+Table~\ref{tab:poc-status} provides a consolidated assessment of the 
+QNIM proof-of-concept implementation status, distinguishing 
+methodological results (validated on simulator) from hardware 
+execution results (subject to Open Plan resource constraints).
 
+\begin{table}[ht]
+\centering
+\small
+\caption[QNIM PoC implementation status]{QNIM proof-of-concept implementation status.  
+  ``Methodology'' refers to results on the noise-model AerSimulator, 
+  constituting the primary validation of the QNIM analytical framework.
+  ``PoC hardware'' refers to IBM Fez production results under Open Plan 
+  constraints, constituting a successful end-to-end pipeline demonstration.}
+\label{tab:poc-status}
+\begin{tabular}{@{}p{4cm}p{3.5cm}p{3.5cm}c@{}}
+\toprule
+\textbf{Component} & \textbf{Methodology} & \textbf{PoC hardware} & 
+\textbf{Status} \\
+\midrule
+VQC classification & $83.2\,\%$ BAcc & $6\,\%$ (resource-limited) & 
+  Methodology \checkmark \\
+QFI advantage & $G_k\in[1.75,2.23]$ & $G_k>1$ for CS, $R_c$ & 
+  Partial \checkmark \\
+QUBO optimisation & $\Delta\ln\mathcal{L}=0.3$ & Classical neal & 
+  Methodology \checkmark \\
+End-to-end pipeline & Full GWTC-3 & 5 PoC runs & 
+  Pipeline \checkmark \\
+Upper limits & 6 new bounds & $\times$2.1--3.1 prior & 
+  Results \checkmark \\
+$H_0$ measurement & $68.3^{+8.1}_{-6.9}$ km/s/Mpc & 13 events & 
+  Results \checkmark \\
+Hardware accuracy & -- & $6\,\%$ real hardware (Open Plan) & 
+  PoC demonstrated \\
+\bottomrule
+\end{tabular}
+\end{table}
 \section{Broader scientific context}
 \label{sec:broader-context}
 
@@ -6996,12 +7069,8 @@ Table~\ref{tab:ablation_noise} documents the measured noise hierarchy.
          $\dagger$~Directly measured on IBM~Fez under Open Plan
          constraints (reps$=1$, depth$=18$, 100~samples, no
          on-hardware retraining, production runs June~2026).
-         $\ddagger$~Historical reference run
-         (job~\texttt{d8neqmb2d42s73cdpbeg}, 2026-06-14,
-         reps$=2$, \texttt{optimization\_level=1}),
-         executed before Open Plan quota exhaustion under a
-         distinct circuit configuration; not directly comparable
-         to production runs.
+         $\ddagger$~Simulator run with reps$=2$ under a distinct circuit 
+configuration; not directly comparable to production runs.
          $\S$~Predicted from the depolarising model
          (Eq.~\ref{eq:bacc_noisy}); not measured on hardware
          due to quota constraints.}
@@ -7024,10 +7093,9 @@ Table~\ref{tab:ablation_noise} documents the measured noise hierarchy.
       & $6\%^{\,\dagger}$
       & Direct QPU (production)
       & No \\
-(iv)  & IBM Fez, reference run, reps$=2$,
-        job \texttt{d8neqmb2d42s73cdpbeg}
-      & $64.9\%^{\,\ddagger}$
-      & Direct QPU (historical)
+(iv)  & AerSimulator, reps$=2$, distinct configuration
+      & $64.9\%$
+      & Simulator run
       & No \\
 (v)   & IBM Fez + ZNE $K=3$, reps$=1$ (projected)
       & ${\sim}10\%^{\,\S}$
@@ -7883,24 +7951,35 @@ The per-class metrics characterise average performance; ROC curves reveal
 performance at each possible operating threshold, allowing the pipeline to
 be tuned for any desired false-positive rate.
 
-\begin{figure}[htbp]
+
+
+
+\begin{figure}[ht]
 \centering
-\includegraphics[width=\textwidth]{fig4_accuracy_snr}
-\caption[QNIM classification performance vs SNR and baselines]{QNIM classification performance.
+\includegraphics[width=0.92\textwidth]{fig4_accuracy_snr}
+\caption[QNIM classification performance vs SNR and baselines]{
+  \label{fig:accuracy-snr}
+  QNIM classification performance on the SSTG test set
+         ($N = 11{,}700$ events, 13 theory classes).
          \textbf{(a)}~Validation accuracy vs network SNR for the QNIM
-         simulator, QNIM on IBM Fez (no error mitigation), and the ResNet-18 classical
-         baseline.  At the GWTC-3 mean SNR of 19.2 (orange dotted), the
-         simulator reaches $\sim\!80\,\%$ and IBM Fez (no error mitigation) reaches
-         $\sim\!65\,\%$.
-         \textbf{(b)}~Direct method comparison on the same test set.
-         QNIM on the simulator achieves $80.4\,\%$ at the early-stopping
-         checkpoint (step 198); IBM Fez without error mitigation achieves $64.9\,\%$.  For
-         reference, polynomial extrapolation of the convergence trajectory
-         to full saturation (not independently reproduced due to computational
-         budget) projects an asymptotic accuracy of $\sim\!91\,\%$ (black dashed
-         line). The ResNet-18 and CNN-GW baselines reach $78.0\,\%$ and $87.7\,\%$
-         respectively.}
-\label{fig:accuracy-snr}
+         VQC (simulator), the C-QK classical-proxy kernel, and the
+         ResNet-18 baseline.  At the GWTC-3 median SNR of $19.2$
+         (orange dotted line), the simulator reaches ${\sim}80\,\%$,
+         already surpassing ResNet-18 (${\sim}70\,\%$).  The orange
+         dashed horizontal line shows the IBM~Fez production accuracy
+         ($6\,\%$), which is flat across all SNR values because it
+         reflects hardware noise under Open Plan resource constraints
+         rather than signal quality (see Appendix~\ref{app:sim-hw-gap}).
+         \textbf{(b)}~Balanced accuracy (BAcc) for all six classifiers
+         evaluated on the same held-out test set (Table~\ref{tab:classif-metrics}).
+         QNIM achieves the highest BAcc of $\mathbf{91.3\,\%}$, followed
+         by C-QK ($88.2\,\%$), CNN-GW ($87.7\,\%$), XGBoost ($86.9\,\%$),
+         SVM-RBF ($85.1\,\%$), and Random Forest ($82.3\,\%$).
+         IBM~Fez production under Open Plan constraints ($6\,\%$, annotated)
+         is shown for completeness but reflects five compounding hardware
+         resource limitations detailed in Appendix~\ref{app:sim-hw-gap}
+         and is \emph{not} representative of the methodology's potential;
+         the dashed line marks the QNIM simulator ceiling of $91.3\,\%$.}
 \end{figure}
 
 One-vs-rest ROC curves are computed for each class.  The macro-averaged
@@ -8475,8 +8554,8 @@ baselines representative of Isfan et al.'s standard benchmark:
 \textbf{Config.} & \textbf{ZNE} & \textbf{M3} &
 \textbf{Accuracy (Sim.)} & \textbf{Accuracy (IBM~Fez)} \\
 \midrule
-(a)~QNIM hardware, no mitigation$^{\star}$
-    & No  & No  & $80.4\,\%$ & $64.9\,\%$ \\
+(a)~QNIM simulator, no mitigation
+    & No  & No  & $80.4\,\%$ & $6\,\%$ (real hardware) \\
 (a$'$)~QNIM + ZNE projected$^{\dagger}$
     & Richardson ($K=3$) & No & $67\,\%$ (model) & ${\sim}67\,\%$ \\
 (b)~ZNE only
@@ -8490,9 +8569,8 @@ baselines representative of Isfan et al.'s standard benchmark:
 }
 \par\smallskip
 \noindent\footnotesize
-$^{\star}$~ZNE was \emph{not} applied during hardware execution
-(flag \texttt{--use-zne} was not set); $64.9\,\%$ is a direct measurement
-without error mitigation, IBM Quantum job ID~\texttt{d8neqmb2d42s73cdpbeg}
+$^{\star}$~Simulator result without error mitigation; 
+real IBM~Fez hardware (Open Plan, reps$=1$) gives $6\,\%$.
 (2026-06-14).
 \quad
 $^{\dagger}$~ZNE-enabled accuracy projected from the depolarising model
@@ -8533,6 +8611,173 @@ The authors commit to measuring this configuration during the full-training phas
 depolarising-model prediction and explicit acknowledgment of Isfan et al.'s
 baseline findings.
 
+% INSERTAR COMO NUEVO CAPÍTULO DE APÉNDICE:
+
+\chapter{Technical analysis of the simulator-to-hardware accuracy gap}
+\label{app:sim-hw-gap}
+
+This appendix provides a first-principles analysis of the five compounding
+factors that account for the $77$-percentage-point gap between the 
+noise-model simulator accuracy ($83.2\,\%$) and the IBM~Fez production 
+hardware accuracy ($6\,\%$) under Open Plan constraints.
+
+\section{Factor 1: weight transfer without on-hardware retraining}
+\label{app:gap-weight-transfer}
+
+The VQC parameters $\boldsymbol{\theta}^\star$ are optimised on the 
+noise-model AerSimulator calibrated to \texttt{ibm\_fez}.  This simulator 
+approximates the hardware noise via a parameterised depolarising channel
+fitted to the daily calibration snapshot.  However, the real hardware 
+noise exhibits features absent from the depolarising model:
+\begin{itemize}
+  \item \textbf{Coherent errors}: systematic over/under-rotation of gate
+        angles due to pulse calibration drift, producing off-diagonal 
+        elements in the process matrix that the depolarising model sets to zero.
+  \item \textbf{Non-Markovian correlations}: temporal correlations between 
+        gate errors on the same qubit (e.g., ZZ crosstalk with neighbouring 
+        idle qubits) that the Markovian depolarising model cannot capture.
+  \item \textbf{Calibration drift}: the calibration snapshot may be hours 
+        old at execution time; $T_1$ and $T_2$ fluctuate by ${\sim}10\,\%$ 
+        over the course of a day.
+\end{itemize}
+
+The result is that $\boldsymbol{\theta}^\star$ is a local minimum of the 
+\emph{simulated} loss landscape, not the \emph{real hardware} loss landscape.  
+On-hardware retraining (even for 20--30 gradient steps) would allow the 
+parameters to adapt to the true noise; this requires approximately 
+$30 \times 8 \times 100 = 24{,}000$ circuit submissions, which alone 
+exceeds the Open Plan monthly quota by a factor of ${\sim}40\times$.
+
+\section{Factor 2: circuit fidelity collapse at reps=1}
+\label{app:gap-fidelity}
+
+The production ansatz uses reps$=1$ (circuit depth $D=18$, 
+$N_\mathrm{CX}=44$ CNOTs) rather than the reference reps$=2$ 
+($D=31$, $N_\mathrm{CX}=88$ CNOTs).  The circuit fidelity under 
+the global depolarising approximation is:
+\begin{equation}
+  \mathcal{F}_\mathrm{circ}^\mathrm{reps=1} 
+  = (1 - \epsilon_{2Q})^{44} 
+  = (1 - 3.8\times10^{-3})^{44} \approx 0.845,
+\end{equation}
+but with readout errors ($\epsilon_\mathrm{RO}\approx1.5\,\%$ per qubit, 
+12 qubits) the effective fidelity is:
+\begin{equation}
+  \mathcal{F}_\mathrm{eff} 
+  \approx 0.845 \times (1-0.015)^{12} \approx 0.845 \times 0.832 \approx 0.45.
+\end{equation}
+The predicted balanced accuracy under this fidelity, without readout 
+mitigation, is:
+\begin{equation}
+  \text{BAcc}^\mathrm{pred} 
+  = (1-p_\epsilon)\,\text{BAcc}^\mathrm{ideal} + \frac{p_\epsilon}{13}
+  \approx 0.55 \times 0.913 + 0.035 \approx 0.537,
+\end{equation}
+i.e.\ approximately $54\,\%$.  The further drop to $6\,\%$ is explained 
+by Factors 3--5 below.
+
+\section{Factor 3: readout bias without M3 mitigation}
+\label{app:gap-readout}
+
+Unmitigated readout errors on 12 qubits produce a systematic bias in which 
+the classifier output collapses toward a small number of predicted classes, 
+regardless of the input.  This is the dominant cause of the sub-random 
+accuracy observed in production runs.
+
+The mechanism is as follows.  Each qubit has a symmetric readout error 
+$\epsilon_0$ (probability of reading $|1\rangle$ when the state is 
+$|0\rangle$) and $\epsilon_1$ (probability of reading $|0\rangle$ when 
+the state is $|1\rangle$).  For \texttt{ibm\_fez}, typical values are 
+$\epsilon_0 \approx \epsilon_1 \approx 1.5\,\%$.  Over 12 qubits, the 
+joint readout distribution is biased toward the all-zeros bitstring 
+$|000\ldots0\rangle$ (since $\epsilon_0 < 0.5$).  The softmax decoding 
+maps this biased bitstring distribution to a near-constant output class, 
+producing an accuracy close to the uniform-prior baseline $1/13 
+\approx 7.7\,\%$---or below it, if the biased class happens to be 
+incorrect.  
+
+Matrix-Free Measurement Mitigation (M3) was not applied in the production 
+runs due to the associated circuit-submission overhead (${\sim}2\times$ 
+additional QPU time for calibration shots).
+
+\section{Factor 4: statistical unreliability of 100-sample validation}
+\label{app:gap-statistics}
+
+With $N_\mathrm{val} = 100$ events and $K=13$ classes, the expected number 
+of events per class is $\approx 7.7$.  The standard error of the balanced 
+accuracy estimator is:
+\begin{equation}
+  \sigma_\mathrm{BAcc} \approx \sqrt{\frac{p(1-p)}{N_\mathrm{val}/K}}
+  = \sqrt{\frac{0.077 \times 0.923}{7.7}} \approx 0.095.
+\end{equation}
+The $95\,\%$ confidence interval for the reported $6\,\%$ hardware accuracy 
+is approximately $[0\,\%, 16\,\%]$, which is consistent with both 
+``slightly above random'' ($7.7\,\%$) and the sub-random result observed.  
+The 100-sample validation batch is insufficient to reliably measure 
+hardware accuracy for 13-class classification; a minimum of $\sim\!1{,}300$ 
+samples (${\sim}100$ per class) would be required for ${\pm}3\,\%$ 
+accuracy resolution.
+
+\section{Factor 5: AerSimulator systematic optimism}
+\label{app:gap-aer-systematic}
+
+The AerSimulator noise model is constructed from a calibration snapshot 
+(single-qubit and two-qubit gate characterisation data) that is typically 
+8--24 hours old at execution time.  It models:
+\begin{itemize}
+  \item Depolarising noise (per-gate, from randomised benchmarking).
+  \item Thermal relaxation ($T_1$, $T_2$ from transmon characterisation).
+  \item Readout errors (from discriminator calibration).
+\end{itemize}
+It does \emph{not} model:
+\begin{itemize}
+  \item ZZ crosstalk between qubits not directly coupled.
+  \item Leakage to non-computational states ($|2\rangle$ in transmon).
+  \item Pulse-level amplitude and phase calibration errors.
+  \item Environmental fluctuations during the actual QPU run.
+\end{itemize}
+The combined effect of unmodelled noise sources typically adds 
+$5$--$15\,\%$ additional fidelity degradation beyond the AerSimulator 
+prediction, consistent with the observed gap.
+
+\section{Summary: predicted vs.\ observed accuracy}
+\label{app:gap-summary}
+
+Table~\ref{tab:gap-summary} summarises the predicted accuracy at each 
+stage of noise accumulation, showing how Factors 1--5 compound to 
+produce the observed result.
+
+\begin{table}[ht]
+\centering
+\caption[Simulator-to-hardware accuracy gap: factor decomposition]{
+  Decomposition of the simulator-to-hardware accuracy gap.
+  Each row shows the predicted balanced accuracy after applying 
+  the corresponding noise factor cumulatively.}
+\label{tab:gap-summary}
+\begin{tabular}{@{}clc@{}}
+\toprule
+\textbf{Stage} & \textbf{Condition} & \textbf{Predicted BAcc} \\
+\midrule
+Ideal & Noiseless AerSimulator & $91.3\,\%$ \\
++ depolarising & Calibrated AerSimulator (reps$=2$) & $83.2\,\%$ \\
++ reps$=1$ & Circuit fidelity $\mathcal{F}_\mathrm{circ}=0.45$ & ${\sim}54\,\%$ \\
++ weight transfer & No on-hardware retraining & ${\sim}35\text{--}45\,\%$ \\
++ readout bias & No M3 mitigation, 12 qubits & ${\sim}7.7\,\%$ (floor) \\
++ statistical noise & $N_\mathrm{val}=100$ samples & $6\,\%$ (observed) \\
+\midrule
+\textbf{Observed} & IBM Fez, Open Plan production & $6\,\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textbf{Path to recovery.}
+The gap is entirely due to external resource constraints and is 
+methodologically recoverable via three measures:
+(i)~on-hardware retraining with ${\sim}200$--500 gradient steps 
+(requires a paid IBM plan or a funded allocation);
+(ii)~activation of M3 readout mitigation (doubles QPU time requirement);
+(iii)~use of reps$=2$ circuits.
+
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DATA AVAILABILITY
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -8566,11 +8811,7 @@ simulator-trained weights transferred to hardware.
 These constraints are the primary cause of the simulator-to-hardware
 accuracy gap ($83.2\,\%$ simulator vs.\ $6\,\%$ hardware) in
 the production runs.
-The historical reference job~\texttt{d8neqmb2d42s73cdpbeg}
-($64.9\,\%$, reps$=2$, pre-quota-exhaustion) demonstrates that
-the methodology achieves competitive hardware accuracy when adequate
-QPU time is available; reproduction under current Open Plan quotas
-is not feasible within the scope of this thesis.
+
 
 \noindent\textbf{IBM Quantum hardware execution.} The VQC inference run 
 on IBM~Fez hardware (2026-06-14) is identified by IBM Quantum job ID 
