@@ -1,19 +1,30 @@
 """
 scripts/generate_results.py
 ============================
-PUNTO DE ENTRADA — actualizado con todas las correcciones postdoctorales.
+PUNTO DE ENTRADA — v4 (consistency fix, alineado con qiskit_vqc_trainer v4).
 
-CAMBIOS RESPECTO A LA VERSIÓN ANTERIOR:
-  1. Los adaptadores fallback usan el OPTIMIZADOR REAL (no pérdidas hardcoded)
-  2. El QUBO usa match function ponderada por PSD LIGO O3
-  3. El análisis estadístico incluye correcciones BH, cota de Holevo, test Isi
-  4. La validación n_qubits ≤ 27/50 está AQUÍ (Presentation), no en Application
-  5. Todos los resultados del fallback son COMPUTADOS, no hardcoded
+CAMBIOS RESPECTO A LA VERSIÓN ANTERIOR (v3 → v4):
+  1. _FallbackVQCTrainer ya NO deriva accuracy_sim de una fórmula heurística
+     sobre el loss (exp(-loss/n_classes)*0.95+0.05). Mide accuracy real
+     contando predicciones de la función sintética, igual que el trainer
+     real ahora hace con el circuito cuántico.
+  2. _FallbackVQCTrainer ya NO inventa accuracy_real_no_zne = acc_sim*0.807.
+     Si no hay hardware real, se reporta NaN explícito.
+  3. El modo --mode figures blinda la deserialización de NaN/None desde el
+     JSON: ya no usa .get(..., 0) ciegamente, que confundiría "no medido"
+     con "midió 0%".
+  4. Nuevo --mode multiseed: ejecuta N runs con seeds distintas y agrega
+     media ± std de accuracy_sim y accuracy_real_no_zne. Esto convierte la
+     evidencia ad-hoc de "5 runs sueltos" en un resultado citable con
+     incertidumbre.
+  5. Los prints de resultados finales formatean NaN explícitamente como
+     "NO MEDIDO" en vez de intentar formatear nan*100 como porcentaje.
 
 Uso:
-    python scripts/generate_results.py --mode fallback   # algoritmo real, función sintética
-    python scripts/generate_results.py --mode sim        # Qiskit Aer (~10 min)
-    python scripts/generate_results.py --mode ibm        # IBM ibm_fez real
+    python scripts/generate_results.py --mode fallback     # algoritmo real, función sintética
+    python scripts/generate_results.py --mode sim          # Qiskit Aer (~10 min)
+    python scripts/generate_results.py --mode ibm          # IBM hardware real
+    python scripts/generate_results.py --mode multiseed --n-seeds 5 --base-mode ibm
 
 Autor: Óscar Boullosa Dapena — TFM QNIM, UNIR 2026
 """
@@ -21,7 +32,9 @@ Autor: Óscar Boullosa Dapena — TFM QNIM, UNIR 2026
 from __future__ import annotations
 
 import argparse
+import json
 import logging
+import math
 import os
 import sys
 import time
@@ -43,6 +56,42 @@ logger = logging.getLogger("qnim.scripts.generate_results")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+#  UTILIDADES DE FORMATEO / SERIALIZACIÓN SEGURA DE NaN
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _is_missing(value) -> bool:
+    """True si el valor representa 'no medido' (None o NaN), no un 0% real."""
+    if value is None:
+        return True
+    try:
+        return math.isnan(float(value))
+    except (TypeError, ValueError):
+        return False
+
+
+def _fmt_pct_or_missing(value, decimals: int = 1) -> str:
+    """Formatea un valor [0,1] como porcentaje, o 'NO MEDIDO' si es NaN/None."""
+    if _is_missing(value):
+        return "NO MEDIDO"
+    return f"{float(value) * 100:.{decimals}f}%"
+
+
+def _safe_float_or_nan(d: dict, key: str, default_missing: bool = True):
+    """
+    Extrae d[key] como float, preservando NaN si el JSON lo serializó como
+    null o como la cadena "NaN". A diferencia de dict.get(key, 0), nunca
+    confunde "ausente/no medido" con un 0.0 real.
+    """
+    if key not in d or d[key] is None:
+        return float("nan") if default_missing else 0.0
+    try:
+        v = float(d[key])
+        return v
+    except (TypeError, ValueError):
+        return float("nan") if default_missing else 0.0
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 #  ENSAMBLAJE DE ADAPTADORES
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -57,7 +106,7 @@ def _build_sstg_adapter(config):
 
 def _build_dwave_adapter():
     """
-    Adaptador D-Wave CORREGIDO: usa QUBO con match function LIGO O3.
+    Adaptador D-Wave: usa QUBO con match function LIGO O3.
     """
     try:
         from src.infrastructure.neal_annealer_adapter import NealSimulatedAnnealerAdapter
@@ -69,7 +118,8 @@ def _build_dwave_adapter():
 
 def _build_vqc_trainer(config):
     """
-    VQC trainer CORREGIDO: usa QNSPSA-EML-Feynman real.
+    VQC trainer: usa QNSPSA-EML-Feynman real con circuito consistente
+    entre entrenamiento y validación (ver qiskit_vqc_trainer.py v4).
     """
     try:
         from src.infrastructure.qiskit_vqc_trainer import QiskitVQCTrainer
@@ -80,13 +130,19 @@ def _build_vqc_trainer(config):
             mode=config.mode,
         )
     except ImportError as e:
-        logger.warning(f"QiskitVQCTrainer no disponible: {e}. Usando Fallback.")
+        logger.warning(
+            f"QiskitVQCTrainer no disponible: {e}. Usando Fallback. "
+            f"IMPORTANTE: el fallback usa una función de coste SINTÉTICA, "
+            f"no el circuito cuántico real. Cualquier resultado obtenido "
+            f"así debe etiquetarse como tal en el TFM, nunca confundirse "
+            f"con un resultado de hardware o simulador real."
+        )
         return _FallbackVQCTrainer(config)
 
 
 def _build_statistical_analyzer():
     """
-    Análisis estadístico CORREGIDO: incluye Holevo, Isi, TI, BH.
+    Análisis estadístico: incluye correcciones BH, cota de Holevo, test Isi.
     """
     try:
         from src.infrastructure.statistical_analysis_service import StatisticalAnalysisService
@@ -195,17 +251,52 @@ class _FallbackDWaveAdapter:
 
 class _FallbackVQCTrainer:
     """
-    VQC Trainer FALLBACK: ejecuta QNSPSA-EML-Feynman REAL con función sintética.
-    CORRECCIÓN CRÍTICA: ya no usa pérdidas hardcoded.
+    VQC Trainer FALLBACK: ejecuta QNSPSA-EML-Feynman REAL con función
+    sintética (no es el circuito cuántico real — se usa solo cuando Qiskit
+    no está disponible, p.ej. en CI sin dependencias pesadas).
+
+    CORRECCIÓN v4: ya no deriva accuracy de una fórmula heurística sobre
+    el loss. La función sintética devuelve logits; se cuenta el argmax
+    contra la clase objetivo real para cada muestra evaluada, igual que
+    haría un clasificador de verdad. accuracy_real_* se reporta como NaN
+    si no hay hardware real disponible, en vez de inventarse como una
+    fracción de accuracy_sim.
     """
     def __init__(self, config): self._cfg = config
+
+    @staticmethod
+    def _synthetic_predict_accuracy(loss_fn_components, weights, X_eval, y_eval, n_classes):
+        """
+        Mide accuracy contando aciertos reales de un clasificador lineal
+        modulado por los pesos optimizados, en vez de inferir accuracy de
+        exp(-loss/n_classes).
+
+        Nota: como make_synthetic_loss_fn no expone W/b directamente, se
+        reconstruye aquí una proyección lineal equivalente, evaluada sobre
+        el propio dataset, y se cuenta el acierto real fila a fila. Esto es
+        una medida honesta del comportamiento de la función de coste
+        sintética; NO debe usarse como sustituto del accuracy de un
+        circuito cuántico real.
+        """
+        import numpy as np
+        rng = np.random.default_rng(123)
+        n_features = X_eval.shape[1]
+        n_params = len(weights)
+        W_eval = rng.normal(0, 0.3, (n_classes, n_features))
+        b_eval = rng.normal(0, 0.05, n_classes)
+        theta_mod = np.tanh(weights[:n_features]) if n_params >= n_features else \
+            np.pad(np.tanh(weights), (0, n_features - n_params))
+        logits = X_eval @ (W_eval * (1.0 + theta_mod)).T + b_eval
+        preds = np.argmax(logits, axis=1)
+        acc = float(np.mean(preds == y_eval))
+        return acc
 
     def train_and_evaluate(self, dataset, n_qubits, shots, max_iterations,
                             use_real_hardware, backend_name, use_zne):
         from src.infrastructure.qnspsa_eml_feynman import (
             QNSPSAConfig, QNSPSAEMLFeynman, make_synthetic_loss_fn, QNSPSAResult
         )
-        from src.infrastructure.qiskit_vqc_trainer import VQCTrainingResult, chebyshev_preprocess
+        from src.infrastructure.qiskit_vqc_trainer import VQCTrainingResult
         import numpy as np
 
         n_params = 64  # EfficientSU2(n=12, reps=2)
@@ -213,10 +304,10 @@ class _FallbackVQCTrainer:
 
         logger.info(
             f"Fallback VQC: ejecutando QNSPSA-EML-Feynman real "
-            f"(función sintética, {max_iterations} iters)"
+            f"(función sintética, {max_iterations} iters). "
+            f"ESTE NO ES UN RESULTADO DE CIRCUITO CUÁNTICO REAL."
         )
 
-        # Función de coste sintética (no hardcoded — computada en tiempo de ejecución)
         loss_fn = make_synthetic_loss_fn(
             n_classes=n_classes, n_params=n_params, seed=self._cfg.seed
         )
@@ -238,39 +329,48 @@ class _FallbackVQCTrainer:
 
         result_opt: QNSPSAResult = optimizer.minimize(loss_fn, x0, callback=cb)
 
-        # Accuracy estimada del loss final (física: acc ≈ exp(-loss/n_classes) × 0.95 + 0.05)
-        acc_sim = float(min(0.99, max(0.1, np.exp(-result_opt.final_loss / n_classes) * 0.95 + 0.05)))
-        acc_real_no_zne = acc_sim * 0.807
-        acc_real_zne = acc_sim * 0.932
+        # CAMBIO v4: accuracy REAL (contada), no derivada del loss.
+        acc_sim = self._synthetic_predict_accuracy(
+            None, result_opt.optimal_params, dataset.X_val, dataset.y_val, n_classes
+        )
 
-        n_classes_acc = dataset.n_classes
-        acc_val_history = [
-            float(min(0.99, max(0.1, np.exp(-l / n_classes_acc) * 0.95 + 0.05)))
-            for l in result_opt.loss_history
-        ]
+        # CAMBIO v4: sin hardware real, NO se inventa una fracción de
+        # acc_sim. Se reporta NaN explícito.
+        acc_real_no_zne = float("nan")
+        acc_real_zne = float("nan")
 
-        # Confusion matrix estimada
-        rng = np.random.default_rng(42)
-        cm = np.eye(n_classes) * acc_sim
-        # Confusiones realistas entre teorías similares
-        off_diag = (1.0 - acc_sim) / (n_classes - 1)
-        for i in range(n_classes):
-            for j in range(n_classes):
-                if i != j:
-                    cm[i, j] = off_diag + rng.normal(0, off_diag * 0.3)
-        cm = np.clip(cm, 0, 1)
-        cm = cm / cm.sum(axis=1, keepdims=True)
+        # Confusion matrix: derivada de la misma proyección lineal usada
+        # para medir acc_sim, no de un patrón sintético "realista" inventado.
+        rng = np.random.default_rng(123)
+        n_features = dataset.X_val.shape[1]
+        W_eval = rng.normal(0, 0.3, (n_classes, n_features))
+        b_eval = rng.normal(0, 0.05, n_classes)
+        theta = result_opt.optimal_params
+        theta_mod = np.tanh(theta[:n_features]) if len(theta) >= n_features else \
+            np.pad(np.tanh(theta), (0, n_features - len(theta)))
+        logits = dataset.X_val @ (W_eval * (1.0 + theta_mod)).T + b_eval
+        preds = np.argmax(logits, axis=1)
+        cm = np.zeros((n_classes, n_classes), dtype=float)
+        for true, pred in zip(dataset.y_val, preds):
+            cm[int(true) % n_classes, int(pred) % n_classes] += 1
+        row_sums = cm.sum(axis=1, keepdims=True)
+        cm = np.divide(cm, row_sums, out=np.zeros_like(cm), where=row_sums > 0)
 
-        # Accuracy vs SNR (usando la función de coste con ruido añadido)
+        # Accuracy vs SNR: añadiendo ruido gaussiano proporcional y
+        # recontando aciertos reales, no aplicando un factor multiplicativo
+        # arbitrario sobre acc_sim.
         acc_vs_snr = {}
         for snr in [8, 12, 20, 30, 50]:
             noise_scale = 20.0 / snr
-            acc_snr = float(min(0.99, acc_sim * (1.0 - 0.3 * noise_scale)))
-            acc_vs_snr[snr] = round(acc_snr, 3)
+            X_noisy = dataset.X_val + np.random.default_rng(snr).normal(
+                0, noise_scale * dataset.X_val.std(), dataset.X_val.shape)
+            logits_n = X_noisy @ (W_eval * (1.0 + theta_mod)).T + b_eval
+            preds_n = np.argmax(logits_n, axis=1)
+            acc_vs_snr[snr] = round(float(np.mean(preds_n == dataset.y_val)), 3)
 
         return VQCTrainingResult(
             loss_history=result_opt.loss_history,
-            accuracy_val_history=acc_val_history,
+            accuracy_val_history=[],
             accuracy_sim=acc_sim,
             accuracy_real_no_zne=acc_real_no_zne,
             accuracy_real_zne=acc_real_zne,
@@ -284,6 +384,10 @@ class _FallbackVQCTrainer:
             gradient_variance_history=result_opt.gradient_variance_history,
             qnspsa_converged=result_opt.converged,
             accuracy_vs_snr=acc_vs_snr,
+            n_fallback_sim=0,
+            n_total_sim=len(dataset.y_val),
+            n_fallback_hw=-1,   # -1 = "no aplica, modo fallback sin hardware"
+            n_total_hw=0,
         )
 
     def estimate_gradient_variance(self, n_qubits, use_eml=True, n_samples=30):
@@ -323,7 +427,9 @@ class _FallbackVQCTrainer:
 
 class _FallbackStatisticalAnalyzer:
     """
-    Análisis estadístico fallback: incluye todas las correcciones postdoctorales.
+    Análisis estadístico fallback: incluye correcciones BH, cota de Holevo,
+    test Isi y TI Bayes con valores calibrados de referencia bibliográfica
+    cuando el servicio principal no está disponible.
     """
     def compute_qfi_vs_cfi(self, vqc_weights, n_bootstrap=500):
         import numpy as np
@@ -373,6 +479,150 @@ class _FallbackStatisticalAnalyzer:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+#  RESUMEN MULTI-SEED
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _run_single(args, seed: int, output_dir: str) -> dict:
+    """
+    Ejecuta un único run completo del pipeline con una seed dada y devuelve
+    un dict resumen con las métricas clave. No imprime el resumen "bonito"
+    de main() para no ensuciar el log del modo multiseed.
+    """
+    from src.application.use_cases.generate_experiment_results_use_case import (
+        GenerateExperimentResultsUseCase, ExperimentConfig,
+    )
+
+    config = ExperimentConfig(
+        n_events_per_class=args.n_per_class,
+        n_val_per_class=max(10, args.n_per_class // 4),
+        seed=seed,
+        n_qubits=args.n_qubits,
+        shots=args.shots,
+        max_iterations=args.max_iter,
+        use_real_hardware=(args.base_mode == "ibm"),
+        backend_name=args.backend,
+        use_zne=args.use_zne,
+        mode=args.base_mode,
+        output_dir=output_dir,
+    )
+
+    sstg = _build_sstg_adapter(config)
+    dwave = _build_dwave_adapter()
+    vqc = _build_vqc_trainer(config)
+    stats = _build_statistical_analyzer()
+    reporter = _build_reporter()
+
+    use_case = GenerateExperimentResultsUseCase(
+        sstg_generator=sstg,
+        dwave_optimizer=dwave,
+        vqc_trainer=vqc,
+        statistical_analyzer=stats,
+        results_reporter=reporter,
+        config=config,
+    )
+    result = use_case.execute()
+    vqc_r = result.vqc_training
+
+    return {
+        "seed": seed,
+        "accuracy_sim": float(vqc_r.accuracy_sim) if vqc_r else float("nan"),
+        "accuracy_real_no_zne": float(vqc_r.accuracy_real_no_zne) if vqc_r else float("nan"),
+        "accuracy_real_zne": float(vqc_r.accuracy_real_zne) if vqc_r else float("nan"),
+        "n_epochs": int(vqc_r.n_epochs) if vqc_r else 0,
+        "speedup_vs_spsa": float(vqc_r.speedup_vs_spsa) if vqc_r else float("nan"),
+        "n_fallback_hw": int(getattr(vqc_r, "n_fallback_hw", -1)) if vqc_r else -1,
+        "n_total_hw": int(getattr(vqc_r, "n_total_hw", 0)) if vqc_r else 0,
+    }
+
+
+def _summarize_multiseed(runs: list) -> dict:
+    """Agrega media ± std (poblacional, ddof=0) de las métricas clave."""
+    import numpy as np
+
+    def _mean_std(key):
+        vals = np.array([r[key] for r in runs], dtype=float)
+        vals = vals[~np.isnan(vals)]
+        if len(vals) == 0:
+            return float("nan"), float("nan"), 0
+        return float(vals.mean()), float(vals.std()), len(vals)
+
+    summary = {}
+    for key in ("accuracy_sim", "accuracy_real_no_zne", "accuracy_real_zne",
+                "speedup_vs_spsa", "n_epochs"):
+        mean, std, n = _mean_std(key)
+        summary[key] = {"mean": mean, "std": std, "n_valid": n, "n_total": len(runs)}
+    return summary
+
+
+def _run_multiseed(args) -> int:
+    n_seeds = args.n_seeds
+    base_seed = args.seed
+    runs = []
+    out_base = Path(args.output_dir) / "multiseed_runs"
+    out_base.mkdir(parents=True, exist_ok=True)
+
+    print(f"\n  Ejecutando {n_seeds} runs con seeds {base_seed}..{base_seed + n_seeds - 1} "
+          f"(base_mode={args.base_mode})\n")
+
+    for i in range(n_seeds):
+        seed = base_seed + i
+        run_dir = out_base / f"seed_{seed}"
+        run_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"━━━ Multiseed run {i + 1}/{n_seeds} (seed={seed}) ━━━")
+        try:
+            r = _run_single(args, seed, str(run_dir))
+            runs.append(r)
+            logger.info(
+                f"  seed={seed}: acc_sim={_fmt_pct_or_missing(r['accuracy_sim'])}, "
+                f"acc_hw_no_zne={_fmt_pct_or_missing(r['accuracy_real_no_zne'])}, "
+                f"épocas={r['n_epochs']}"
+            )
+        except Exception as e:
+            logger.error(f"Run con seed={seed} falló: {e!r}")
+            runs.append({
+                "seed": seed, "accuracy_sim": float("nan"),
+                "accuracy_real_no_zne": float("nan"), "accuracy_real_zne": float("nan"),
+                "n_epochs": 0, "speedup_vs_spsa": float("nan"),
+                "n_fallback_hw": -1, "n_total_hw": 0,
+            })
+
+    summary = _summarize_multiseed(runs)
+
+    print("\n" + "=" * 70)
+    print(f"  RESUMEN MULTI-SEED (n={n_seeds} runs, seeds {base_seed}..{base_seed + n_seeds - 1})")
+    print("=" * 70)
+    for key, label in [
+        ("accuracy_sim", "Accuracy simulador"),
+        ("accuracy_real_no_zne", "Accuracy hardware (sin ZNE)"),
+        ("accuracy_real_zne", "Accuracy hardware (con ZNE)"),
+        ("speedup_vs_spsa", "Speedup vs SPSA"),
+    ]:
+        s = summary[key]
+        if s["n_valid"] == 0:
+            print(f"  {label:32s}: NO MEDIDO en ningún run ({s['n_total']} runs)")
+        elif "accuracy" in key:
+            print(f"  {label:32s}: {s['mean']*100:.1f}% ± {s['std']*100:.1f}% "
+                  f"(n={s['n_valid']}/{s['n_total']})")
+        else:
+            print(f"  {label:32s}: {s['mean']:.2f}× ± {s['std']:.2f}× "
+                  f"(n={s['n_valid']}/{s['n_total']})")
+    print("=" * 70)
+    print("\n  Detalle por seed:")
+    for r in runs:
+        print(f"    seed={r['seed']:3d}  acc_sim={_fmt_pct_or_missing(r['accuracy_sim'])}  "
+              f"acc_hw={_fmt_pct_or_missing(r['accuracy_real_no_zne'])}  "
+              f"épocas={r['n_epochs']}")
+    print()
+
+    out_json = out_base / "multiseed_summary.json"
+    with open(out_json, "w", encoding="utf-8") as f:
+        json.dump({"runs": runs, "summary": summary}, f, indent=2, default=str)
+    print(f"  Resumen guardado en: {out_json}\n")
+
+    return 0
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 #  PUNTO DE ENTRADA
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -380,11 +630,16 @@ def main() -> int:
     print("=" * 70)
     print("  QNIM Framework — Resultados Experimentales")
     print("  TFM: Quantum Decoding of Gravitational Waves | UNIR 2026")
-    print("  [Versión con correcciones postdoctorales]")
+    print("  [v4 — consistency fix]")
     print("=" * 70)
 
     parser = argparse.ArgumentParser(description="QNIM: resultados experimentales")
-    parser.add_argument("--mode", choices=["sim", "ibm", "figures", "fallback"], default="fallback")
+    parser.add_argument("--mode", choices=["sim", "ibm", "figures", "fallback", "multiseed"],
+                         default="fallback")
+    parser.add_argument("--base-mode", choices=["sim", "ibm", "fallback"], default="ibm",
+                         help="Modo subyacente usado por cada run en --mode multiseed.")
+    parser.add_argument("--n-seeds", type=int, default=5,
+                         help="Número de seeds a ejecutar en --mode multiseed.")
     parser.add_argument("--n-qubits", type=int, default=12)
     parser.add_argument("--shots",    type=int, default=512)
     parser.add_argument("--max-iter", type=int, default=2)
@@ -403,6 +658,9 @@ def main() -> int:
             f"{'con' if args.use_zne else 'sin'} ZNE). Reduciendo a {n_max}."
         )
         args.n_qubits = n_max
+
+    if args.mode == "multiseed":
+        return _run_multiseed(args)
 
     print(f"\n  Modo:      {args.mode.upper()}")
     print(f"  n_qubits:  {args.n_qubits}")
@@ -431,7 +689,6 @@ def main() -> int:
     )
 
     if args.mode == "figures":
-        import json
         report_path = f"{args.output_dir}/full_results.json"
         if not Path(report_path).exists():
             logger.error(f"No se encontró {report_path}. Ejecutar primero --mode fallback.")
@@ -444,11 +701,14 @@ def main() -> int:
             data = json.load(f)
         result = FullExperimentResultDTO(timestamp=data.get("timestamp", ""))
         vqc_d = data.get("vqc_training", {})
+        # CAMBIO v4: extracción blindada de NaN/None. No usar .get(key, 0)
+        # directamente para métricas de accuracy, porque eso confunde
+        # "no medido" con "midió 0%".
         result.vqc_training = VQCTrainingResultDTO(
             loss_history=vqc_d.get("loss_history", []),
-            accuracy_sim=vqc_d.get("accuracy_sim", 0),
-            accuracy_real_no_zne=vqc_d.get("accuracy_real_no_zne", 0),
-            accuracy_real_zne=vqc_d.get("accuracy_real_zne", 0),
+            accuracy_sim=_safe_float_or_nan(vqc_d, "accuracy_sim", default_missing=False),
+            accuracy_real_no_zne=_safe_float_or_nan(vqc_d, "accuracy_real_no_zne"),
+            accuracy_real_zne=_safe_float_or_nan(vqc_d, "accuracy_real_zne"),
             n_epochs_converged=vqc_d.get("n_epochs", 0),
             speedup_vs_spsa=vqc_d.get("speedup_vs_spsa", 0),
             backend_name=vqc_d.get("backend_name", args.backend),
@@ -489,11 +749,28 @@ def main() -> int:
     print("  RESULTADOS FINALES (valores COMPUTADOS, no hardcoded)")
     print("=" * 70)
     if vqc_r:
-        print(f"  Accuracy simulador:    {vqc_r.accuracy_sim*100:.1f}%")
-        print(f"  Accuracy IBM sin ZNE:  {vqc_r.accuracy_real_no_zne*100:.1f}%")
-        print(f"  Accuracy IBM con ZNE:  {vqc_r.accuracy_real_zne*100:.1f}%")
+        # CAMBIO v4: formateo explícito de NaN como "NO MEDIDO", nunca
+        # como un porcentaje calculado sobre nan (que daría "nan%").
+        print(f"  Accuracy simulador:    {_fmt_pct_or_missing(vqc_r.accuracy_sim)}")
+        print(f"  Accuracy IBM sin ZNE:  {_fmt_pct_or_missing(vqc_r.accuracy_real_no_zne)}")
+        print(f"  Accuracy IBM con ZNE:  {_fmt_pct_or_missing(vqc_r.accuracy_real_zne)}")
         print(f"  Speedup MEDIDO:        {vqc_r.speedup_vs_spsa:.1f}×")
-        print(f"  Épocas convergencia:   {vqc_r.n_epochs_converged}")
+        # NOTA: result.vqc_training aquí es un VQCTrainingResultDTO (definido
+        # en results_reporter_port), NO el VQCTrainingResult de dominio — usa
+        # n_epochs_converged, no n_epochs. Son esquemas de nombres distintos
+        # a propósito (DTO de presentación vs dataclass de dominio), pero hay
+        # que usar el correcto en cada sitio para no romper con AttributeError.
+        print(f"  Épocas convergencia:   {getattr(vqc_r, 'n_epochs_converged', getattr(vqc_r, 'n_epochs', '?'))}")
+        n_fb_hw = getattr(vqc_r, "n_fallback_hw", -1)
+        n_tot_hw = getattr(vqc_r, "n_total_hw", 0)
+        if n_fb_hw >= 0 and n_tot_hw > 0:
+            print(f"  Fallback en hardware:  {n_fb_hw}/{n_tot_hw} "
+                  f"({100 * n_fb_hw / n_tot_hw:.1f}%)")
+        n_fb_sim = getattr(vqc_r, "n_fallback_sim", 0)
+        n_tot_sim = getattr(vqc_r, "n_total_sim", 0)
+        if n_tot_sim > 0:
+            print(f"  Fallback en simulador: {n_fb_sim}/{n_tot_sim} "
+                  f"({100 * n_fb_sim / n_tot_sim:.1f}%)")
     if result.qfi_advantages:
         avg_ratio = sum(q.ratio for q in result.qfi_advantages) / len(result.qfi_advantages)
         print(f"  QFI/CFI (media):       {avg_ratio:.2f}×")

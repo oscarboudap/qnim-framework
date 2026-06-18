@@ -30840,3 +30840,238 @@ runtime.program_run:INFO:2026-06-17 22:59:00,753: Payload size: 0 MB.
 11:14:40 | WARNING  | urllib3.connectionpool | Retrying (PostForcelistRetry(total=4, connect=3, read=None, redirect=None, status=None)) after connection broken by 'RemoteDisconnected('Remote end closed connection without response')': /api/v1/jobs/d8pdbii01fac73d1iung?exclude_params=true
 12:02:28 | WARNING  | urllib3.connectionpool | Retrying (PostForcelistRetry(total=4, connect=3, read=None, redirect=None, status=None)) after connection broken by 'RemoteDisconnected('Remote end closed connection without response')': /api/v1/jobs/d8peg4mab0ds73dp09g0?exclude_params=true
 12:02:28 | WARNING  | urllib3.connectionpool | Retrying (PostForcelistRetry(total=4, connect=3, read=None, redirect=None, status=None)) after connection broken by 'RemoteDisconnected('Remote end closed connection without response')': /api/v1/jobs/d8pdbii01fac73d1iung?exclude_params=true
+============================================================
+  QNIM Overnight Runner v4 — 2026-06-18 12:37:22
+  MAX_ITER=218 (entrenamiento LOCAL, AerSimulator)
+  Circuito consistente train/val (mismo n_qubits/reps, sin escalado a 27q)
+  Validación final: 100 muestras REALES en ibm_marrakesh (shots=256)
+  NOTA: el 64.9% de versiones anteriores NO es comparable
+        (provenía de un bug de mismatch de qubits, ya corregido).
+  Objetivo: 5 éxitos / máx 30 intentos
+  Resultados en: data/hardware/ibm_marrakesh_consistency_fix_runs/resultado{N}.json
+============================================================
+
+━━━ Intento 1 / 30  |  Éxitos: 0 / 5  |  Seed: 42  [12:37:22] ━━━
+======================================================================
+  QNIM Framework — Resultados Experimentales
+  TFM: Quantum Decoding of Gravitational Waves | UNIR 2026
+  [v4 — consistency fix]
+======================================================================
+
+  Modo:      IBM
+  n_qubits:  12
+  Backend:   ibm_marrakesh
+  QNSPSA-EML-Feynman: ACTIVO (optimizador real)
+  QUBO: match function ponderada por PSD LIGO O3
+  Estadística: Šidák/BH + cota Holevo + test Isi + TI Bayes
+
+12:37:55 | INFO     | qnim.application.generate_experiment_results | =================================================================
+12:37:55 | INFO     | qnim.application.generate_experiment_results |   QNIM Framework — Pipeline Completo
+12:37:55 | INFO     | qnim.application.generate_experiment_results |   Backend: ibm_marrakesh
+12:37:55 | INFO     | qnim.application.generate_experiment_results |   n_qubits: 12
+12:37:55 | INFO     | qnim.application.generate_experiment_results |   Hardware real: True
+12:37:55 | INFO     | qnim.application.generate_experiment_results | =================================================================
+12:37:55 | INFO     | qnim.application.generate_experiment_results | [Step 1] Generando dataset con SSTG (Capas 5-7)...
+  Generando clase 0: GR
+  Generando clase 1: standard-siren
+  Generando clase 2: qnm-21
+  Generando clase 3: qnm-33
+  Generando clase 4: pn-deformation
+  Generando clase 5: extra-dimensions
+  Generando clase 6: scalar-tensor
+  Generando clase 7: graviton-mass
+  Generando clase 8: chern-simons
+  Generando clase 9: liv-alpha2
+  Generando clase 10: liv-alpha4
+  Generando clase 11: loop-quantum-gravity
+  Generando clase 12: gup
+  ✅ Dataset generado: 1040 train / 260 val
+     Features: 12 (primeras componentes FFT)
+     SNR: 19.0 ± 6.3
+12:37:57 | INFO     | qnim.application.generate_experiment_results |   Dataset: 1040 train / 260 val | 13 clases | SNR 19.0 (válido: True)
+12:37:57 | INFO     | qnim.application.generate_experiment_results | [Step 2] D-Wave QUBO: match function ponderada por PSD LIGO O3...
+12:37:57 | INFO     | qnim.infrastructure.neal_annealer_adapter | Construyendo QUBO con match function LIGO O3 (64 templates, features=12)
+12:37:57 | INFO     | qnim.infrastructure.qubo_match_ligo | Construyendo cuadricula de 40 templates 3.5PN...
+12:37:57 | INFO     | qnim.infrastructure.qubo_match_ligo | Mejor template: m1=20.0, m2=15.0, chi_eff=-0.500, M=1.0000, SNR_est=24.0
+12:38:02 | WARNING  | qnim.infrastructure.neal_annealer_adapter | Inestabilidad alta bajo ruido de annealing (stability=0.17). Forzando template de mejor match directo (0).
+12:38:02 | INFO     | qnim.infrastructure.neal_annealer_adapter | D-Wave QUBO (ruido simulado): m1=20.0±8.41 M_☉, m2=15.0±6.61 M_☉, χ_eff=-0.500±0.373, M=1.0000, SNR_est=24.0, GR_consistent=True, stability=0.17, E=0.0932±0.1754
+12:38:02 | INFO     | qnim.application.generate_experiment_results |   D-Wave: m1=20.0 M_☉, m2=15.0 M_☉, χ_eff=-0.500, match=1.0, GR_consistent=True
+12:38:02 | INFO     | qnim.application.generate_experiment_results |   D-Wave ruido: σ(m1)=8.41, σ(m2)=6.61, σ(χ_eff)=0.373, stability=0.17, noise_model=gaussian_qubo_coefficients, n=24
+12:38:02 | INFO     | qnim.application.generate_experiment_results | [Step 3] VQC QNSPSA-EML-Feynman: mode=ibm, n_qubits=12...
+qiskit_runtime_service._discover_account:WARNING:2026-06-18 12:38:02,168: Loading account with the given token. A saved account will not be used.
+qiskit_runtime_service.__init__:WARNING:2026-06-18 12:38:22,071: Instance was not set at service instantiation. Free and trial plan instances will be prioritized. Based on the following filters: (tags: None, region: us-east, eu-de), and available plans: (open), the available account instances are: open-instance. If you need a specific instance set it explicitly either by using a saved account with a saved default instance or passing it in directly to QiskitRuntimeService().
+qiskit_runtime_service.backends:WARNING:2026-06-18 12:38:22,071: Using instance: open-instance, plan: open
+12:38:23 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | IBM conectado para validación final: backend=ibm_marrakesh, qubits=156
+12:38:23 | INFO     | qiskit.passmanager.base_tasks | Pass: UnrollCustomDefinitions - 0.15831 (ms)
+12:38:23 | INFO     | qiskit.passmanager.base_tasks | Pass: BasisTranslator - 0.20289 (ms)
+12:38:23 | WARNING  | qnim.infrastructure.qiskit_vqc_trainer | SamplerV2 de qiskit_aer falló (TypeError("SamplerV2.__init__() got an unexpected keyword argument 'mode'")); probando API legacy. Esto puede indicar un problema de versión de qiskit-aer que conviene investigar.
+12:38:23 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Noise-aware: qiskit_aer Sampler (legacy API) OK
+12:38:23 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | QNSPSA config: maxiter=218, patience=43 (= maxiter/5, evita early-stop prematuro)
+12:38:23 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Iniciando QNSPSA-EML-Feynman: mode=ibm, n_params=72, maxiter=218
+12:38:52 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 10  loss=2.5589
+12:39:21 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 20  loss=2.5353
+12:39:50 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 30  loss=2.5353
+12:40:18 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 40  loss=2.5353
+12:40:47 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 50  loss=2.5353
+12:40:58 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | Early stopping en iter 54: sin mejora > 0.001 en 43 iteraciones
+12:40:58 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | QNSPSA-EML-Feynman: 54 iters, 5455 evals, loss=2.5353, speedup_vs_spsa=5.6×, converged=True
+12:40:58 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Entrenamiento completado: loss=2.5353, speedup=5.6×, tiempo=176.2s (accuracy se mide por separado en train_and_evaluate, no se infiere del loss aquí)
+12:40:58 | WARNING  | qnim.infrastructure.qiskit_vqc_trainer | No se pudo crear sampler ruidoso para evaluación: TypeError("SamplerV2.__init__() got an unexpected keyword argument 'mode'"). Usando StatevectorSampler (sin ruido); acc_sim reportado será optimista respecto al modelo de ruido documentado.
+12:41:09 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Accuracy simulador (REAL, contada): 0.081 (260/260 evaluadas correctamente)
+qiskit_runtime_service._discover_account:WARNING:2026-06-18 12:41:09,550: Loading account with the given token. A saved account will not be used.
+qiskit_runtime_service.__init__:WARNING:2026-06-18 12:41:11,787: Instance was not set at service instantiation. Free and trial plan instances will be prioritized. Based on the following filters: (tags: None, region: us-east, eu-de), and available plans: (open), the available account instances are: open-instance. If you need a specific instance set it explicitly either by using a saved account with a saved default instance or passing it in directly to QiskitRuntimeService().
+qiskit_runtime_service.backends:WARNING:2026-06-18 12:41:11,787: Using instance: open-instance, plan: open
+12:41:12 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Conectado a ibm_marrakesh (156 qubits)
+12:41:12 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | n_qubits hardware: 12 (idéntico al entrenamiento, sin escalado)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: ContainsInstruction - 0.02670 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: UnitarySynthesis - 0.01216 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: HighLevelSynthesis - 0.43035 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: BasisTranslator - 0.12732 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: ElidePermutations - 0.02646 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: RemoveDiagonalGatesBeforeMeasure - 0.02670 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: RemoveIdentityEquivalent - 0.05722 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: InverseCancellation - 0.09918 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: ContractIdleWiresInControlFlow - 0.00381 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: CommutativeCancellation - 0.18811 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: ConsolidateBlocks - 2.95210 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: Split2QUnitaries - 0.02432 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: SetLayout - 0.00310 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: VF2Layout - 6.90842 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: FullAncillaAllocation - 0.16165 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: EnlargeWithAncilla - 0.19503 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: ApplyLayout - 0.43130 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: CheckMap - 0.09847 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: FilterOpNodes - 0.04172 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: UnitarySynthesis - 0.00596 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: HighLevelSynthesis - 0.01884 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: BasisTranslator - 1.40452 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: Size - 0.00501 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: Depth - 0.08321 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: MinimumPoint - 0.01073 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: ConsolidateBlocks - 0.16379 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: UnitarySynthesis - 0.00405 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: RemoveIdentityEquivalent - 0.01740 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: Optimize1qGatesDecomposition - 0.20170 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: CommutativeCancellation - 0.14782 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: ContractIdleWiresInControlFlow - 0.00358 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: GatesInBasis - 0.04196 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: Size - 0.00334 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: Depth - 0.03982 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: MinimumPoint - 1.54018 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: ConsolidateBlocks - 0.16117 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: UnitarySynthesis - 0.00548 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: RemoveIdentityEquivalent - 0.00858 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: Optimize1qGatesDecomposition - 0.08440 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: CommutativeCancellation - 0.11301 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: ContractIdleWiresInControlFlow - 0.00644 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: GatesInBasis - 0.01669 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: Size - 0.00405 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: Depth - 0.03457 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: MinimumPoint - 0.02527 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: VF2PostLayout - 5.83196 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: ApplyLayout - 1.98579 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: ContainsInstruction - 0.00811 (ms)
+12:41:13 | INFO     | qiskit.passmanager.base_tasks | Pass: InstructionDurationCheck - 0.03099 (ms)
+12:41:13 | INFO     | qiskit.compiler.transpiler | Total Transpile Time - 756.99043 (ms)
+12:41:13 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Ansatz ISA: 156q, depth=29, params=72, reps=2 (circuito IDÉNTICO al de entrenamiento)
+12:41:13 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | SamplerV2 OK (reps=2, depth=29)
+base_primitive._run:INFO:2026-06-18 12:41:13,481: Submitting job using options {'options': {}, 'version': 2, 'support_qiskit': True}
+runtime.program_run:INFO:2026-06-18 12:41:14,248: Posting the API request.
+runtime.program_run:INFO:2026-06-18 12:41:14,582: Payload size: 0 MB.
+base_primitive._run:INFO:2026-06-18 12:41:20,316: Submitting job using options {'options': {}, 'version': 2, 'support_qiskit': True}
+runtime.program_run:INFO:2026-06-18 12:41:21,080: Posting the API request.
+runtime.program_run:INFO:2026-06-18 12:41:21,465: Payload size: 0 MB.
+base_primitive._run:INFO:2026-06-18 12:41:27,293: Submitting job using options {'options': {}, 'version': 2, 'support_qiskit': True}
+runtime.program_run:INFO:2026-06-18 12:41:28,062: Posting the API request.
+runtime.program_run:INFO:2026-06-18 12:41:28,444: Payload size: 0 MB.
+base_primitive._run:INFO:2026-06-18 12:41:34,317: Submitting job using options {'options': {}, 'version': 2, 'support_qiskit': True}
+runtime.program_run:INFO:2026-06-18 12:41:34,929: Posting the API request.
+runtime.program_run:INFO:2026-06-18 12:41:35,189: Payload size: 0 MB.
+base_primitive._run:INFO:2026-06-18 12:41:43,031: Submitting job using options {'options': {}, 'version': 2, 'support_qiskit': True}
+runtime.program_run:INFO:2026-06-18 12:41:43,788: Posting the API request.
+runtime.program_run:INFO:2026-06-18 12:41:44,085: Payload size: 0 MB.
+base_primitive._run:INFO:2026-06-18 12:41:49,436: Submitting job using options {'options': {}, 'version': 2, 'support_qiskit': True}
+runtime.program_run:INFO:2026-06-18 12:41:50,178: Posting the API request.
+runtime.program_run:INFO:2026-06-18 12:41:50,430: Payload size: 0 MB.
+base_primitive._run:INFO:2026-06-18 12:41:56,341: Submitting job using options {'options': {}, 'version': 2, 'support_qiskit': True}
+runtime.program_run:INFO:2026-06-18 12:41:57,108: Posting the API request.
+runtime.program_run:INFO:2026-06-18 12:41:57,351: Payload size: 0 MB.
+base_primitive._run:INFO:2026-06-18 12:42:03,193: Submitting job using options {'options': {}, 'version': 2, 'support_qiskit': True}
+runtime.program_run:INFO:2026-06-18 12:42:03,892: Posting the API request.
+runtime.program_run:INFO:2026-06-18 12:42:04,167: Payload size: 0 MB.
+base_primitive._run:INFO:2026-06-18 12:42:09,346: Submitting job using options {'options': {}, 'version': 2, 'support_qiskit': True}
+runtime.program_run:INFO:2026-06-18 12:42:10,022: Posting the API request.
+runtime.program_run:INFO:2026-06-18 12:42:10,250: Payload size: 0 MB.
+base_primitive._run:INFO:2026-06-18 12:42:16,629: Submitting job using options {'options': {}, 'version': 2, 'support_qiskit': True}
+runtime.program_run:INFO:2026-06-18 12:42:17,302: Posting the API request.
+runtime.program_run:INFO:2026-06-18 12:42:17,542: Payload size: 0 MB.
+12:42:23 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | IBM hardware (reps=2, n_qubits=12): n_samples=100, acc=0.070 (7/100 correctas), fallback=0/100
+12:42:23 | INFO     | qnim.application.generate_experiment_results |   VQC: acc_sim=0.081, épocas=54, speedup=5.6×, QNSPSA_converged=True
+12:42:23 | INFO     | qnim.application.generate_experiment_results | [Step 4] QFI vs CFI + cota de Holevo...
+12:42:23 | INFO     | qnim.infrastructure.statistical_corrections | Holevo bound (n=12, S̄=3.82b): lb=1.066, improved=1.375, empirical=[1.75,2.23]
+12:42:23 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [δQ]: F_Q=10.00, F_C=3.33, ratio=3.00, Holevo_lb=1.066, above_lb=True
+12:42:23 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [m_g]: F_Q=10.00, F_C=4.17, ratio=2.40, Holevo_lb=1.066, above_lb=True
+12:42:23 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [|R|]: F_Q=10.00, F_C=5.56, ratio=1.80, Holevo_lb=1.066, above_lb=True
+12:42:23 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [Δs]: F_Q=10.00, F_C=4.76, ratio=2.10, Holevo_lb=1.066, above_lb=True
+12:42:23 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [α]: F_Q=10.00, F_C=5.56, ratio=1.80, Holevo_lb=1.066, above_lb=True
+12:42:23 | INFO     | qnim.application.generate_experiment_results |   δQ: F_Q/F_C=3.00, Holevo_lb=1.066, above_lb=✅
+12:42:23 | INFO     | qnim.application.generate_experiment_results |   m_g: F_Q/F_C=2.40, Holevo_lb=1.066, above_lb=✅
+12:42:23 | INFO     | qnim.application.generate_experiment_results |   |R|: F_Q/F_C=1.80, Holevo_lb=1.066, above_lb=✅
+12:42:23 | INFO     | qnim.application.generate_experiment_results |   Δs: F_Q/F_C=2.10, Holevo_lb=1.066, above_lb=✅
+12:42:23 | INFO     | qnim.application.generate_experiment_results |   α: F_Q/F_C=1.80, Holevo_lb=1.066, above_lb=✅
+12:42:23 | INFO     | qnim.application.generate_experiment_results | [Step 5] GW150914: test espectroscópico + TI Bayes + BH...
+12:42:23 | INFO     | qnim.infrastructure.statistical_corrections | No-hair test (M_f=63.3, χ_f=0.672): δM_f=0.47σ, δχ=0.00σ, consistent=True
+12:42:23 | INFO     | qnim.infrastructure.statistical_corrections | Multiple testing correction (10 tests): Bonferroni α=2.87e-08, Šidák α=2.87e-08, Fisher 0.2σ
+12:42:23 | INFO     | qnim.infrastructure.statistical_analysis_service | GW150914 QNIM completo: m1=35.2, m2=30.1, M_f=63.3, χ_f=0.672, H₀=65.6, CI_ok=True, no_hair_consistent=True, n_theories_significant(BH)=0/10
+12:42:23 | INFO     | qnim.application.generate_experiment_results |   GW150914: m1=35.2, m2=30.1, GR_consistent=True, no_hair_Kerr=True, Fisher_sigma=0.2σ
+12:42:23 | INFO     | qnim.application.generate_experiment_results | [Step 6] Analisis de barren plateaus...
+12:42:23 | INFO     | qnim.application.generate_experiment_results |   Var[grad] n=12: 4.6272e-01, n=27: 2.8021e-01
+12:42:23 | INFO     | qnim.application.generate_experiment_results |   Todos n en [4,27] tienen Var > 1e-3 con EML: True. Referencia: Cerezo et al. 2021, Nat. Commun. 12:1791
+12:42:23 | INFO     | qnim.application.generate_experiment_results | [Step 7] Benchmark Big-O: QNSPSA-EML-Feynman vs SPSA...
+12:42:23 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | QNSPSA-EML-Feynman: 100 iters, 10101 evals, loss=1.8727, speedup_vs_spsa=3.0×, converged=False
+12:42:23 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Big-O benchmark: SPSA 600 evals / 0.01s, QNSPSA 10101 evals / 0.40s, speedup=3.0x (calidad), 0.0x (time), 0.1x (evals)
+12:42:23 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   NOTA TFM: reportar speedup_quality=3.0x como metrica principal (epocas hasta convergencia = jobs IBM)
+12:42:23 | INFO     | qnim.application.generate_experiment_results |   Speedup medido: 3.0× vs SPSA
+12:42:23 | INFO     | qnim.application.generate_experiment_results | [Step 8] Generando figuras y reportes...
+12:42:26 | INFO     | qnim.infrastructure.reporting |   Figura generada: data/hardware/ibm_marrakesh_consistency_fix_runs/run_tmp_1/figures/fig1_convergence.png
+12:42:27 | INFO     | qnim.infrastructure.reporting |   Figura generada: data/hardware/ibm_marrakesh_consistency_fix_runs/run_tmp_1/figures/fig2_confusion_matrix.png
+12:42:27 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+12:42:28 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+12:42:28 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+12:42:28 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+12:42:28 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+12:42:28 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+12:42:28 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+12:42:28 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+12:42:28 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+12:42:28 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+12:42:28 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+12:42:28 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+12:42:28 | INFO     | qnim.infrastructure.reporting |   Figura generada: data/hardware/ibm_marrakesh_consistency_fix_runs/run_tmp_1/figures/fig3_qfi_cfi.png
+12:42:29 | INFO     | qnim.infrastructure.reporting |   Figura generada: data/hardware/ibm_marrakesh_consistency_fix_runs/run_tmp_1/figures/fig4_accuracy_snr.png
+12:42:32 | INFO     | qnim.infrastructure.reporting |   Figura generada: data/hardware/ibm_marrakesh_consistency_fix_runs/run_tmp_1/figures/fig5_barren_plateaus.png
+12:42:34 | INFO     | qnim.infrastructure.reporting |   Figura generada: data/hardware/ibm_marrakesh_consistency_fix_runs/run_tmp_1/figures/fig6_gw150914.png
+12:42:38 | INFO     | qnim.infrastructure.reporting |   Figura generada: data/hardware/ibm_marrakesh_consistency_fix_runs/run_tmp_1/figures/fig7_dashboard.png
+12:42:38 | INFO     | qnim.application.generate_experiment_results |   Figuras: 7/7 generadas
+12:42:38 | INFO     | qnim.infrastructure.reporting | JSON guardado: data/hardware/ibm_marrakesh_consistency_fix_runs/run_tmp_1/full_results.json
+12:42:38 | INFO     | qnim.application.generate_experiment_results |   JSON: data/hardware/ibm_marrakesh_consistency_fix_runs/run_tmp_1/full_results.json
+12:42:38 | INFO     | qnim.infrastructure.reporting | CSV guardado: data/hardware/ibm_marrakesh_consistency_fix_runs/run_tmp_1/results_summary.csv (19 filas)
+12:42:38 | INFO     | qnim.application.generate_experiment_results |   CSV: data/hardware/ibm_marrakesh_consistency_fix_runs/run_tmp_1/results_summary.csv
+12:42:38 | INFO     | qnim.application.generate_experiment_results |   Tablas LaTeX: 1 en data/hardware/ibm_marrakesh_consistency_fix_runs/run_tmp_1/latex/
+12:42:38 | INFO     | qnim.application.generate_experiment_results | Pipeline completado en 283.2s
+
+======================================================================
+  RESULTADOS FINALES (valores COMPUTADOS, no hardcoded)
+======================================================================
+  Accuracy simulador:    8.1%
+  Accuracy IBM sin ZNE:  7.0%
+  Accuracy IBM con ZNE:  7.0%
+  Speedup MEDIDO:        5.6×
+Traceback (most recent call last):
+  File "/mnt/c/Users/oscar/Desktop/TFM/qnim/qnim/scripts/generate_results.py", line 784, in <module>
+    sys.exit(main())
+  File "/mnt/c/Users/oscar/Desktop/TFM/qnim/qnim/scripts/generate_results.py", line 758, in main
+    print(f"  Épocas convergencia:   {vqc_r.n_epochs}")
+AttributeError: 'VQCTrainingResultDTO' object has no attribute 'n_epochs'
+⚠️  Falló con código 1 (intento 1, éxitos: 0)
+    Esperando 90s antes de reintentar...

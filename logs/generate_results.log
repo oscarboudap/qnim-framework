@@ -1,138 +1,81 @@
-22:44:31 | INFO     | qnim.application.generate_experiment_results | =================================================================
-22:44:31 | INFO     | qnim.application.generate_experiment_results |   QNIM Framework — Pipeline Completo
-22:44:31 | INFO     | qnim.application.generate_experiment_results |   Backend: ibm_marrakesh
-22:44:31 | INFO     | qnim.application.generate_experiment_results |   n_qubits: 12
-22:44:31 | INFO     | qnim.application.generate_experiment_results |   Hardware real: True
-22:44:31 | INFO     | qnim.application.generate_experiment_results | =================================================================
-22:44:31 | INFO     | qnim.application.generate_experiment_results | [Step 1] Generando dataset con SSTG (Capas 5-7)...
-22:44:36 | INFO     | qnim.application.generate_experiment_results |   Dataset: 1040 train / 260 val | 13 clases | SNR 19.0 (válido: True)
-22:44:36 | INFO     | qnim.application.generate_experiment_results | [Step 2] D-Wave QUBO: match function ponderada por PSD LIGO O3...
-22:44:36 | INFO     | qnim.infrastructure.neal_annealer_adapter | Construyendo QUBO con match function LIGO O3 (64 templates, features=12)
-22:44:36 | INFO     | qnim.infrastructure.qubo_match_ligo | Construyendo cuadricula de 40 templates 3.5PN...
-22:44:36 | INFO     | qnim.infrastructure.qubo_match_ligo | Mejor template: m1=20.0, m2=15.0, chi_eff=-0.500, M=1.0000, SNR_est=24.0
-22:44:43 | INFO     | qnim.infrastructure.neal_annealer_adapter | D-Wave QUBO (ruido simulado): m1=20.0±12.24 M_☉, m2=15.0±7.99 M_☉, χ_eff=-0.500±0.408, M=1.0000, SNR_est=24.0, GR_consistent=True, stability=0.25, E=0.1574±0.2193
-22:44:43 | INFO     | qnim.application.generate_experiment_results |   D-Wave: m1=20.0 M_☉, m2=15.0 M_☉, χ_eff=-0.500, match=1.0, GR_consistent=True
-22:44:43 | INFO     | qnim.application.generate_experiment_results |   D-Wave ruido: σ(m1)=12.24, σ(m2)=7.99, σ(χ_eff)=0.408, stability=0.25, noise_model=gaussian_qubo_coefficients, n=24
-22:44:43 | INFO     | qnim.application.generate_experiment_results | [Step 3] VQC QNSPSA-EML-Feynman: mode=ibm, n_qubits=12...
-22:45:15 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | IBM conectado para validación final: backend=ibm_marrakesh, qubits=156
-22:45:16 | INFO     | qiskit.passmanager.base_tasks | Pass: UnrollCustomDefinitions - 0.21052 (ms)
-22:45:16 | INFO     | qiskit.passmanager.base_tasks | Pass: BasisTranslator - 0.11945 (ms)
-22:45:16 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Noise-aware: qiskit_aer Sampler (legacy API) OK
-22:45:16 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | QNSPSA config: maxiter=218, patience=43 (= maxiter/5, evita early-stop prematuro)
-22:45:16 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Iniciando QNSPSA-EML-Feynman: mode=ibm, n_params=72, maxiter=218
-22:46:06 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 10  loss=2.5608
-22:46:57 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 20  loss=2.5446
-22:47:45 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 30  loss=2.5437
-22:48:35 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 40  loss=2.5398
-22:49:26 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 50  loss=2.5347
-22:50:17 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 60  loss=2.5347
-22:51:07 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 70  loss=2.5322
-22:51:58 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 80  loss=2.5322
-22:52:59 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 90  loss=2.5322
-22:53:57 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=100  loss=2.5253
-22:54:56 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=110  loss=2.5253
-22:55:55 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=120  loss=2.5253
-22:56:53 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=130  loss=2.5253
-22:57:35 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | Early stopping en iter 137: sin mejora > 0.001 en 43 iteraciones
-22:57:35 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | QNSPSA-EML-Feynman: 137 iters, 13838 evals, loss=2.5245, speedup_vs_spsa=2.2×, converged=True
-22:57:35 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Entrenamiento completado: loss=2.5245, acc_est=0.832, speedup=2.2×, tiempo=771.2s
-22:57:40 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Conectado a ibm_marrakesh (156 qubits)
-22:57:40 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | n_qubits hardware: 12 → 27 (escalado para mayor expresividad)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: ContainsInstruction - 0.03338 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: UnitarySynthesis - 0.03099 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: HighLevelSynthesis - 3.37291 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: BasisTranslator - 0.39196 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: ElidePermutations - 0.02837 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: RemoveDiagonalGatesBeforeMeasure - 0.03839 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: RemoveIdentityEquivalent - 0.11563 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: InverseCancellation - 0.15235 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: ContractIdleWiresInControlFlow - 0.01550 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: CommutativeCancellation - 0.68569 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: ConsolidateBlocks - 1.26195 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: Split2QUnitaries - 0.01740 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: SetLayout - 0.01645 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: VF2Layout - 48.56563 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: FullAncillaAllocation - 0.41628 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: EnlargeWithAncilla - 0.52691 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: ApplyLayout - 1.16205 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: CheckMap - 0.46039 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: FilterOpNodes - 0.41032 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: UnitarySynthesis - 0.02789 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: HighLevelSynthesis - 0.09513 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: BasisTranslator - 5.61166 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: Size - 0.02265 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: Depth - 0.23770 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: MinimumPoint - 0.08821 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: ConsolidateBlocks - 1.43981 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: UnitarySynthesis - 0.03219 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: RemoveIdentityEquivalent - 0.28634 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: Optimize1qGatesDecomposition - 0.88549 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: CommutativeCancellation - 1.60909 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: ContractIdleWiresInControlFlow - 0.01431 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: GatesInBasis - 0.22125 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: Size - 0.01884 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_task11:14:40 | WARNING  | urllib3.connectionpool | Retrying (PostForcelistRetry(total=4, connect=3, read=None, redirect=None, status=None)) after connection broken by 'RemoteDisconnected('Remote end closed connection without response')': /api/v1/jobs/d8pdbii01fac73d1iung?exclude_params=true
-12:02:28 | WARNING  | urllib3.connectionpool | Retrying (PostForcelistRetry(total=4, connect=3, read=None, redirect=None, status=None)) after connection broken by 'RemoteDisconnected('Remote end closed connection without response')': /api/v1/jobs/d8pdbii01fac73d1iung?exclude_params=true
-iveCancellation - 2.50196 (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: ContractIdleWiresInControlFlow - 0.01526 (ms)
-22:57:41 | INFO     | qiski11:14:40 | WARNING  | urllib3.connectionpool | Retrying (PostForcelistRetry(total=4, connect=3, read=None, redirect=None, status=None)) after connection broken by 'RemoteDisconnected('Remote end closed connection without response')': /api/v1/jobs/d8peg4mab0ds73dp09g0?exclude_params=true
-12:02:28 | WARNING  | urllib3.connectionpool | Retrying (PostForcelistRetry(total=4, connect=3, read=None, redirect=None, status=None)) after connection broken by 'RemoteDisconnected('Remote end closed connection without response')': /api/v1/jobs/d8peg4mab0ds73dp09g0?exclude_params=true
- (ms)
-22:57:41 | INFO     | qiskit.passmanager.base_tasks | Pass: InstructionDurationCheck - 0.01740 (ms)
-22:57:41 | INFO     | qiskit.compiler.transpiler | Total Transpile Time - 878.63111 (ms)
-22:57:41 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Ansatz ISA: 156q, depth=29, params=162, reps=2
-22:57:41 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | SamplerV2 OK (reps=1, depth=21)
-22:59:10 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | IBM hardware (reps=2): n_samples=100, acc=0.070 (7/100 correctas)
-22:59:10 | INFO     | qnim.application.generate_experiment_results |   VQC: acc_sim=0.832, épocas=137, speedup=2.2×, QNSPSA_converged=True
-22:59:10 | INFO     | qnim.application.generate_experiment_results | [Step 4] QFI vs CFI + cota de Holevo...
-22:59:10 | INFO     | qnim.infrastructure.statistical_corrections | Holevo bound (n=12, S̄=3.82b): lb=1.066, improved=1.375, empirical=[1.75,2.23]
-22:59:10 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [δQ]: F_Q=10.00, F_C=3.33, ratio=3.00, Holevo_lb=1.066, above_lb=True
-22:59:11 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [m_g]: F_Q=10.00, F_C=4.17, ratio=2.40, Holevo_lb=1.066, above_lb=True
-22:59:11 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [|R|]: F_Q=10.00, F_C=5.56, ratio=1.80, Holevo_lb=1.066, above_lb=True
-22:59:11 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [Δs]: F_Q=10.00, F_C=4.76, ratio=2.10, Holevo_lb=1.066, above_lb=True
-22:59:11 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [α]: F_Q=10.00, F_C=5.56, ratio=1.80, Holevo_lb=1.066, above_lb=True
-22:59:11 | INFO     | qnim.application.generate_experiment_results |   δQ: F_Q/F_C=3.00, Holevo_lb=1.066, above_lb=✅
-22:59:11 | INFO     | qnim.application.generate_experiment_results |   m_g: F_Q/F_C=2.40, Holevo_lb=1.066, above_lb=✅
-22:59:11 | INFO     | qnim.application.generate_experiment_results |   |R|: F_Q/F_C=1.80, Holevo_lb=1.066, above_lb=✅
-22:59:11 | INFO     | qnim.application.generate_experiment_results |   Δs: F_Q/F_C=2.10, Holevo_lb=1.066, above_lb=✅
-22:59:11 | INFO     | qnim.application.generate_experiment_results |   α: F_Q/F_C=1.80, Holevo_lb=1.066, above_lb=✅
-22:59:11 | INFO     | qnim.application.generate_experiment_results | [Step 5] GW150914: test espectroscópico + TI Bayes + BH...
-22:59:11 | INFO     | qnim.infrastructure.statistical_corrections | No-hair test (M_f=63.3, χ_f=0.672): δM_f=0.47σ, δχ=0.00σ, consistent=True
-22:59:11 | INFO     | qnim.infrastructure.statistical_corrections | Multiple testing correction (10 tests): Bonferroni α=2.87e-08, Šidák α=2.87e-08, Fisher 0.2σ
-22:59:11 | INFO     | qnim.infrastructure.statistical_analysis_service | GW150914 QNIM completo: m1=35.2, m2=30.1, M_f=63.3, χ_f=0.672, H₀=65.6, CI_ok=True, no_hair_consistent=True, n_theories_significant(BH)=0/10
-22:59:11 | INFO     | qnim.application.generate_experiment_results |   GW150914: m1=35.2, m2=30.1, GR_consistent=True, no_hair_Kerr=True, Fisher_sigma=0.2σ
-22:59:11 | INFO     | qnim.application.generate_experiment_results | [Step 6] Analisis de barren plateaus...
-22:59:11 | INFO     | qnim.application.generate_experiment_results |   Var[grad] n=12: 4.6272e-01, n=27: 2.8021e-01
-22:59:11 | INFO     | qnim.application.generate_experiment_results |   Todos n en [4,27] tienen Var > 1e-3 con EML: True. Referencia: Cerezo et al. 2021, Nat. Commun. 12:1791
-22:59:11 | INFO     | qnim.application.generate_experiment_results | [Step 7] Benchmark Big-O: QNSPSA-EML-Feynman vs SPSA...
-22:59:12 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | QNSPSA-EML-Feynman: 100 iters, 10101 evals, loss=1.8727, speedup_vs_spsa=3.0×, converged=False
-22:59:12 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Big-O benchmark: SPSA 600 evals / 0.02s, QNSPSA 10101 evals / 0.52s, speedup=3.0x (calidad), 0.0x (time), 0.1x (evals)
-22:59:12 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   NOTA TFM: reportar speedup_quality=3.0x como metrica principal (epocas hasta convergencia = jobs IBM)
-22:59:12 | INFO     | qnim.application.generate_experiment_results |   Speedup medido: 3.0× vs SPSA
-22:59:12 | INFO     | qnim.application.generate_experiment_results | [Step 8] Generando figuras y reportes...
-22:59:15 | INFO     | qnim.infrastructure.reporting |   Figura generada: data/hardware/ibm_marrakesh_noise_aware_runs/run_tmp_5/figures/fig1_convergence.png
-22:59:17 | INFO     | qnim.infrastructure.reporting |   Figura generada: data/hardware/ibm_marrakesh_noise_aware_runs/run_tmp_5/figures/fig2_confusion_matrix.png
-22:59:17 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-22:59:17 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-22:59:18 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-22:59:18 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-22:59:18 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-22:59:18 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-22:59:18 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-22:59:18 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-22:59:19 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-22:59:19 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-22:59:19 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-22:59:19 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-22:59:19 | INFO     | qnim.infrastructure.reporting |   Figura generada: data/hardware/ibm_marrakesh_noise_aware_runs/run_tmp_5/figures/fig3_qfi_cfi.png
-22:59:21 | INFO     | qnim.infrastructure.reporting |   Figura generada: data/hardware/ibm_marrakesh_noise_aware_runs/run_tmp_5/figures/fig4_accuracy_snr.png
-22:59:23 | INFO     | qnim.infrastructure.reporting |   Figura generada: data/hardware/ibm_marrakesh_noise_aware_runs/run_tmp_5/figures/fig5_barren_plateaus.png
-22:59:26 | INFO     | qnim.infrastructure.reporting |   Figura generada: data/hardware/ibm_marrakesh_noise_aware_runs/run_tmp_5/figures/fig6_gw150914.png
-22:59:31 | INFO     | qnim.infrastructure.reporting |   Figura generada: data/hardware/ibm_marrakesh_noise_aware_runs/run_tmp_5/figures/fig7_dashboard.png
-22:59:31 | INFO     | qnim.application.generate_experiment_results |   Figuras: 7/7 generadas
-22:59:31 | INFO     | qnim.infrastructure.reporting | JSON guardado: data/hardware/ibm_marrakesh_noise_aware_runs/run_tmp_5/full_results.json
-22:59:31 | INFO     | qnim.application.generate_experiment_results |   JSON: data/hardware/ibm_marrakesh_noise_aware_runs/run_tmp_5/full_results.json
-22:59:31 | INFO     | qnim.infrastructure.reporting | CSV guardado: data/hardware/ibm_marrakesh_noise_aware_runs/run_tmp_5/results_summary.csv (19 filas)
-22:59:31 | INFO     | qnim.application.generate_experiment_results |   CSV: data/hardware/ibm_marrakesh_noise_aware_runs/run_tmp_5/results_summary.csv
-22:59:31 | INFO     | qnim.application.generate_experiment_results |   Tablas LaTeX: 1 en data/hardware/ibm_marrakesh_noise_aware_runs/run_tmp_5/latex/
-22:59:31 | INFO     | qnim.application.generate_experiment_results | Pipeline completado en 899.9s
+14:40:57 | INFO     | qnim.application.generate_experiment_results | =================================================================
+14:40:57 | INFO     | qnim.application.generate_experiment_results |   QNIM Framework — Pipeline Completo
+14:40:57 | INFO     | qnim.application.generate_experiment_results |   Backend: ibm_fez
+14:40:57 | INFO     | qnim.application.generate_experiment_results |   n_qubits: 12
+14:40:57 | INFO     | qnim.application.generate_experiment_results |   Hardware real: False
+14:40:57 | INFO     | qnim.application.generate_experiment_results | =================================================================
+14:40:57 | INFO     | qnim.application.generate_experiment_results | [Step 1] Generando dataset con SSTG (Capas 5-7)...
+14:40:59 | INFO     | qnim.application.generate_experiment_results |   Dataset: 1040 train / 260 val | 13 clases | SNR 19.0 (válido: True)
+14:40:59 | INFO     | qnim.application.generate_experiment_results | [Step 2] D-Wave QUBO: match function ponderada por PSD LIGO O3...
+14:40:59 | INFO     | qnim.infrastructure.neal_annealer_adapter | Construyendo QUBO con match function LIGO O3 (64 templates, features=12)
+14:40:59 | INFO     | qnim.infrastructure.qubo_match_ligo | Construyendo cuadricula de 40 templates 3.5PN...
+14:40:59 | INFO     | qnim.infrastructure.qubo_match_ligo | Mejor template: m1=20.0, m2=15.0, chi_eff=-0.500, M=1.0000, SNR_est=24.0
+14:41:03 | WARNING  | qnim.infrastructure.neal_annealer_adapter | Inestabilidad alta bajo ruido de annealing (stability=0.17). Forzando template de mejor match directo (0).
+14:41:03 | INFO     | qnim.infrastructure.neal_annealer_adapter | D-Wave QUBO (ruido simulado): m1=20.0±8.41 M_☉, m2=15.0±6.61 M_☉, χ_eff=-0.500±0.373, M=1.0000, SNR_est=24.0, GR_consistent=True, stability=0.17, E=0.0932±0.1754
+14:41:03 | INFO     | qnim.application.generate_experiment_results |   D-Wave: m1=20.0 M_☉, m2=15.0 M_☉, χ_eff=-0.500, match=1.0, GR_consistent=True
+14:41:03 | INFO     | qnim.application.generate_experiment_results |   D-Wave ruido: σ(m1)=8.41, σ(m2)=6.61, σ(χ_eff)=0.373, stability=0.17, noise_model=gaussian_qubo_coefficients, n=24
+14:41:03 | INFO     | qnim.application.generate_experiment_results | [Step 3] VQC QNSPSA-EML-Feynman: mode=sim, n_qubits=12...
+14:41:03 | INFO     | qiskit.passmanager.base_tasks | Pass: UnrollCustomDefinitions - 0.13113 (ms)
+14:41:03 | INFO     | qiskit.passmanager.base_tasks | Pass: BasisTranslator - 0.03386 (ms)
+14:41:04 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Noise-aware: qiskit_aer SamplerV2(options.backend_options.noise_model) OK (p_cx=0.002, p_ro=0.015)
+14:41:04 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | DIAGNÓSTICO inicial: loss(x0)=3.015724, loss(x0 + 0.5 en param 0)=2.847258, diff=0.168466 (diff≈0 indica circuito insensible a theta en x0)
+14:41:04 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | QNSPSA config: maxiter=60, patience=12 (= maxiter/5, evita early-stop prematuro)
+14:41:04 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Iniciando QNSPSA-EML-Feynman: mode=sim, n_params=72, maxiter=60
+14:52:04 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 10  loss=2.2103
+14:58:40 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | Early stopping en iter 16: sin mejora > 0.001 en 12 iteraciones
+14:58:40 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | QNSPSA-EML-Feynman: 16 iters, 1617 evals, loss=2.2103, speedup_vs_spsa=18.8×, converged=True
+14:58:40 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Entrenamiento completado: loss=2.2103, speedup=18.8×, tiempo=1057.3s (accuracy se mide por separado en train_and_evaluate, no se infiere del loss aquí)
+14:58:51 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Accuracy simulador (REAL, contada): 0.062 (260/260 evaluadas correctamente)
+14:58:51 | INFO     | qnim.application.generate_experiment_results |   VQC: acc_sim=0.062, épocas=16, speedup=18.8×, QNSPSA_converged=True
+14:58:51 | INFO     | qnim.application.generate_experiment_results | [Step 4] QFI vs CFI + cota de Holevo...
+14:58:51 | INFO     | qnim.infrastructure.statistical_corrections | Holevo bound (n=12, S̄=3.82b): lb=1.066, improved=1.375, empirical=[1.75,2.23]
+14:58:51 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [δQ]: F_Q=40.00, F_C=13.33, ratio=3.00, Holevo_lb=1.066, above_lb=True
+14:58:51 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [m_g]: F_Q=40.00, F_C=16.67, ratio=2.40, Holevo_lb=1.066, above_lb=True
+14:58:51 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [|R|]: F_Q=40.00, F_C=22.22, ratio=1.80, Holevo_lb=1.066, above_lb=True
+14:58:51 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [Δs]: F_Q=40.00, F_C=19.05, ratio=2.10, Holevo_lb=1.066, above_lb=True
+14:58:51 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [α]: F_Q=40.00, F_C=22.22, ratio=1.80, Holevo_lb=1.066, above_lb=True
+14:58:51 | INFO     | qnim.application.generate_experiment_results |   δQ: F_Q/F_C=3.00, Holevo_lb=1.066, above_lb=✅
+14:58:51 | INFO     | qnim.application.generate_experiment_results |   m_g: F_Q/F_C=2.40, Holevo_lb=1.066, above_lb=✅
+14:58:51 | INFO     | qnim.application.generate_experiment_results |   |R|: F_Q/F_C=1.80, Holevo_lb=1.066, above_lb=✅
+14:58:51 | INFO     | qnim.application.generate_experiment_results |   Δs: F_Q/F_C=2.10, Holevo_lb=1.066, above_lb=✅
+14:58:51 | INFO     | qnim.application.generate_experiment_results |   α: F_Q/F_C=1.80, Holevo_lb=1.066, above_lb=✅
+14:58:51 | INFO     | qnim.application.generate_experiment_results | [Step 5] GW150914: test espectroscópico + TI Bayes + BH...
+14:58:51 | INFO     | qnim.infrastructure.statistical_corrections | No-hair test (M_f=63.5, χ_f=0.672): δM_f=0.47σ, δχ=0.00σ, consistent=True
+14:58:51 | INFO     | qnim.infrastructure.statistical_corrections | Multiple testing correction (10 tests): Bonferroni α=2.87e-08, Šidák α=2.87e-08, Fisher 0.2σ
+14:58:51 | INFO     | qnim.infrastructure.statistical_analysis_service | GW150914 QNIM completo: m1=35.6, m2=29.8, M_f=63.5, χ_f=0.672, H₀=64.5, CI_ok=True, no_hair_consistent=True, n_theories_significant(BH)=0/10
+14:58:51 | INFO     | qnim.application.generate_experiment_results |   GW150914: m1=35.6, m2=29.8, GR_consistent=True, no_hair_Kerr=True, Fisher_sigma=0.2σ
+14:58:51 | INFO     | qnim.application.generate_experiment_results | [Step 6] Analisis de barren plateaus...
+14:58:51 | INFO     | qnim.application.generate_experiment_results |   Var[grad] n=12: 4.6272e-01, n=27: 2.8021e-01
+14:58:51 | INFO     | qnim.application.generate_experiment_results |   Todos n en [4,27] tienen Var > 1e-3 con EML: True. Referencia: Cerezo et al. 2021, Nat. Commun. 12:1791
+14:58:51 | INFO     | qnim.application.generate_experiment_results | [Step 7] Benchmark Big-O: QNSPSA-EML-Feynman vs SPSA...
+14:58:52 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | QNSPSA-EML-Feynman: 100 iters, 10101 evals, loss=1.8727, speedup_vs_spsa=3.0×, converged=False
+14:58:52 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Big-O benchmark: SPSA 600 evals / 0.02s, QNSPSA 10101 evals / 0.62s, speedup=3.0x (calidad), 0.0x (time), 0.1x (evals)
+14:58:52 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   NOTA TFM: reportar speedup_quality=3.0x como metrica principal (epocas hasta convergencia = jobs IBM)
+14:58:52 | INFO     | qnim.application.generate_experiment_results |   Speedup medido: 3.0× vs SPSA
+14:58:52 | INFO     | qnim.application.generate_experiment_results | [Step 8] Generando figuras y reportes...
+14:58:53 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig1_convergence.png
+14:58:55 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig2_confusion_matrix.png
+14:58:56 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+14:58:56 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+14:58:56 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+14:58:56 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+14:58:56 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+14:58:56 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+14:58:56 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+14:58:56 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+14:58:56 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+14:58:57 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+14:58:57 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+14:58:57 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+14:58:57 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig3_qfi_cfi.png
+14:58:58 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig4_accuracy_snr.png
+14:58:59 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig5_barren_plateaus.png
+14:59:01 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig6_gw150914.png
+14:59:04 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig7_dashboard.png
+14:59:04 | INFO     | qnim.application.generate_experiment_results |   Figuras: 7/7 generadas
+14:59:04 | INFO     | qnim.infrastructure.reporting | JSON guardado: reports/full_results.json
+14:59:04 | INFO     | qnim.application.generate_experiment_results |   JSON: reports/full_results.json
+14:59:04 | INFO     | qnim.infrastructure.reporting | CSV guardado: reports/results_summary.csv (19 filas)
+14:59:04 | INFO     | qnim.application.generate_experiment_results |   CSV: reports/results_summary.csv
+14:59:04 | INFO     | qnim.application.generate_experiment_results |   Tablas LaTeX: 1 en reports/latex/
+14:59:04 | INFO     | qnim.application.generate_experiment_results | Pipeline completado en 1087.2s
