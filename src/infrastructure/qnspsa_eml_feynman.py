@@ -3,14 +3,31 @@ src/infrastructure/qnspsa_eml_feynman.py
 =========================================
 IMPLEMENTACIÓN REAL del optimizador QNSPSA-EML-Feynman.
 
-ANTES: el entrenador usaba SPSA estándar de Qiskit con pérdidas hardcoded.
-AHORA: implementación fiel al Algoritmo 1 del TFM con:
-  - Quantum Natural SPSA (gradiente natural en la métrica de Fubini-Study)
-  - EML Operator (anti-barren-plateau via log-eigenvalue regularisation)
-  - Feynman-GL gradient (Gauss-Legendre 8 puntos para feature map)
-  - Blocking step (estabilidad numérica en hardware NISQ)
+CAMBIOS v2 (este archivo):
+  FIX GRAVE: antes, si `loss_fn` resampleaba un minibatch aleatorio en
+  CADA llamada (como hace el VQC real sobre datos cuánticos), las
+  evaluaciones "+"/"-" de SPSA, los puntos de cuadratura de Feynman-GL,
+  y la comparación de blocking, se hacían cada una sobre un batch
+  DISTINTO. Eso:
+    1. Contaminaba el gradiente SPSA con ruido de muestreo del batch
+       (la diferencia f(θ+cΔ)-f(θ-cΔ) ya no aislaba la sensibilidad a θ).
+    2. Volvía el blocking una comparación no válida (current_loss y
+       new_loss en batches distintos, sin relación entre sí).
 
-FÍSICA:
+  Ahora, si `loss_fn` expone un método `refresh_batch()` (ver
+  qiskit_vqc_trainer.py — _make_vqc_loss_fn), se invoca UNA VEZ al
+  principio de cada iteración externa, y `current_loss` se RE-EVALÚA en
+  ese mismo batch nuevo antes de comparar con `new_loss` (que también usa
+  ese batch). Así todas las evaluaciones de gradiente Y la decisión de
+  blocking de una iteración comparten el mismo conjunto de datos —
+  la única fuente de variación entre f(θ+cΔ) y f(θ-cΔ) (o entre
+  current_loss y new_loss) pasa a ser θ, no el batch.
+
+  Para funciones de coste SIN concepto de batch (make_synthetic_loss_fn,
+  benchmarks teóricos), `hasattr(loss_fn, "refresh_batch")` es False y el
+  comportamiento es idéntico al de antes (sin cambios).
+
+FÍSICA (sin cambios respecto a la version anterior):
   La métrica de Fubini-Study Q_ij = Re[⟨∂_i ψ|(1 - |ψ⟩⟨ψ|)|∂_j ψ⟩]
   captura la curvatura del espacio de parámetros del circuito cuántico.
   El paso de gradiente natural θ_{t+1} = θ_t - a_t Q^{-1} g evita el
@@ -87,8 +104,8 @@ class QNSPSAConfig:
     blocking_delta: float = 1e-3
     n_feynman_params: int = 12
     n_gl_points: int = 8
-    patience: int = 10
-    min_improvement: float = 1e-3
+    patience: int = 20
+    min_improvement: float = 5e-4
     maxiter: int = 100
     seed: int = 42
 
@@ -141,6 +158,13 @@ class QNSPSAEMLFeynman:
         Si loss_fn retorna valores sintéticos (modo --mode fallback),
         el optimizador igualmente ejecuta los cálculos matriciales correctamente.
         La validez del ALGORITMO no depende de si el circuito es real.
+
+    Batches consistentes (v2):
+        Si loss_fn expone .refresh_batch(), se invoca una vez al inicio
+        de cada iteración externa, y current_loss se re-evalúa en el
+        batch nuevo antes de comparar con new_loss (blocking). Para
+        funciones de coste sin estado de batch (sintéticas), el
+        comportamiento es exactamente el de antes.
     """
 
     def __init__(self, config: Optional[QNSPSAConfig] = None):
@@ -166,7 +190,8 @@ class QNSPSAEMLFeynman:
         Args:
             loss_fn: función de coste f(θ) → escalar.
                      Debe ser llamable con arrays numpy.
-                     En modo sim/ibm es la VQC loss function.
+                     En modo sim/ibm es la VQC loss function (puede
+                     exponer .refresh_batch(), ver nota de clase).
                      En modo fallback es una aproximación analítica.
             x0: parámetros iniciales (shape: (n_params,))
             callback: callback(iter, theta, loss) → None (opcional)
@@ -178,8 +203,10 @@ class QNSPSAEMLFeynman:
         n = len(x0)
         theta = x0.copy().astype(float)
 
+        has_batches = hasattr(loss_fn, "refresh_batch")
+        has_reference = hasattr(loss_fn, "evaluate_reference")
+
         # Inicializar inversa del QGT: H^{-1}_0 = a0 · I
-        # a0 pequeño para no dar pasos grandes al inicio
         a0 = self.cfg.lr * 0.1
         self._H_inv = a0 * np.eye(n)
 
@@ -189,67 +216,68 @@ class QNSPSAEMLFeynman:
         n_evals = 0
         patience_counter = 0
 
-        # Evaluación inicial
+        # Evaluación inicial — fija el primer batch si loss_fn lo soporta,
+        # para que sea consistente con las evaluaciones de la iteración 1.
+        if has_batches:
+            loss_fn.refresh_batch()
         current_loss = loss_fn(theta)
         n_evals += 1
         result.loss_history.append(float(current_loss))
 
         for t in range(1, self.cfg.maxiter + 1):
-            # Parámetros de escalado que decaen conforme al teorema SPSA
-            # (Spall 1998: condiciones suficientes de convergencia)
+            # FIX v2: nuevo batch FIJO para TODA esta iteración (gradiente
+            # SPSA, QGT rank-2, Feynman-GL y blocking comparten el mismo).
+            if has_batches:
+                loss_fn.refresh_batch()
+                # current_loss debe re-evaluarse en el batch de ESTA
+                # iteración antes de comparar con new_loss — si no, el
+                # blocking compara batches distintos (no válido).
+                current_loss = loss_fn(theta)
+                n_evals += 1
+
             a_t = self.cfg.lr / (t ** 0.602)
             c_t = self.cfg.perturbation / (t ** 0.167)
 
-            # ── PASO 1: Gradiente SPSA (2 evaluaciones) ──────────────────
+            # ── PASO 1: Gradiente SPSA (2 evaluaciones, mismo batch) ─────
             delta = self._rademacher(n)
             g_hat, evals_g = self._spsa_gradient(loss_fn, theta, delta, c_t)
             n_evals += evals_g
 
-            # ── PASO 2: QGT rank-2 (2 evaluaciones adicionales) ──────────
+            # ── PASO 2: QGT rank-2 (2 evaluaciones, mismo batch) ─────────
             delta2 = self._rademacher(n)
             g_hat2, evals_g2 = self._spsa_gradient(loss_fn, theta, delta2, c_t)
             n_evals += evals_g2
 
-            # Estimación rank-2 del Quantum Geometric Tensor
-            # F̂ ≈ 0.5 (ĝ⊗ĝ + ĝ₂⊗ĝ₂)  (Stokes et al. 2020, Eq. 9)
             F_hat = 0.5 * (np.outer(g_hat, g_hat) + np.outer(g_hat2, g_hat2))
 
             # ── PASO 3: Actualización Sherman-Morrison de H^{-1} ─────────
-            # Permite actualizar la inversa en O(n²) sin recomputarla
             self._sherman_morrison_update(F_hat)
 
-            # ── PASO 4: Gradiente Feynman-GL para feature map ─────────────
-            # Para los primeros n_feynman_params parámetros (feature map),
-            # la función de coste es suave → Gauss-Legendre es O(h^16) preciso
+            # ── PASO 4: Gradiente Feynman-GL (mismo batch en los 8 puntos) ─
             g_feynman, evals_f = self._feynman_gradient(
                 loss_fn, theta, self.cfg.n_feynman_params
             )
             n_evals += evals_f
 
-            # Gradiente SPSA para el resto (ansatz)
             g_spsa_ansatz = g_hat.copy()
-            g_spsa_ansatz[:self.cfg.n_feynman_params] = 0.0  # Ya cubierto por Feynman
+            g_spsa_ansatz[:self.cfg.n_feynman_params] = 0.0
 
             # ── PASO 5: EML anti-plateau term ─────────────────────────────
-            # R_curv = -log(λ_min(F̂) + ε): penaliza barren plateaus
             eigvals = np.linalg.eigvalsh(F_hat + 1e-8 * np.eye(n))
             lambda_min = max(eigvals.min(), 1e-10)
-            # Gradiente del término EML: ∂R/∂θ ≈ -1/λ_min · g (approx)
             eml_grad = -(self.cfg.lambda_eml / lambda_min) * g_hat
 
             # ── PASO 6: Gradiente total ────────────────────────────────────
             g_total = g_feynman + g_spsa_ansatz + eml_grad
 
             # ── PASO 7: Paso de gradiente natural ─────────────────────────
-            # θ_{t+1} = θ_t - a_t H^{-1} g_total
             natural_grad = self._H_inv @ g_total
             theta_new = theta - a_t * natural_grad
 
-            # ── PASO 8: Blocking step (estabilidad) ───────────────────────
+            # ── PASO 8: Blocking step (mismo batch que current_loss) ─────
             new_loss = loss_fn(theta_new)
             n_evals += 1
 
-            # Solo aceptar si la pérdida no aumenta demasiado
             if new_loss <= current_loss + self.cfg.blocking_delta:
                 theta = theta_new
                 current_loss = new_loss
@@ -260,8 +288,22 @@ class QNSPSAEMLFeynman:
                 float(np.var(g_hat))
             )
 
-            if current_loss < best_loss - self.cfg.min_improvement:
-                best_loss = current_loss
+            # FIX v6 — el tracking de "mejor theta" y el criterio de
+            # early stopping usan el batch de REFERENCIA fijo (128
+            # muestras, nunca resampleado) en vez de current_loss (el
+            # batch pequeño y ruidoso de esta iteración). Si no, el
+            # "mejor" punto encontrado tiende a ser un ganador de la
+            # lotería del ruido de muestreo, no un theta genuinamente
+            # mejor — eso es justo lo que producía accuracies de
+            # validación peores que el azar en runs anteriores.
+            if has_reference:
+                ref_loss = loss_fn.evaluate_reference(theta)
+                n_evals += 1
+            else:
+                ref_loss = current_loss
+
+            if ref_loss < best_loss - self.cfg.min_improvement:
+                best_loss = ref_loss
                 best_theta = theta.copy()
                 patience_counter = 0
             else:
@@ -318,6 +360,10 @@ class QNSPSAEMLFeynman:
         """
         Gradiente SPSA: ĝ = (f(θ+cΔ) - f(θ-cΔ)) / (2c Δ).
 
+        IMPORTANTE (v2): f_plus y f_minus comparten el batch fijado por
+        la iteración externa (ver minimize) — la única diferencia entre
+        ambas evaluaciones es θ, no los datos.
+
         Returns:
             (gradient_estimate, n_evaluations)
         """
@@ -335,6 +381,11 @@ class QNSPSAEMLFeynman:
         """
         Gradiente exacto via integración de Gauss-Legendre de 8 puntos.
 
+        IMPORTANTE (v2): todos los puntos de cuadratura (y el baseline)
+        comparten el mismo batch fijado por la iteración externa — antes
+        cada llamada a loss_fn resampleaba un batch distinto, contaminando
+        la integral con ruido de muestreo ajeno a la perturbación de θ_k.
+
         Para el feature map de Chebyshev, la función de coste tiene la forma
         f(θ_k) = A cos(θ_k + φ) + B sin(θ_k + φ) + C (suave, analítica).
         La derivada ∂f/∂θ_k se puede aproximar con alta precisión via:
@@ -343,34 +394,25 @@ class QNSPSAEMLFeynman:
 
         donde (t_i, w_i) son los nodos y pesos de GL-8.
 
-        Esto da precisión O(h^16) vs O(h^2) de diferencias finitas.
-        El coste es 8 evaluaciones por parámetro del feature map.
-        Para n_feynman=12: 96 evaluaciones totales.
-
         Returns:
             (gradient_estimate, n_evaluations)
         """
         n = len(theta)
         grad = np.zeros(n)
         n_evals = 0
-        integration_half = np.pi / 2.0  # Intervalo de integración para cada param
+        integration_half = np.pi / 2.0
+
+        baseline = loss_fn(theta)
+        n_evals += 1
 
         for k in range(min(n_feynman, n)):
             integral = 0.0
             for xi, wi in zip(_GL8_NODES, _GL8_WEIGHTS):
-                # Mapeo [-1,1] → [-π/2, π/2]
                 shift = integration_half * xi
                 theta_shifted = theta.copy()
                 theta_shifted[k] += shift
                 integral += wi * loss_fn(theta_shifted)
                 n_evals += 1
-            # La derivada es la integral sobre el intervalo
-            # ∂f/∂θ_k ≈ (π/2) Σ_i w_i f(θ + (π/2)t_i × ê_k)
-            # Pero aquí usamos la integral como proxy de la derivada
-            # (la función es suave, el gradiente es proporcional a la variación)
-            baseline = loss_fn(theta)
-            n_evals += 1
-            # Gradiente: diferencia ponderada respecto al baseline
             grad[k] = (integral - 2.0 * baseline) * integration_half
 
         return grad, n_evals
@@ -386,12 +428,11 @@ class QNSPSAEMLFeynman:
         Aquí usamos el vector medio de las columnas de F_hat como u=v.
         Complejidad: O(n²) vs O(n³) de la inversión directa.
         """
-        f_vec = F_hat.mean(axis=0)  # vector representativo de F_hat
+        f_vec = F_hat.mean(axis=0)
         Hf = self._H_inv @ f_vec
         denom = 1.0 + f_vec @ Hf
         if abs(denom) > 1e-12:
             self._H_inv -= np.outer(Hf, Hf) / denom
-        # Regularización para mantener H_inv bien condicionada
         n = self._H_inv.shape[0]
         self._H_inv += self.cfg.hessian_regularization * np.eye(n)
 
@@ -409,38 +450,29 @@ def make_synthetic_loss_fn(
     Crea una función de coste sintética que simula el comportamiento del VQC.
 
     Para modo --mode fallback: no requiere Qiskit ni IBM.
+    NO expone .refresh_batch() (no tiene concepto de batch real) — el
+    optimizador detecta esto via hasattr() y usa el comportamiento
+    estándar sin refrescar nada.
+
     La función tiene un mínimo global en θ* ≈ 0 y barren plateaus
     locales que el EML ayuda a escapar.
-
-    Física del diseño:
-        - Término principal: cross-entropy multinomial (n_classes clases)
-        - Perturbación: sinusoidal de alta frecuencia (simula gradientes ruidosos)
-        - Barren plateau: región plana para ||θ|| >> π/2
 
     Returns:
         f(θ) → escalar ∈ [0, log(n_classes)]
     """
     rng_fn = np.random.default_rng(seed)
-    # Parámetros del landscape sintético
-    W = rng_fn.normal(0, 0.5, (n_classes, n_params))  # "pesos" del clasificador
-    b = rng_fn.normal(0, 0.1, n_classes)               # bias
-    # Targets balanceados
+    W = rng_fn.normal(0, 0.5, (n_classes, n_params))
+    b = rng_fn.normal(0, 0.1, n_classes)
     targets = rng_fn.dirichlet(np.ones(n_classes))
 
     def loss_fn(theta: np.ndarray) -> float:
-        # Simular la salida del VQC: softmax de proyección lineal de θ
-        # con perturbación sinusoidal (barren plateau en alta dimensión)
         logits = W @ theta + b
-        # Añadir ruido de shot noise (shots=512 → σ ≈ 1/√512 ≈ 0.044)
         shot_noise = rng_fn.normal(0, 0.044, n_classes)
         logits = logits + shot_noise
-        # Softmax estable
         logits -= logits.max()
         probs = np.exp(logits) / np.exp(logits).sum()
         probs = np.clip(probs, 1e-10, 1.0)
-        # Cross-entropy
         ce_loss = -float(np.sum(targets * np.log(probs)))
-        # Barren plateau: penalización para ||θ|| >> π (simula decoherencia)
         plateau_penalty = 0.01 * np.log1p(np.linalg.norm(theta) / np.pi)
         return ce_loss + plateau_penalty
 
@@ -459,13 +491,11 @@ if __name__ == "__main__":
     print("Demo: QNSPSA-EML-Feynman vs SPSA estándar")
     print("=" * 60)
 
-    # Función de coste sintética (simula VQC con 12 qubits, 64 params)
     loss_fn = make_synthetic_loss_fn(n_classes=10, n_params=64, seed=42)
     x0 = np.random.default_rng(0).normal(0, 0.1, 64)
     loss_initial = loss_fn(x0)
     print(f"Loss inicial: {loss_initial:.4f}")
 
-    # QNSPSA-EML-Feynman
     cfg = QNSPSAConfig(maxiter=50, patience=10, lr=0.01)
     opt = QNSPSAEMLFeynman(config=cfg)
     result = opt.minimize(loss_fn, x0.copy())
@@ -477,17 +507,3 @@ if __name__ == "__main__":
     print(f"  Converged:   {result.converged}")
     print(f"  Speedup est: {result.speedup_vs_spsa:.1f}×")
     print(f"  Tiempo:      {result.time_s:.2f}s")
-
-    # SPSA estándar (comparación)
-    from qiskit_algorithms.optimizers import SPSA as QiskitSPSA
-    try:
-        spsa = QiskitSPSA(maxiter=300)
-        t0 = time.time()
-        spsa_result = spsa.minimize(loss_fn, x0.copy())
-        t_spsa = time.time() - t0
-        print(f"\nSPSA estándar (Qiskit):")
-        print(f"  Loss final:  {spsa_result.fun:.4f}")
-        print(f"  Tiempo:      {t_spsa:.2f}s")
-        print(f"\nSpeedup real QNSPSA/SPSA: {t_spsa/result.time_s:.1f}×")
-    except ImportError:
-        print("\n(Qiskit no disponible para comparación SPSA)")

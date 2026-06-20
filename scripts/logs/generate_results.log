@@ -1,0 +1,28 @@
+19:39:17 | INFO     | qnim.application.generate_experiment_results | =================================================================
+19:39:17 | INFO     | qnim.application.generate_experiment_results |   QNIM Framework — Pipeline Completo
+19:39:17 | INFO     | qnim.application.generate_experiment_results |   Backend: ibm_fez
+19:39:17 | INFO     | qnim.application.generate_experiment_results |   n_qubits: 12
+19:39:17 | INFO     | qnim.application.generate_experiment_results |   Hardware real: False
+19:39:17 | INFO     | qnim.application.generate_experiment_results | =================================================================
+19:39:17 | INFO     | qnim.application.generate_experiment_results | [Step 1] Generando dataset con SSTG (Capas 5-7)...
+19:39:20 | INFO     | qnim.application.generate_experiment_results |   Dataset: 1040 train / 260 val | 13 clases | SNR 19.0 (válido: True)
+19:39:20 | INFO     | qnim.application.generate_experiment_results | [Step 2] D-Wave QUBO: match function ponderada por PSD LIGO O3...
+19:39:20 | INFO     | qnim.infrastructure.neal_annealer_adapter | Construyendo QUBO con match function LIGO O3 (64 templates, features=12)
+19:39:20 | INFO     | qnim.infrastructure.qubo_match_ligo | Construyendo cuadricula de 40 templates 3.5PN...
+19:39:20 | INFO     | qnim.infrastructure.qubo_match_ligo | Mejor template: m1=50.0, m2=45.0, chi_eff=0.500, M=0.8778, SNR_est=21.1
+19:39:20 | INFO     | qnim.infrastructure.neal_annealer_adapter | D-Wave QUBO: m1=50.0 M_☉, m2=45.0 M_☉, χ_eff=0.500, M=0.8778, SNR_est=21.1, GR_consistent=True
+19:39:20 | INFO     | qnim.application.generate_experiment_results |   D-Wave: m1=50.0 M_☉, m2=45.0 M_☉, χ_eff=0.500, match=0.8777711026817547, GR_consistent=True
+19:39:20 | INFO     | qnim.application.generate_experiment_results | [Step 3] VQC QNSPSA-EML-Feynman: mode=sim, n_qubits=12...
+19:39:20 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Iniciando QNSPSA-EML-Feynman: mode=sim, n_params=72, maxiter=60, batch_size=64, patience=20, ansatz_reps=2, lr=0.05, noise_aware=no
+19:42:06 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  1  loss=2.9947
+19:44:55 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  2  loss=2.7999
+19:47:41 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  3  loss=2.7472
+19:50:27 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  4  loss=2.8280
+19:53:11 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  5  loss=2.7233
+19:55:58 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  6  loss=2.8255
+19:59:00 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  7  loss=2.8020
+20:02:10 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  8  loss=2.8743
+20:05:21 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  9  loss=2.6954
+20:08:31 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 10  loss=2.7593
+20:11:41 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 11  loss=2.5323
+20:14:56 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 12  loss=2.7563

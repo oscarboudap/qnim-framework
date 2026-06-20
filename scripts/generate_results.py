@@ -10,10 +10,28 @@ CAMBIOS RESPECTO A LA VERSIÓN ANTERIOR:
   4. La validación n_qubits ≤ 27/50 está AQUÍ (Presentation), no en Application
   5. Todos los resultados del fallback son COMPUTADOS, no hardcoded
 
+CAMBIOS v2 (validación contra ibm_fez real):
+  6. --max-iter por defecto pasa de 2 a 50 (con 2 el VQC no llega ni a
+     empezar a converger; el aviso se mantiene si bajas de 10).
+  7. Nuevos flags --n-hw-validation y --shots-validation: antes la
+     validación en hardware real estaba hardcodeada a 8 muestras / 128
+     shots dentro de QiskitVQCTrainer; ahora son configurables desde CLI.
+  8. Nuevo flag --noise-aware-training: entrena con un simulador LOCAL
+     que imita el ruido real del backend (sin coste de cuota IBM) para
+     reducir el sim-to-real gap.
+
 Uso:
     python scripts/generate_results.py --mode fallback   # algoritmo real, función sintética
     python scripts/generate_results.py --mode sim        # Qiskit Aer (~10 min)
     python scripts/generate_results.py --mode ibm        # IBM ibm_fez real
+
+    # Validación hardware con más muestras/shots y entrenamiento noise-aware:
+    python scripts/generate_results.py --mode ibm --max-iter 60 \
+        --n-hw-validation 20 --shots-validation 512 --noise-aware-training
+
+    # Con ZNE real (gate-folding [1,3,5] + Richardson) — TRIPLICA el coste
+    # de circuitos enviados respecto a no usar ZNE:
+    python scripts/generate_results.py --mode ibm --use-zne --n-hw-validation 10
 
 Autor: Óscar Boullosa Dapena — TFM QNIM, UNIR 2026
 """
@@ -70,6 +88,10 @@ def _build_dwave_adapter():
 def _build_vqc_trainer(config):
     """
     VQC trainer CORREGIDO: usa QNSPSA-EML-Feynman real.
+
+    v2: ahora también propaga n_hw_validation / shots_validation /
+    noise_aware_training al constructor de QiskitVQCTrainer (antes
+    estaban hardcodeados dentro del propio adaptador).
     """
     try:
         from src.infrastructure.qiskit_vqc_trainer import QiskitVQCTrainer
@@ -78,6 +100,14 @@ def _build_vqc_trainer(config):
             backend_name=config.backend_name,
             token=os.environ.get("IBM_QUANTUM_TOKEN", ""),
             mode=config.mode,
+            n_hw_validation=config.n_hw_validation,
+            shots_validation=config.shots_validation,
+            noise_aware_training=config.noise_aware_training,
+            training_batch_size=config.training_batch_size,
+            patience=config.patience,
+            ansatz_reps=config.ansatz_reps,
+            learning_rate=config.learning_rate,
+            reference_shots=config.reference_shots,
         )
     except ImportError as e:
         logger.warning(f"QiskitVQCTrainer no disponible: {e}. Usando Fallback.")
@@ -107,9 +137,12 @@ def _build_reporter():
 
 class _FallbackDataset:
     """Dataset fallback físicamente honesto."""
-    def __init__(self, config):
+    def __init__(self, config, max_classes=None):
         import numpy as np
         from src.infrastructure.matricula_vectors import generate_physically_valid_dataset
+
+        nc_total = 13
+        nc = nc_total if max_classes is None else max(1, min(max_classes, nc_total))
 
         try:
             X_tr, y_tr, X_v, y_v, stats = generate_physically_valid_dataset(
@@ -119,6 +152,11 @@ class _FallbackDataset:
                 snr_range=(config.target_snr_min, config.target_snr_max),
                 seed=config.seed,
             )
+            if max_classes is not None:
+                mask_tr = y_tr < nc
+                mask_v = y_v < nc
+                X_tr, y_tr = X_tr[mask_tr], y_tr[mask_tr]
+                X_v, y_v = X_v[mask_v], y_v[mask_v]
             self.X_train = X_tr
             self.y_train = y_tr
             self.X_val = X_v
@@ -130,7 +168,7 @@ class _FallbackDataset:
         except Exception as e:
             logger.warning(f"Dataset físico falló ({e}), usando sintético simple")
             rng = np.random.default_rng(seed=config.seed)
-            n, v, nc = config.n_events_per_class, config.n_val_per_class, 13
+            n, v = config.n_events_per_class, config.n_val_per_class
             centers = rng.uniform(-3, 3, (nc, config.n_qubits)) * 2.0
             Xs, ys = [], []
             for c in range(nc):
@@ -150,20 +188,20 @@ class _FallbackDataset:
 
         self.n_train = len(self.X_train)
         self.n_val = len(self.X_val)
-        self.n_classes = 13
+        self.n_classes = nc
         self.snr_val = None
         self.class_names = [
             "GR", "standard-siren", "qnm-21", "qnm-33",
             "pn-deformation", "extra-dimensions", "scalar-tensor",
             "graviton-mass", "chern-simons", "liv-alpha2",
             "liv-alpha4", "loop-quantum-gravity", "gup",
-        ]
+        ][:nc]
 
 
 class _FallbackSSTGAdapter:
     def __init__(self, config): self._cfg = config
-    def generate_balanced_dataset(self, n_per_class, n_val_per_class, target_snr_range, seed):
-        return _FallbackDataset(self._cfg)
+    def generate_balanced_dataset(self, n_per_class, n_val_per_class, target_snr_range, seed, max_classes=None):
+        return _FallbackDataset(self._cfg, max_classes=max_classes)
 
 
 class _FallbackDWaveAdapter:
@@ -380,19 +418,58 @@ def main() -> int:
     print("=" * 70)
     print("  QNIM Framework — Resultados Experimentales")
     print("  TFM: Quantum Decoding of Gravitational Waves | UNIR 2026")
-    print("  [Versión con correcciones postdoctorales]")
+    print("  [Versión con correcciones postdoctorales v2]")
     print("=" * 70)
 
     parser = argparse.ArgumentParser(description="QNIM: resultados experimentales")
     parser.add_argument("--mode", choices=["sim", "ibm", "figures", "fallback"], default="fallback")
     parser.add_argument("--n-qubits", type=int, default=12)
     parser.add_argument("--shots",    type=int, default=512)
-    parser.add_argument("--max-iter", type=int, default=2)
+    # FIX v2: el default anterior era 2 — el VQC no llegaba ni a empezar a
+    # converger antes de desplegarse en hardware real. 50 es un mínimo
+    # razonable; sube esto si tu presupuesto de tiempo lo permite.
+    parser.add_argument("--max-iter", type=int, default=50)
     parser.add_argument("--n-per-class", type=int, default=80)
     parser.add_argument("--seed",     type=int, default=42)
     parser.add_argument("--backend",  default="ibm_fez")
-    parser.add_argument("--use-zne",  action="store_true")
+    parser.add_argument("--use-zne",  action="store_true",
+                         help="Activa ZNE REAL (gate-folding [1,3,5] + Richardson). "
+                              "TRIPLICA el numero de circuitos enviados a hardware.")
     parser.add_argument("--output-dir", default="reports")
+    # FIX v2: parámetros antes hardcodeados dentro de QiskitVQCTrainer.
+    parser.add_argument("--n-hw-validation", type=int, default=20,
+                         help="Num. de muestras de validacion enviadas a hardware "
+                              "real (antes hardcodeado a 8).")
+    parser.add_argument("--shots-validation", type=int, default=512,
+                         help="Shots por circuito en la validacion hardware "
+                              "(antes hardcodeado a 128).")
+    parser.add_argument("--noise-aware-training", action="store_true",
+                         help="Entrena con un simulador LOCAL que imita el ruido "
+                              "real del backend (NoiseModel.from_backend), sin "
+                              "coste de cuota IBM, para reducir el sim-to-real gap.")
+    parser.add_argument("--max-classes", type=int, default=None,
+                         help="Trunca el problema a las primeras N teorías (de 13). "
+                              "Útil para pruebas de cordura rápidas (p.ej. 3-4 clases) "
+                              "antes de escalar al problema completo.")
+    parser.add_argument("--batch-size", type=int, default=64,
+                         help="Tamaño del batch de entrenamiento local (antes fijo en "
+                              "32). Con muchas clases, sube esto para tener más "
+                              "muestras/clase por iteración (gradiente menos ruidoso, "
+                              "a cambio de iteraciones más lentas).")
+    parser.add_argument("--patience", type=int, default=20,
+                         help="Iteraciones sin mejora antes de early stopping "
+                              "(antes fijo en 10).")
+    parser.add_argument("--ansatz-reps", type=int, default=2,
+                         help="Profundidad del ansatz EfficientSU2 (mas reps = "
+                              "mas capacidad de representacion, circuitos algo "
+                              "mas profundos).")
+    parser.add_argument("--learning-rate", type=float, default=0.01,
+                         help="Learning rate base de QNSPSA (a_t = lr/t^0.602). "
+                              "Con pocas iteraciones de presupuesto, subir esto "
+                              "aprovecha mejor cada paso.")
+    parser.add_argument("--reference-shots", type=int, default=None,
+                         help="Shots del batch de referencia (decide 'mejor theta'). "
+                              "Por defecto, 2x los shots de entrenamiento.")
     args = parser.parse_args()
 
     # ── Validación n_qubits (límite IBM — está AQUÍ en Presentation, no en Application) ──
@@ -404,12 +481,38 @@ def main() -> int:
         )
         args.n_qubits = n_max
 
+    # FIX v2: aviso explícito si max-iter es demasiado bajo para converger.
+    if args.mode in ("sim", "ibm") and args.max_iter < 10:
+        logger.warning(
+            f"--max-iter={args.max_iter} es muy bajo: el VQC apenas saldrá de "
+            f"su inicialización aleatoria. Se recomienda >= 30-50, especialmente "
+            f"antes de desplegar en hardware real (--mode ibm)."
+        )
+
+    if args.use_zne:
+        logger.warning(
+            f"--use-zne activo: se enviarán 3x circuitos (escalas 1,3,5 de "
+            f"gate-folding) por cada muestra de validación hardware. "
+            f"Con --n-hw-validation={args.n_hw_validation} eso son "
+            f"{args.n_hw_validation * 3} circuitos en un único job."
+        )
+
     print(f"\n  Modo:      {args.mode.upper()}")
     print(f"  n_qubits:  {args.n_qubits}")
     print(f"  Backend:   {args.backend}")
+    print(f"  max_iter:  {args.max_iter}")
+    if args.max_classes is not None:
+        print(f"  max_classes: {args.max_classes} (PRUEBA DE CORDURA, no las 13 completas)")
+    print(f"  batch_size: {args.batch_size}  patience: {args.patience}")
+    print(f"  ansatz_reps: {args.ansatz_reps}  learning_rate: {args.learning_rate}  "
+          f"reference_shots: {args.reference_shots or '2x shots entrenamiento'}")
     print(f"  QNSPSA-EML-Feynman: ACTIVO (optimizador real)")
     print(f"  QUBO: match function ponderada por PSD LIGO O3")
     print(f"  Estadística: Šidák/BH + cota Holevo + test Isi + TI Bayes")
+    if args.mode == "ibm":
+        print(f"  Validación HW: n_hw={args.n_hw_validation}, shots={args.shots_validation}, "
+              f"ZNE={'real (folding+Richardson)' if args.use_zne else 'no'}, "
+              f"noise-aware-training={'sí' if args.noise_aware_training else 'no'}")
     print()
 
     from src.application.use_cases.generate_experiment_results_use_case import (
@@ -428,6 +531,15 @@ def main() -> int:
         use_zne=args.use_zne,
         mode=args.mode,
         output_dir=args.output_dir,
+        n_hw_validation=args.n_hw_validation,
+        shots_validation=args.shots_validation,
+        noise_aware_training=args.noise_aware_training,
+        max_classes=args.max_classes,
+        training_batch_size=args.batch_size,
+        patience=args.patience,
+        ansatz_reps=args.ansatz_reps,
+        learning_rate=args.learning_rate,
+        reference_shots=args.reference_shots,
     )
 
     if args.mode == "figures":

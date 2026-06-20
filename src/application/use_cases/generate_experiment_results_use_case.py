@@ -13,6 +13,14 @@ CORRECCIONES DE INGENIERÍA DEL SOFTWARE:
   3. AÑADIDO: los resultados del análisis estadístico corregido se propagan
      al DTO final (cota de Holevo, test espectroscópico, BH correction).
 
+CAMBIOS v2 (validación contra ibm_fez real):
+  4. AÑADIDOS tres campos de configuración para la validación en hardware
+     real, antes hardcodeados dentro de QiskitVQCTrainer:
+       - n_hw_validation: nº de muestras enviadas a hardware (antes 8 fijo)
+       - shots_validation: shots por circuito en hardware (antes 128 fijo)
+       - noise_aware_training: entrenar con un simulador local que imita
+         el ruido real del backend (reduce el sim-to-real gap)
+
 PRINCIPIO RESTAURADO:
   Application layer ← solo imports de:
     - src.domain.*
@@ -66,6 +74,10 @@ class ExperimentConfig:
     seed: int = 42
     target_snr_min: float = 8.0
     target_snr_max: float = 30.0
+    # Si se proporciona, trunca el problema a las primeras N teorías (de
+    # las 13 totales) — para pruebas de cordura rápidas antes de escalar
+    # al problema completo. None = usar las 13 clases.
+    max_classes: Optional[int] = None
 
     # VQC
     n_qubits: int = 12
@@ -74,6 +86,22 @@ class ExperimentConfig:
     use_real_hardware: bool = False
     backend_name: str = "ibm_fez"
     use_zne: bool = False
+
+    # Validación en hardware real (v2 — antes hardcodeados en
+    # QiskitVQCTrainer: n_hw=8, shots=128, sin opción noise-aware).
+    n_hw_validation: int = 20
+    shots_validation: int = 512
+    noise_aware_training: bool = False
+    # Tamaño del batch de entrenamiento local (antes fijo en 32 — con
+    # muchas clases eso da muy pocas muestras/clase por iteración) y
+    # paciencia del optimizador antes de declarar early stopping.
+    training_batch_size: int = 64
+    patience: int = 20
+    # Profundidad del ansatz, learning rate base de QNSPSA, y shots del
+    # batch de referencia (None = 2x los shots de entrenamiento).
+    ansatz_reps: int = 2
+    learning_rate: float = 0.01
+    reference_shots: Optional[int] = None
 
     # Pipeline
     run_dwave_template_matching: bool = True
@@ -100,6 +128,14 @@ class ExperimentConfig:
             raise ValueError(
                 f"n_events_per_class={self.n_events_per_class} demasiado pequeño. "
                 f"Mínimo 10 para estimación estadística válida."
+            )
+        if self.n_hw_validation < 1:
+            raise ValueError(
+                f"n_hw_validation={self.n_hw_validation} debe ser >= 1."
+            )
+        if self.shots_validation < 1:
+            raise ValueError(
+                f"shots_validation={self.shots_validation} debe ser >= 1."
             )
 
 
@@ -187,6 +223,7 @@ class GenerateExperimentResultsUseCase:
             n_val_per_class=cfg.n_val_per_class,
             target_snr_range=(cfg.target_snr_min, cfg.target_snr_max),
             seed=cfg.seed,
+            max_classes=cfg.max_classes,
         )
 
         result.dataset_n_events = dataset.n_train + dataset.n_val

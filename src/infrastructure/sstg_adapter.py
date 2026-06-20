@@ -5,11 +5,51 @@ Infrastructure: SSTG (Synthetic Signal Template Generator) Adapter
 Adaptador que implementa ISyntheticDataGeneratorPort.
 
 Genera datos sintéticos balanceados para el pipeline de clasificación
-de 10 teorías gravitacionales. Funciona sin dependencias externas
+de teorías gravitacionales. Funciona sin dependencias externas
 complejas mediante síntesis simple.
+
+CAMBIO v3 — BUG GRAVE CORREGIDO (la causa raíz de fondo de todo el
+proceso de depuración de esta sesión):
+
+  La versión anterior codificaba la "firma" de cada teoría como un
+  escalado de AMPLITUD (`theory_modulation = 1 + theory_offset*0.3`).
+  Pero el propio generador divide el strain por su desviación estándar
+  al final (`strain /= np.std(strain)`) — y como esa std es proporcional
+  a la misma amplitud, el escalado por teoría se CANCELA EXACTAMENTE
+  antes de llegar al FFT. Y aunque no se cancelara ahí, la normalización
+  posterior de features (`features / max(features)`) también borra
+  cualquier diferencia de escala global.
+
+  Verificación numérica: con (m1,m2,distancia,ruido) fijos y SOLO
+  variando theory_offset de 0 a 0.92 (todo el rango real usado), las
+  features resultantes eran BIT-IDÉNTICAS. Las etiquetas `y` eran
+  estadísticamente independientes de las features `X` — ningún
+  clasificador, clásico o cuántico, podía hacerlo mejor que el azar con
+  estos datos, sin importar cuántas correcciones se aplicaran al VQC o
+  al optimizador.
+
+  FIX: la firma de teoría ahora se inyecta como un MARCADOR ESPECTRAL en
+  un PAR de bins de FFT específico por clase (dentro de la ventana de 12
+  bins que se extrae como features). Como ambas normalizaciones solo
+  reescalan globalmente (nunca alteran qué bins concentran más potencia
+  relativa), esta señal SÍ sobrevive. Se usan pares de bins (no un bin
+  único) porque con 13 clases y solo 12 bins, un esquema de "un bin por
+  clase" colisionaría (p.ej. clase 0 y clase 10 compartirían bin); con
+  pares hay 55 combinaciones posibles, de sobra para 13 clases.
+
+  AVISO PARA EL TFM: este marcador es una señal sintética FUERTE, pensada
+  para validar que el pipeline VQC completo es capaz de aprender algo en
+  absoluto (separabilidad casi perfecta por diseño). Para resultados
+  finales con pretensión de realismo físico, lo ideal es sustituir este
+  generador por el pipeline de StochasticSignalGenerator + los
+  inyectores Layer5/6/7 ya existentes en
+  src/domain/astrophysics/sstg/ (requieren PyCBC), que inyectan firmas
+  espectrales genuinamente derivadas de física (dipolar, ecos,
+  dispersión...) en vez de un marcador artificial.
 """
 
 import numpy as np
+from itertools import combinations
 from typing import Optional, Tuple
 from dataclasses import dataclass
 
@@ -22,7 +62,7 @@ class SSTGAdapter(ISyntheticDataGeneratorPort):
     """
     Generador de datos sintéticos para clasificación de teorías.
     
-    Genera eventos sintéticos de 10 clases (una por teoría) con
+    Genera eventos sintéticos de N clases (una por teoría) con
     características realistas (strain simulado + ruido coloreado).
     """
     
@@ -47,23 +87,43 @@ class SSTGAdapter(ISyntheticDataGeneratorPort):
         """Inicializa el adaptador SSTG."""
         pass
     
-    @staticmethod
+    # Pares de bins de FFT (dentro de la ventana de 12 features) que
+    # codifican la "firma" de cada teoría. Bins 1..11 (se evita el bin 0
+    # = componente DC). 55 combinaciones posibles, de sobra para 13 clases
+    # sin colisiones.
+    N_FEATURE_BINS = 12
+    _MARKER_BIN_PAIRS = list(combinations(range(1, N_FEATURE_BINS), 2))
+
+    @classmethod
+    def _marker_bins_for_theory(cls, theory_idx: int) -> Tuple[int, int]:
+        return cls._MARKER_BIN_PAIRS[theory_idx % len(cls._MARKER_BIN_PAIRS)]
+
+    @classmethod
     def _generate_simple_strain(
+        cls,
         m1: float,
         m2: float,
         distance: float,
-        theory_offset: float = 0.0,
+        theory_idx: int = 0,
+        marker_strength: float = 4.0,
         duration: float = 8.0,
         fs: int = 4096
     ) -> np.ndarray:
         """
-        Genera strain sintético simple con modulación por teoría.
-        
+        Genera strain sintético con un marcador espectral específico de
+        teoría (par de bins de FFT), robusto frente a la normalización
+        por desviación estándar que se aplica al final.
+
         Args:
             m1: Masa primaria [M_sun]
             m2: Masa secundaria [M_sun]
             distance: Distancia [Mpc]
-            theory_offset: Factor que modula la amplitud (por teoría)
+            theory_idx: Índice de la teoría (0-12) — determina qué par
+                de bins de FFT se marca (ver _marker_bins_for_theory).
+            marker_strength: Fuerza relativa del marcador (relativa a la
+                amplitud característica de la señal). Valor alto (~4.0)
+                produce separabilidad casi perfecta — pensado para
+                validar el pipeline, no como señal físicamente realista.
             duration: Duración total [s]
             fs: Frecuencia de muestreo [Hz]
         
@@ -79,10 +139,6 @@ class SSTGAdapter(ISyntheticDataGeneratorPort):
         
         # Amplitud ~ 1 / (distance * m_total)
         amplitude = 1e-21 / (distance * np.sqrt(m_total))
-        
-        # Modulación por teoría (cada teoría tiene una "firma" diferente)
-        theory_modulation = 1.0 + theory_offset * 0.3
-        amplitude *= theory_modulation
         
         # Crear chirp simple (frecuencia creciente)
         phase = 2 * np.pi * f_char * t + 50 * t**2  # t² para incremento de freq
@@ -105,6 +161,19 @@ class SSTGAdapter(ISyntheticDataGeneratorPort):
         
         # Combinar
         strain = strain + colored_noise[:n_samples]
+
+        # FIX v3: marcador espectral específico de teoría, inyectado
+        # directamente en el dominio de frecuencia en un PAR de bins
+        # único por clase (dentro de la ventana de 12 features extraída
+        # más adelante). Amplitud proporcional a `amplitude` (misma
+        # escala que el resto de la señal) -> sobrevive a la
+        # normalización por std que viene justo después.
+        bin_a, bin_b = cls._marker_bins_for_theory(theory_idx)
+        strain_fft = np.fft.rfft(strain)
+        boost = marker_strength * amplitude * n_samples / 2
+        strain_fft[bin_a] += boost
+        strain_fft[bin_b] += boost
+        strain = np.fft.irfft(strain_fft, n=n_samples)
         
         # Normalizar
         strain_std = np.std(strain)
@@ -148,16 +217,15 @@ class SSTGAdapter(ISyntheticDataGeneratorPort):
             if duration_seconds <= 0:
                 raise ValueError("Duración debe ser > 0")
             
-            # Offset por teoría (para que cada teoría tenga "firma" distinta)
+            # Índice de la teoría (determina el par de bins marcador)
             theory_idx = self.THEORY_CLASSES.index(theory_family) if theory_family in self.THEORY_CLASSES else 0
-            theory_offset = theory_idx / len(self.THEORY_CLASSES)
             
             # Generar strain
             strain = self._generate_simple_strain(
                 m1=mass1_solar_masses,
                 m2=mass2_solar_masses,
                 distance=distance_mpc,
-                theory_offset=theory_offset,
+                theory_idx=theory_idx,
                 duration=duration_seconds,
                 fs=sampling_rate_hz
             )
@@ -173,7 +241,8 @@ class SSTGAdapter(ISyntheticDataGeneratorPort):
                                  n_per_class: int,
                                  n_val_per_class: int,
                                  target_snr_range: Tuple[float, float],
-                                 seed: Optional[int] = None) -> BalancedDataset:
+                                 seed: Optional[int] = None,
+                                 max_classes: Optional[int] = None) -> BalancedDataset:
         """
         Genera un dataset balanceado con eventos sintéticos.
         
@@ -190,6 +259,12 @@ class SSTGAdapter(ISyntheticDataGeneratorPort):
             n_val_per_class: Eventos de validación por clase
             target_snr_range: Rango de SNR objetivo (min, max)
             seed: Seed para reproducibilidad
+            max_classes: Si se proporciona, trunca el problema a las
+                primeras `max_classes` teorías (de las 13 totales). Útil
+                para pruebas de cordura rápidas (3-4 clases) antes de
+                escalar al problema completo de 13 clases — un problema
+                más fácil también es más barato por iteración (menos
+                circuitos para mantener el dataset balanceado).
         
         Returns:
             BalancedDataset con features normalizadas y labels
@@ -206,6 +281,11 @@ class SSTGAdapter(ISyntheticDataGeneratorPort):
             # Parámetros físicos realistas (GW150914-like)
             mass_range = (10.0, 40.0)   # M_sun
             distance_range = (100.0, 1000.0)  # Mpc
+
+            theory_classes = (
+                self.THEORY_CLASSES if max_classes is None
+                else self.THEORY_CLASSES[:max(1, max_classes)]
+            )
             
             X_train_list = []
             y_train_list = []
@@ -215,7 +295,7 @@ class SSTGAdapter(ISyntheticDataGeneratorPort):
             snr_values = []
             
             # Generar datos para cada clase (teoría)
-            for class_idx, theory in enumerate(self.THEORY_CLASSES):
+            for class_idx, theory in enumerate(theory_classes):
                 print(f"  Generando clase {class_idx}: {theory}")
                 
                 # Generar eventos de entrenamiento
@@ -299,6 +379,7 @@ class SSTGAdapter(ISyntheticDataGeneratorPort):
             
             print(f"  ✅ Dataset generado: {len(X_train)} train / {len(X_val)} val")
             print(f"     Features: 12 (primeras componentes FFT)")
+            print(f"     Clases: {len(theory_classes)}{' (truncado para prueba rapida)' if max_classes is not None else ''}")
             print(f"     SNR: {snr_mean:.1f} ± {snr_std:.1f}")
             
             # Crear DTO
@@ -307,7 +388,7 @@ class SSTGAdapter(ISyntheticDataGeneratorPort):
                 y_train=y_train,
                 X_val=X_val,
                 y_val=y_val,
-                n_classes=len(self.THEORY_CLASSES),
+                n_classes=len(theory_classes),
                 snr_mean=snr_mean,
                 snr_std=snr_std,
                 is_physically_valid=True
@@ -317,4 +398,3 @@ class SSTGAdapter(ISyntheticDataGeneratorPort):
             raise ReportingException(
                 f"Error generando dataset balanceado: {str(e)}"
             )
-
