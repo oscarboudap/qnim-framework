@@ -90,13 +90,45 @@ class SSTGAdapter(ISyntheticDataGeneratorPort):
     # Pares de bins de FFT (dentro de la ventana de 12 features) que
     # codifican la "firma" de cada teoría. Bins 1..11 (se evita el bin 0
     # = componente DC). 55 combinaciones posibles, de sobra para 13 clases
-    # sin colisiones.
+    # sin colisiones EXACTAS de pares — pero el orden lexicográfico de
+    # itertools.combinations concentraba el bin 1 en 10 de las 13 clases
+    # (todas comparten un mismo bin, solo el segundo las distingue).
+    # _build_balanced_marker_pairs reparte el uso de cada bin de forma
+    # mucho más uniforme (máximo ~3 clases por bin en vez de 10).
     N_FEATURE_BINS = 12
-    _MARKER_BIN_PAIRS = list(combinations(range(1, N_FEATURE_BINS), 2))
+
+    @staticmethod
+    def _build_balanced_marker_pairs(n_classes: int, n_feature_bins: int) -> list:
+        """
+        Asigna a cada clase un par de bins (1..n_feature_bins-1) de forma
+        GREEDY-BALANCEADA: en cada paso elige, entre los pares aún no
+        usados, el que tiene menor uso acumulado de sus dos bins. Evita
+        que unos pocos bins (p.ej. el bin 1) se conviertan en el único
+        rasgo realmente discriminante para la mayoría de las clases.
+        """
+        all_pairs = list(combinations(range(1, n_feature_bins), 2))
+        usage = {b: 0 for b in range(1, n_feature_bins)}
+        used = set()
+        selected = []
+        for _ in range(n_classes):
+            candidates = [p for p in all_pairs if p not in used] or all_pairs
+            best = min(
+                candidates,
+                key=lambda p: (usage[p[0]] + usage[p[1]], max(usage[p[0]], usage[p[1]]))
+            )
+            selected.append(best)
+            used.add(best)
+            usage[best[0]] += 1
+            usage[best[1]] += 1
+        return selected
 
     @classmethod
     def _marker_bins_for_theory(cls, theory_idx: int) -> Tuple[int, int]:
-        return cls._MARKER_BIN_PAIRS[theory_idx % len(cls._MARKER_BIN_PAIRS)]
+        if not hasattr(cls, "_balanced_pairs_cache"):
+            cls._balanced_pairs_cache = cls._build_balanced_marker_pairs(
+                len(cls.THEORY_CLASSES), cls.N_FEATURE_BINS
+            )
+        return cls._balanced_pairs_cache[theory_idx % len(cls._balanced_pairs_cache)]
 
     @classmethod
     def _generate_simple_strain(

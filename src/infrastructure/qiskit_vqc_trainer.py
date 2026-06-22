@@ -133,6 +133,21 @@ def chebyshev_preprocess(X: np.ndarray, stats: Optional[tuple] = None) -> np.nda
     transfería — no por falta de generalización real, sino porque se le
     daba una codificación distinta de las mismas features físicas.
 
+    NOTA (intento de fix v7 revertido): se probó sustituir el arccos por
+    un mapeo lineal x->pi*x (motivado por la idea de que RY(2*arccos(x))
+    "satura" en x=+-1). Verificación numérica con las probabilidades
+    CONJUNTAS de 2 qubits tras entrelazar (no solo la marginal de un
+    qubit aislado, que es simétrica en el signo de x para CUALQUIER
+    mapeo RY -- eso no es un bug, es una propiedad inevitable de medir
+    en Z tras rotar en Y) mostró que el mapeo lineal es PEOR para separar
+    x=+0.9999 de x=-0.9999 (diferencia total 0.0006) que el arccos
+    original (diferencia total 0.0566). Motivo: cualquier mapeo con
+    recorrido angular total de 2pi tiene un punto de degeneración por
+    fase global en sus dos extremos; el mapeo lineal probado colocaba
+    ese punto justo donde vive el marcador de clase (x≈+1), empeorando
+    las cosas. Se revierte al arccos original hasta tener evidencia
+    empírica (no solo álgebra de operadores) de que otro esquema mejora.
+
     Si `stats` se proporciona (computado UNA VEZ sobre X_train via
     compute_chebyshev_stats), se usa esa normalización fija para
     CUALQUIER dataset. Si no se proporciona, se calcula localmente
@@ -234,13 +249,21 @@ def _class_probabilities_from_counts(
     dominaba la media del batch y volvía el gradiente inutilizable.
     Con Laplace, el peor caso es log(1/(total+n_classes)), mucho más
     acotado y proporcional a la evidencia real disponible.
+
+    FIX v7 (bug C1 — aliasing por módulo): con n_bits=4 para 13 clases
+    hay 16 códigos posibles (0-15) pero solo 13 clases válidas (0-12).
+    Los códigos 13,14,15 colapsaban antes sobre las clases 0,1,2 vía
+    `% n_classes`, dándoles sistemáticamente el DOBLE de masa de
+    probabilidad espuria frente al resto. Ahora los códigos >= n_classes
+    se DESCARTAN (no se reparten a ninguna clase) en vez de alias-earse.
     """
     raw_counts_per_class = np.zeros(n_classes)
     if counts:
         for bitstring, count in counts.items():
             bits = bitstring[-n_bits:]
-            class_idx = int(bits, 2) % n_classes
-            raw_counts_per_class[class_idx] += count
+            class_idx = int(bits, 2)
+            if class_idx < n_classes:  # descarta los codigos sobrantes, sin modulo
+                raw_counts_per_class[class_idx] += count
     total = raw_counts_per_class.sum()
     return (raw_counts_per_class + 1.0) / (total + n_classes)
 
@@ -591,9 +614,18 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         num_qubits: int,
         max_iterations: int = 100,
         optimizer_name: str = "QNSPSA-EML-Feynman",
+        shots: int = 512,
+        n_feynman_params: Optional[int] = None,
     ) -> Dict[str, object]:
         """
         Entrena el VQC con QNSPSA-EML-Feynman.
+
+        FIX (bug de cableado — CRÍTICO): `shots` no estaba en esta firma
+        en absoluto, y la llamada interna a _make_vqc_loss_fn usaba
+        SIEMPRE `shots=512` hardcoded, sin importar qué valor pasara el
+        CLI via --shots a train_and_evaluate (que SÍ recibía el argumento
+        pero nunca lo reenviaba aquí). Resultado: TODAS las corridas
+        previas entrenaron con 512 shots sin importar el flag --shots.
 
         Returns:
             Dict con 'weights', 'training_loss', 'validation_accuracy'
@@ -644,7 +676,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 X_train=X_train,
                 y_train=y_train,
                 n_qubits=num_qubits,
-                shots=512,
+                shots=shots,
                 mode="sim",
                 backend_sampler=_noisy_sampler,
                 ibm_backend=_transpile_target,
@@ -660,7 +692,10 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 perturbation=0.05,
                 lambda_eml=0.01,
                 patience=self.patience,
-                n_feynman_params=num_qubits,
+                n_feynman_params=(
+                    n_feynman_params if n_feynman_params is not None
+                    else min(4, num_qubits)
+                ),
                 seed=42,
             )
 
@@ -793,9 +828,17 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         use_real_hardware: bool = False,
         backend_name: str = "ibm_fez",
         use_zne: bool = False,
+        n_feynman_params: Optional[int] = None,
     ) -> VQCTrainingResult:
         """
         Entrena y evalúa el VQC. Retorna VQCTrainingResult completo.
+
+        FIX (bug de cableado — CRÍTICO, ver train_vqc): antes `shots` se
+        recibía aquí pero NUNCA se reenviaba a train_vqc (que tampoco lo
+        aceptaba) — el entrenamiento real usaba siempre 512 shots sin
+        importar el valor de --shots en el CLI. También se usaba 512
+        hardcoded al medir la accuracy real en el simulador (más abajo),
+        en vez de usar el mismo `shots` del entrenamiento.
         """
         try:
             train_result = self.train_vqc(
@@ -803,6 +846,8 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 y_train=dataset.y_train,
                 num_qubits=n_qubits,
                 max_iterations=max_iterations,
+                shots=shots,
+                n_feynman_params=n_feynman_params,
             )
 
             loss_hist = train_result["loss_history"]
@@ -820,7 +865,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 y_val=dataset.y_val,
                 n_qubits=n_qubits,
                 n_classes=dataset.n_classes,
-                shots=512,
+                shots=shots,
             )
             if acc_real_measured is not None:
                 acc_sim = acc_real_measured

@@ -102,6 +102,11 @@ class ExperimentConfig:
     ansatz_reps: int = 2
     learning_rate: float = 0.01
     reference_shots: Optional[int] = None
+    # FIX (cuello de botella real encontrado): antes hardcoded a n_qubits
+    # en QNSPSAConfig — 12*8=96 evaluaciones de circuito SOLO para el
+    # refinamiento Feynman-GL, en CADA iteración (~95% del tiempo total).
+    # None = usa el default interno de QiskitVQCTrainer (min(4, n_qubits)).
+    n_feynman_params: Optional[int] = None
 
     # Pipeline
     run_dwave_template_matching: bool = True
@@ -281,6 +286,7 @@ class GenerateExperimentResultsUseCase:
             use_real_hardware=self._config.use_real_hardware,
             backend_name=self._config.backend_name,
             use_zne=self._config.use_zne,
+            n_feynman_params=self._config.n_feynman_params,
         )
 
         # Accuracy vs SNR: delegado al adaptador (que es Infrastructure)
@@ -445,7 +451,11 @@ class GenerateExperimentResultsUseCase:
         )
 
     def _step7_bigO_benchmark(self, result: FullExperimentResultDTO):
-        logger.info("[Step 7] Benchmark Big-O: QNSPSA-EML-Feynman vs SPSA...")
+        logger.info(
+            "[Step 7] Benchmark Big-O (función sintética con semilla FIJA, "
+            "NO el entrenamiento real -- ver Step 3 para el speedup real "
+            "de esta corrida): QNSPSA-EML-Feynman vs SPSA..."
+        )
         benchmark = self._vqc.run_bigO_benchmark(
             n_qubits=self._config.n_qubits,
             n_per_class=20,
@@ -454,7 +464,14 @@ class GenerateExperimentResultsUseCase:
         if len(benchmark) >= 2:
             speedup = max(b.get("speedup_quality", 1.0) for b in benchmark)
 
-            logger.info(f"  Speedup medido: {speedup:.1f}× vs SPSA")
+            logger.info(
+                f"  Speedup en benchmark SINTÉTICO (paisaje de loss "
+                f"analítico fijo, seed=42, NO depende de batch_size/lr/"
+                f"ansatz_reps/shots de esta corrida): {speedup:.1f}× vs SPSA. "
+                f"Para el TFM, reportar esto como 'complejidad teórica en "
+                f"paisaje controlado', separado del speedup REAL medido en "
+                f"Step 3 (ese sí varía por configuración)."
+            )
 
     def _step8_generate_reports(self, result: FullExperimentResultDTO):
         logger.info("[Step 8] Generando figuras y reportes...")

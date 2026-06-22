@@ -470,6 +470,19 @@ def main() -> int:
     parser.add_argument("--reference-shots", type=int, default=None,
                          help="Shots del batch de referencia (decide 'mejor theta'). "
                               "Por defecto, 2x los shots de entrenamiento.")
+    parser.add_argument("--n-feynman-params", type=int, default=None,
+                         help="Cuántos de los parámetros del ansatz reciben el "
+                              "refinamiento caro de cuadratura Gauss-Legendre de 8 "
+                              "puntos (EML-Feynman) en vez de SPSA puro. ANTES "
+                              "estaba hardcodeado a n_qubits (12) en TODAS las "
+                              "corridas, sin exponerse via CLI: eso significa 12*8="
+                              "96 evaluaciones de circuito SOLO para esta parte, en "
+                              "CADA iteración, sea cual sea batch_size/shots/lr — "
+                              "es la causa real de los ~6-8 min/iteración observados "
+                              "(≈95%% del coste total por iteración). Bajar esto "
+                              "(p.ej. a 4) recorta el coste de esta parte a 4*8+1=33 "
+                              "evals en vez de 97, permitiendo MÁS iteraciones en el "
+                              "mismo tiempo de pared. Por defecto: min(4, n_qubits).")
     args = parser.parse_args()
 
     # ── Validación n_qubits (límite IBM — está AQUÍ en Presentation, no en Application) ──
@@ -506,6 +519,8 @@ def main() -> int:
     print(f"  batch_size: {args.batch_size}  patience: {args.patience}")
     print(f"  ansatz_reps: {args.ansatz_reps}  learning_rate: {args.learning_rate}  "
           f"reference_shots: {args.reference_shots or '2x shots entrenamiento'}")
+    _nfp = args.n_feynman_params if args.n_feynman_params is not None else f"min(4, {args.n_qubits}) [default]"
+    print(f"  n_feynman_params: {_nfp}  (cada uno cuesta 8 evals/iter -- antes SIEMPRE n_qubits=12, ~95% del tiempo/iter)")
     print(f"  QNSPSA-EML-Feynman: ACTIVO (optimizador real)")
     print(f"  QUBO: match function ponderada por PSD LIGO O3")
     print(f"  Estadística: Šidák/BH + cota Holevo + test Isi + TI Bayes")
@@ -540,6 +555,7 @@ def main() -> int:
         ansatz_reps=args.ansatz_reps,
         learning_rate=args.learning_rate,
         reference_shots=args.reference_shots,
+        n_feynman_params=args.n_feynman_params,
     )
 
     if args.mode == "figures":
