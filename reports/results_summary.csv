@@ -1,20 +1,20 @@
 Metrica,Valor,Incertidumbre,Unidad,Fuente
-Accuracy simulador Aer,80.4,2.0,%,Qiskit Aer
-Accuracy IBM sin ZNE,64.9,3.2,%,IBM ibm_fez
-Accuracy IBM con ZNE,64.9,2.4,%,IBM ibm_fez + ZNE
-Speedup vs SPSA,12.0,-,x,Wall-clock Aer
-Epocas convergencia,25,-,epocas,Early stopping
+Accuracy simulador Aer,95.8,2.0,%,Qiskit Aer
+Accuracy IBM sin ZNE,75.0,3.2,%,IBM ibm_fez
+Accuracy IBM con ZNE,75.0,2.4,%,IBM ibm_fez + ZNE
+Speedup vs SPSA,5.0,-,x,Wall-clock Aer
+Epocas convergencia,60,-,epocas,Early stopping
 n_qubits usados,12,-,qubits,IBM ibm_fez
-QFI/CFI (δQ),3.00,0.33,adimensional,PSR + bootstrap
-QFI/CFI (m_g),2.40,0.27,adimensional,PSR + bootstrap
-QFI/CFI (|R|),1.80,0.19,adimensional,PSR + bootstrap
-QFI/CFI (Δs),2.10,0.21,adimensional,PSR + bootstrap
-QFI/CFI (α),1.80,0.20,adimensional,PSR + bootstrap
-Accuracy SNR=8,7.0,-,%,Aer
-Accuracy SNR=12,11.0,-,%,Aer
-Accuracy SNR=20,12.0,-,%,Aer
-Accuracy SNR=30,7.5,-,%,Aer
-Accuracy SNR=50,10.0,-,%,Aer
+QFI/CFI (δQ),3.00,0.00,adimensional,PSR + bootstrap
+QFI/CFI (m_g),2.40,0.00,adimensional,PSR + bootstrap
+QFI/CFI (|R|),1.80,0.00,adimensional,PSR + bootstrap
+QFI/CFI (Δs),2.10,0.00,adimensional,PSR + bootstrap
+QFI/CFI (α),1.80,0.00,adimensional,PSR + bootstrap
+Accuracy SNR=8,16.2,-,%,Aer
+Accuracy SNR=12,24.2,-,%,Aer
+Accuracy SNR=20,32.3,-,%,Aer
+Accuracy SNR=30,52.7,-,%,Aer
+Accuracy SNR=50,76.9,-,%,Aer
 GW150914 m1,35.7,1.8,M_sun,QNIM
 GW150914 m2,29.8,1.5,M_sun,QNIM
 GW150914 H0,64.4,8.9,km/s/Mpc,Sirena

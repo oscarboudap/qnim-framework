@@ -1,189 +1,195 @@
-20:01:56 | INFO     | qnim.application.generate_experiment_results | =================================================================
-20:01:56 | INFO     | qnim.application.generate_experiment_results |   QNIM Framework — Pipeline Completo
-20:01:56 | INFO     | qnim.application.generate_experiment_results |   Backend: ibm_fez
-20:01:56 | INFO     | qnim.application.generate_experiment_results |   n_qubits: 12
-20:01:56 | INFO     | qnim.application.generate_experiment_results |   Hardware real: False220:01:56 | INFO     | qnim.application.generate_experiment_results | =================================================================220:01:56 | INFO     | qnim.application.generate_experiment_results | [Step 1] Generando dataset con SSTG (Capas 5-7)...20:01:59 | INFO     | qnim.application.generate_experiment_results |   Dataset: 1040 train / 260 val | 13 clases | SNR 19.0 (válido: True)
-20:01:59 | INFO     | qnim.application.generate_experiment_results | [Step 2] D-Wave QUBO: match function ponderada por PSD LIGO O3...
-20:01:59 | INFO     | qnim.infrastructure.neal_annealer_adapter | Construyendo QUBO con match function LIGO O3 (64 templates, features=12)
-20:01:59 | INFO     | qnim.infrastructure.qubo_match_ligo | Construyendo cuadricula de 40 templates 3.5PN...
-20:01:59 | INFO     | qnim.infrastructure.qubo_match_ligo | Mejor template: m1=20.0, m2=15.0, chi_eff=-0.500, M=1.0000, SNR_est=24.0
-20:02:00 | INFO     | qnim.infrastructure.neal_annealer_adapter | D-Wave QUBO: m1=20.0 M_☉, m2=15.0 M_☉, χ_eff=-0.500, M=1.0000, SNR_est=24.0, GR_consistent=True
-20:02:00 | INFO     | qnim.application.generate_experiment_results |   D-Wave: m1=20.0 M_☉, m2=15.0 M_☉, χ_eff=-0.500, match=1.0, GR_consistent=True
-20:02:00 | INFO     | qnim.application.generate_experiment_results | [Step 3] VQC QNSPSA-EML-Feynman: mode=ibm, n_qubits=12...
-20:02:00 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Iniciando QNSPSA-EML-Feynman: mode=ibm, n_params=72, maxiter=200, batch_size=96, patience=30, ansatz_reps=2, lr=0.03, noise_aware=no
-20:04:56 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  1  loss=2.6151
-20:07:51 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  2  loss=2.6321
-20:10:40 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  3  loss=2.6973
-20:13:28 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  4  loss=2.6957
-20:16:05 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  5  loss=2.6716
-20:18:44 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  6  loss=2.6923
-20:21:24 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  7  loss=2.6054
-20:24:05 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  8  loss=2.6817
-20:26:41 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  9  loss=2.7053
-20:29:19 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 10  loss=2.5893
-20:31:58 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 11  loss=2.6606
-20:34:36 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 12  loss=2.6582
-20:37:15 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 13  loss=2.5815
-20:39:55 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 14  loss=2.6088
-20:42:34 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 15  loss=2.5905
-20:45:14 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 16  loss=2.5924
-20:47:53 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 17  loss=2.5870
-20:50:32 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 18  loss=2.5631
-20:53:02 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 19  loss=2.6762
-20:55:34 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 20  loss=2.6185
-20:58:05 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 21  loss=2.5822
-21:00:37 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 22  loss=2.5510
-21:03:08 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 23  loss=2.5741
-21:05:41 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 24  loss=2.6367
-21:08:13 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 25  loss=2.5827
-21:10:45 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 26  loss=2.6538
-21:13:12 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 27  loss=2.5800
-21:15:42 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 28  loss=2.6789
-21:18:16 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 29  loss=2.5105
-21:20:54 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 30  loss=2.5979
-21:24:11 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 31  loss=2.5490
-21:27:32 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 32  loss=2.5091
-21:30:04 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 33  loss=2.5816
-21:32:13 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 34  loss=2.4750
-21:34:50 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 35  loss=2.5201
-21:37:19 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 36  loss=2.5583
-21:39:49 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 37  loss=2.6147
-21:42:17 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 38  loss=2.4924
-21:44:48 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 39  loss=2.5324
-21:47:17 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 40  loss=2.5085
-21:49:47 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 41  loss=2.4773
-21:52:16 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 42  loss=2.5202
-21:54:47 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 43  loss=2.5520
-21:57:16 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 44  loss=2.4595
-21:59:45 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 45  loss=2.5342
-22:01:41 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 46  loss=2.4838
-22:03:34 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 47  loss=2.5407
-22:05:28 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 48  loss=2.5733
-22:07:21 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 49  loss=2.4812
-22:09:17 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 50  loss=2.5678
-22:11:10 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 51  loss=2.5262
-22:13:03 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 52  loss=2.5315
-22:14:57 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 53  loss=2.5624
-22:16:51 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 54  loss=2.5802
-22:18:44 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 55  loss=2.5363
-22:20:38 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 56  loss=2.4978
-22:22:33 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 57  loss=2.5017
-22:24:27 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 58  loss=2.5314
-22:26:20 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 59  loss=2.5044
-22:28:14 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 60  loss=2.5673
-22:30:09 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 61  loss=2.4759
-22:32:03 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 62  loss=2.4889
-22:33:57 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 63  loss=2.5764
-22:35:51 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 64  loss=2.5239
-22:37:49 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 65  loss=2.5667
-22:39:49 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 66  loss=2.4988
-22:41:43 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 67  loss=2.5514
-22:43:39 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 68  loss=2.5339
-22:45:32 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 69  loss=2.5976
-22:47:25 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 70  loss=2.5527
-22:49:21 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 71  loss=2.4794
-22:51:16 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 72  loss=2.5628
-22:53:10 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 73  loss=2.4944
-22:55:04 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 74  loss=2.5063
-22:56:56 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 75  loss=2.5436
-22:58:50 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 76  loss=2.5360
-23:00:44 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 77  loss=2.4776
-23:02:37 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 78  loss=2.5469
-23:04:31 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 79  loss=2.5583
-23:06:19 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 80  loss=2.5248
-23:08:10 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 81  loss=2.5016
-23:10:00 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 82  loss=2.5621
-23:11:49 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 83  loss=2.4937
-23:13:39 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 84  loss=2.5577
-23:15:31 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 85  loss=2.6295
-23:17:25 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 86  loss=2.5477
-23:19:21 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 87  loss=2.5142
-23:21:15 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 88  loss=2.5355
-23:23:06 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 89  loss=2.5791
-23:24:58 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 90  loss=2.5478
-23:26:49 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 91  loss=2.5617
-23:28:41 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 92  loss=2.5378
-23:30:32 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 93  loss=2.5095
-23:32:23 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 94  loss=2.5538
-23:34:15 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 95  loss=2.5048
-23:36:06 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 96  loss=2.5073
-23:37:59 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 97  loss=2.6283
-23:39:51 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 98  loss=2.4872
-23:41:42 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 99  loss=2.6085
-23:43:34 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=100  loss=2.5333
-23:45:28 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=101  loss=2.5155
-23:47:20 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=102  loss=2.4314
-23:49:16 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=103  loss=2.6421
-23:51:13 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=104  loss=2.7014
-23:53:08 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=105  loss=2.6072
-23:54:59 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=106  loss=2.5787
-23:56:51 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=107  loss=2.7203
-23:58:45 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=108  loss=2.6260
-00:00:37 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=109  loss=2.6874
-00:02:29 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=110  loss=2.5880
-00:04:25 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=111  loss=2.5363
-00:06:20 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=112  loss=2.5475
-00:08:09 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=113  loss=2.5725
-00:09:56 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=114  loss=2.5225
-00:11:43 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=115  loss=2.5583
-00:13:30 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=116  loss=2.6402
-00:15:18 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=117  loss=2.6328
-00:17:09 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=118  loss=2.6459
-00:17:09 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | Early stopping en iter 118: sin mejora > 0.0005 en 30 iteraciones
-00:17:09 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | QNSPSA-EML-Feynman: 118 iters, 4721 evals, loss=2.5618, speedup_vs_spsa=2.5×, converged=True
-00:17:09 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Entrenamiento completado: loss=2.5618 (ln(n_classes)=2.5649), acc_heuristica=0.830, speedup=2.5×, tiempo=15309.7s
-00:17:17 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Accuracy REAL medida en validación (simulador ideal): 0.050 (sustituye a la heurística del loss)
-00:17:17 | INFO     | qnim.application.generate_experiment_results |   VQC: acc_sim=0.050, épocas=118, speedup=2.5×, QNSPSA_converged=True
-00:17:17 | INFO     | qnim.application.generate_experiment_results | [Step 4] QFI vs CFI + cota de Holevo...
-00:17:17 | INFO     | qnim.infrastructure.statistical_corrections | Holevo bound (n=12, S̄=3.82b): lb=1.066, improved=1.375, empirical=[1.75,2.23]
-00:17:17 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [δQ]: F_Q=40.00, F_C=13.33, ratio=3.00, Holevo_lb=1.066, above_lb=True
-00:17:17 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [m_g]: F_Q=40.00, F_C=16.67, ratio=2.40, Holevo_lb=1.066, above_lb=True
-00:17:17 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [|R|]: F_Q=40.00, F_C=22.22, ratio=1.80, Holevo_lb=1.066, above_lb=True
-00:17:17 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [Δs]: F_Q=40.00, F_C=19.05, ratio=2.10, Holevo_lb=1.066, above_lb=True
-00:17:17 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [α]: F_Q=40.00, F_C=22.22, ratio=1.80, Holevo_lb=1.066, above_lb=True
-00:17:17 | INFO     | qnim.application.generate_experiment_results |   δQ: F_Q/F_C=3.00, Holevo_lb=1.066, above_lb=✅
-00:17:17 | INFO     | qnim.application.generate_experiment_results |   m_g: F_Q/F_C=2.40, Holevo_lb=1.066, above_lb=✅
-00:17:17 | INFO     | qnim.application.generate_experiment_results |   |R|: F_Q/F_C=1.80, Holevo_lb=1.066, above_lb=✅
-00:17:17 | INFO     | qnim.application.generate_experiment_results |   Δs: F_Q/F_C=2.10, Holevo_lb=1.066, above_lb=✅
-00:17:17 | INFO     | qnim.application.generate_experiment_results |   α: F_Q/F_C=1.80, Holevo_lb=1.066, above_lb=✅
-00:17:17 | INFO     | qnim.application.generate_experiment_results | [Step 5] GW150914: test espectroscópico + TI Bayes + BH...
-00:17:17 | INFO     | qnim.infrastructure.statistical_corrections | No-hair test (M_f=63.5, χ_f=0.672): δM_f=0.47σ, δχ=0.00σ, consistent=True
-00:17:17 | INFO     | qnim.infrastructure.statistical_corrections | Multiple testing correction (10 tests): Bonferroni α=2.87e-08, Šidák α=2.87e-08, Fisher 0.2σ
-00:17:17 | INFO     | qnim.infrastructure.statistical_analysis_service | GW150914 QNIM completo: m1=35.7, m2=29.8, M_f=63.5, χ_f=0.672, H₀=64.4, CI_ok=True, no_hair_consistent=True, n_theories_significant(BH)=0/10
-00:17:17 | INFO     | qnim.application.generate_experiment_results |   GW150914: m1=35.7, m2=29.8, GR_consistent=True, no_hair_Kerr=True, Fisher_sigma=0.2σ
-00:17:17 | INFO     | qnim.application.generate_experiment_results | [Step 6] Analisis de barren plateaus...
-00:17:17 | INFO     | qnim.application.generate_experiment_results |   Var[grad] n=12: 4.6272e-01, n=27: 2.8021e-01
-00:17:17 | INFO     | qnim.application.generate_experiment_results |   Todos n en [4,27] tienen Var > 1e-3 con EML: True. Referencia: Cerezo et al. 2021, Nat. Commun. 12:1791
-00:17:17 | INFO     | qnim.application.generate_experiment_results | [Step 7] Benchmark Big-O (función sintética con semilla FIJA, NO el entrenamiento real -- ver Step 3 para el speedup real de esta corrida): QNSPSA-EML-Feynman vs SPSA...
-00:17:17 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | Early stopping en iter 11: sin mejora > 0.0005 en 10 iteraciones
-00:17:17 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | QNSPSA-EML-Feynman: 11 iters, 1123 evals, loss=2.3434, speedup_vs_spsa=27.3×, converged=True
-00:17:17 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Big-O benchmark: SPSA 600 evals / 0.02s, QNSPSA 1123 evals / 0.04s, speedup=27.3x (calidad), 0.5x (time), 0.5x (evals)
-00:17:17 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   NOTA TFM: reportar speedup_quality=27.3x como metrica principal (epocas hasta convergencia = jobs IBM)
-00:17:17 | INFO     | qnim.application.generate_experiment_results |   Speedup en benchmark SINTÉTICO (paisaje de loss analítico fijo, seed=42, NO depende de batch_size/lr/ansatz_reps/shots de esta corrida): 27.3× vs SPSA. Para el TFM, reportar esto como 'complejidad teórica en paisaje controlado', separado del speedup REAL medido en Step 3 (ese sí varía por configuración).
-00:17:17 | INFO     | qnim.application.generate_experiment_results | [Step 8] Generando figuras y reportes...
-00:17:19 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig1_convergence.png
-00:17:21 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig2_confusion_matrix.png
-00:17:22 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-00:17:22 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-00:17:22 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-00:17:22 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-00:17:22 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-00:17:22 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-00:17:22 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-00:17:22 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-00:17:22 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-00:17:23 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-00:17:23 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-00:17:23 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
-00:17:23 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig3_qfi_cfi.png
-00:17:24 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig4_accuracy_snr.png
-00:17:25 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig5_barren_plateaus.png
-00:17:27 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig6_gw150914.png
-00:17:29 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig7_dashboard.png
-00:17:29 | INFO     | qnim.application.generate_experiment_results |   Figuras: 7/7 generadas
-00:17:29 | INFO     | qnim.infrastructure.reporting | JSON guardado: reports/full_results.json
-00:17:29 | INFO     | qnim.application.generate_experiment_results |   JSON: reports/full_results.json
-00:17:29 | INFO     | qnim.infrastructure.reporting | CSV guardado: reports/results_summary.csv (19 filas)
-00:17:29 | INFO     | qnim.application.generate_experiment_results |   CSV: reports/results_summary.csv
-00:17:29 | INFO     | qnim.application.generate_experiment_results |   Tablas LaTeX: 1 en reports/latex/
-00:17:29 | INFO     | qnim.application.generate_experiment_results | Pipeline completado en 15333.5s
+06:32:51 | INFO     | qnim.application.generate_experiment_results | =================================================================
+06:32:51 | INFO     | qnim.application.generate_experiment_results |   QNIM Framework — Pipeline Completo
+06:32:51 | INFO     | qnim.application.generate_experiment_results |   Backend: ibm_fez
+06:32:51 | INFO     | qnim.application.generate_experiment_results |   n_qubits: 12
+06:32:51 | INFO     | qnim.application.generate_experiment_results |   Hardware real: True
+06:32:51 | INFO     | qnim.application.generate_experiment_results | =================================================================
+06:32:51 | INFO     | qnim.application.generate_experiment_results | [Step 1] Generando dataset con SSTG (Capas 5-7)...
+06:32:54 | INFO     | qnim.application.generate_experiment_results |   Dataset: 1040 train / 260 val | 13 clases | SNR 19.0 (válido: True)
+06:32:54 | INFO     | qnim.application.generate_experiment_results | [Step 2] D-Wave QUBO: match function ponderada por PSD LIGO O3...
+06:32:54 | INFO     | qnim.infrastructure.neal_annealer_adapter | Construyendo QUBO con match function LIGO O3 (64 templates, features=12)
+06:32:54 | INFO     | qnim.infrastructure.qubo_match_ligo | Construyendo cuadricula de 40 templates 3.5PN...
+06:32:54 | INFO     | qnim.infrastructure.qubo_match_ligo | Mejor template: m1=20.0, m2=15.0, chi_eff=-0.500, M=1.0000, SNR_est=24.0
+06:32:54 | INFO     | qnim.infrastructure.neal_annealer_adapter | D-Wave QUBO: m1=20.0 M_☉, m2=15.0 M_☉, χ_eff=-0.500, M=1.0000, SNR_est=24.0, GR_consistent=True
+06:32:54 | INFO     | qnim.application.generate_experiment_results |   D-Wave: m1=20.0 M_☉, m2=15.0 M_☉, χ_eff=-0.500, match=1.0, GR_consistent=True
+06:32:54 | INFO     | qnim.application.generate_experiment_results | [Step 3] VQC QNSPSA-EML-Feynman: mode=ibm, n_qubits=12...
+06:32:54 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Iniciando QNSPSA-EML-Feynman: mode=ibm, n_params=72, maxiter=200, batch_size=96, patience=30, ansatz_reps=2, lr=0.03, noise_aware=no
+06:34:49 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  1  loss=2.9459
+06:37:19 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  2  loss=2.8217
+06:40:23 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  3  loss=2.7645
+06:43:12 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  4  loss=2.7458
+06:45:36 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  5  loss=2.8645
+06:47:59 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  6  loss=2.7703
+06:50:20 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  7  loss=2.7899
+06:52:52 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  8  loss=2.6442
+06:55:15 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=  9  loss=2.7731
+06:57:40 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 10  loss=2.7467
+07:00:04 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 11  loss=2.7819
+07:02:27 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 12  loss=2.7030
+07:04:51 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 13  loss=2.7142
+07:07:13 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 14  loss=2.6744
+07:09:37 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 15  loss=2.5544
+07:11:56 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 16  loss=2.5992
+07:14:20 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 17  loss=2.4568
+07:16:46 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 18  loss=2.6288
+07:19:16 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 19  loss=2.8303
+07:21:48 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 20  loss=2.5425
+07:24:13 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 21  loss=2.6439
+07:26:36 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 22  loss=2.6102
+07:29:07 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 23  loss=2.5899
+07:31:34 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 24  loss=2.6393
+07:33:56 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 25  loss=2.6733
+07:36:20 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 26  loss=2.7292
+07:38:50 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 27  loss=2.5120
+07:41:13 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 28  loss=2.7007
+07:43:36 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 29  loss=2.4677
+07:46:01 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 30  loss=2.6496
+07:48:32 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 31  loss=2.7031
+07:50:57 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 32  loss=2.6700
+07:53:23 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 33  loss=2.6331
+07:55:45 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 34  loss=2.5791
+07:58:11 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 35  loss=2.6658
+08:00:39 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 36  loss=2.6477
+08:03:09 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 37  loss=2.6919
+08:05:38 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 38  loss=2.5866
+08:08:10 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 39  loss=2.6322
+08:10:34 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 40  loss=2.6903
+08:12:58 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 41  loss=2.6498
+08:15:25 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 42  loss=2.5252
+08:17:53 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 43  loss=2.6698
+08:20:19 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 44  loss=2.6122
+08:22:45 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 45  loss=2.5470
+08:25:11 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 46  loss=2.6566
+08:27:36 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 47  loss=2.6977
+08:30:03 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 48  loss=2.6603
+08:32:30 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 49  loss=2.7474
+08:34:55 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 50  loss=2.7388
+08:37:21 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 51  loss=2.6936
+08:39:48 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 52  loss=2.7441
+08:42:10 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 53  loss=2.8756
+08:44:35 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 54  loss=2.7139
+08:46:55 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 55  loss=2.7665
+08:49:14 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 56  loss=2.6905
+08:51:32 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 57  loss=2.5385
+08:53:53 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 58  loss=2.6047
+08:56:14 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 59  loss=2.6433
+08:58:37 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 60  loss=2.5718
+09:01:04 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 61  loss=2.6369
+09:03:31 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 62  loss=2.6854
+09:05:57 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 63  loss=2.6449
+09:08:26 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 64  loss=2.5197
+09:10:47 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 65  loss=2.4537
+09:13:07 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 66  loss=2.7276
+09:15:29 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 67  loss=2.6639
+09:17:52 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 68  loss=2.6323
+09:20:16 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 69  loss=2.5602
+09:22:42 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 70  loss=2.6479
+09:25:04 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 71  loss=2.5800
+09:27:29 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 72  loss=2.5039
+09:29:54 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 73  loss=2.4817
+09:31:58 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 74  loss=2.7154
+09:33:48 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 75  loss=2.6470
+09:35:37 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 76  loss=2.8300
+09:37:28 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 77  loss=2.7954
+09:39:18 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 78  loss=2.7112
+09:41:06 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 79  loss=2.6531
+09:42:53 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 80  loss=2.7636
+09:44:41 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 81  loss=2.7220
+09:46:27 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 82  loss=2.7123
+09:48:16 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 83  loss=2.6939
+09:50:06 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 84  loss=2.7367
+09:51:55 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 85  loss=2.8296
+09:53:43 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 86  loss=2.6976
+09:55:31 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 87  loss=2.5274
+09:57:19 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 88  loss=2.7298
+09:59:07 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 89  loss=2.7194
+10:00:54 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 90  loss=2.7913
+10:02:41 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 91  loss=2.4751
+10:04:30 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 92  loss=2.3844
+10:06:17 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 93  loss=2.5303
+10:08:07 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 94  loss=2.4614
+10:09:54 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 95  loss=2.5391
+10:11:43 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 96  loss=2.4545
+10:13:30 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 97  loss=2.5107
+10:15:19 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 98  loss=2.5555
+10:17:07 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter= 99  loss=2.5277
+10:18:55 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=100  loss=2.4438
+10:20:43 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=101  loss=2.4792
+10:22:31 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=102  loss=2.4535
+10:24:22 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=103  loss=2.4764
+10:26:13 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=104  loss=2.5254
+10:28:00 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=105  loss=2.4552
+10:29:49 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=106  loss=2.4117
+10:31:37 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=107  loss=2.4824
+10:33:26 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=108  loss=2.5162
+10:35:15 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=109  loss=2.4884
+10:37:04 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=110  loss=2.3450
+10:38:54 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=111  loss=2.5668
+10:40:43 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=112  loss=2.4629
+10:42:36 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=113  loss=2.5055
+10:44:29 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=114  loss=2.4886
+10:46:24 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=115  loss=2.4797
+10:48:18 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=116  loss=2.4925
+10:50:23 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=117  loss=2.4788
+10:52:20 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=118  loss=2.4741
+10:54:11 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=119  loss=2.4499
+10:56:02 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=120  loss=2.4906
+10:57:51 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   iter=121  loss=2.3799
+10:57:51 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | Early stopping en iter 121: sin mejora > 0.0005 en 30 iteraciones
+10:57:51 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | QNSPSA-EML-Feynman: 121 iters, 4841 evals, loss=2.4039, speedup_vs_spsa=2.5×, converged=True
+10:57:51 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Entrenamiento completado: loss=2.4039 (ln(n_classes)=2.5649), acc_heuristica=0.840, speedup=2.5×, tiempo=15896.8s
+10:57:59 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Accuracy REAL medida en validación (simulador ideal): 0.138 (sustituye a la heurística del loss)
+10:57:59 | INFO     | qnim.application.generate_experiment_results |   VQC: acc_sim=0.138, épocas=121, speedup=2.5×, QNSPSA_converged=True
+10:57:59 | INFO     | qnim.application.generate_experiment_results | [Step 4] QFI vs CFI + cota de Holevo...
+10:57:59 | INFO     | qnim.infrastructure.statistical_corrections | Holevo bound (n=12, S̄=3.82b): lb=1.066, improved=1.375, empirical=[1.75,2.23]
+10:57:59 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [δQ]: F_Q=40.00, F_C=13.33, ratio=3.00, Holevo_lb=1.066, above_lb=True
+10:57:59 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [m_g]: F_Q=40.00, F_C=16.67, ratio=2.40, Holevo_lb=1.066, above_lb=True
+10:57:59 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [|R|]: F_Q=40.00, F_C=22.22, ratio=1.80, Holevo_lb=1.066, above_lb=True
+10:57:59 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [Δs]: F_Q=40.00, F_C=19.05, ratio=2.10, Holevo_lb=1.066, above_lb=True
+10:57:59 | INFO     | qnim.infrastructure.statistical_analysis_service | QFI/CFI [α]: F_Q=40.00, F_C=22.22, ratio=1.80, Holevo_lb=1.066, above_lb=True
+10:57:59 | INFO     | qnim.application.generate_experiment_results |   δQ: F_Q/F_C=3.00, Holevo_lb=1.066, above_lb=✅
+10:57:59 | INFO     | qnim.application.generate_experiment_results |   m_g: F_Q/F_C=2.40, Holevo_lb=1.066, above_lb=✅
+10:57:59 | INFO     | qnim.application.generate_experiment_results |   |R|: F_Q/F_C=1.80, Holevo_lb=1.066, above_lb=✅
+10:57:59 | INFO     | qnim.application.generate_experiment_results |   Δs: F_Q/F_C=2.10, Holevo_lb=1.066, above_lb=✅
+10:57:59 | INFO     | qnim.application.generate_experiment_results |   α: F_Q/F_C=1.80, Holevo_lb=1.066, above_lb=✅
+10:57:59 | INFO     | qnim.application.generate_experiment_results | [Step 5] GW150914: test espectroscópico + TI Bayes + BH...
+10:57:59 | INFO     | qnim.infrastructure.statistical_corrections | No-hair test (M_f=63.5, χ_f=0.672): δM_f=0.47σ, δχ=0.00σ, consistent=True
+10:57:59 | INFO     | qnim.infrastructure.statistical_corrections | Multiple testing correction (10 tests): Bonferroni α=2.87e-08, Šidák α=2.87e-08, Fisher 0.2σ
+10:57:59 | INFO     | qnim.infrastructure.statistical_analysis_service | GW150914 QNIM completo: m1=35.7, m2=29.8, M_f=63.5, χ_f=0.672, H₀=64.4, CI_ok=True, no_hair_consistent=True, n_theories_significant(BH)=0/10
+10:57:59 | INFO     | qnim.application.generate_experiment_results |   GW150914: m1=35.7, m2=29.8, GR_consistent=True, no_hair_Kerr=True, Fisher_sigma=0.2σ
+10:57:59 | INFO     | qnim.application.generate_experiment_results | [Step 6] Analisis de barren plateaus...
+10:57:59 | INFO     | qnim.application.generate_experiment_results |   Var[grad] n=12: 4.6272e-01, n=27: 2.8021e-01
+10:57:59 | INFO     | qnim.application.generate_experiment_results |   Todos n en [4,27] tienen Var > 1e-3 con EML: True. Referencia: Cerezo et al. 2021, Nat. Commun. 12:1791
+10:57:59 | INFO     | qnim.application.generate_experiment_results | [Step 7] Benchmark Big-O (función sintética con semilla FIJA, NO el entrenamiento real -- ver Step 3 para el speedup real de esta corrida): QNSPSA-EML-Feynman vs SPSA...
+10:57:59 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | Early stopping en iter 11: sin mejora > 0.0005 en 10 iteraciones
+10:57:59 | INFO     | qnim.infrastructure.qnspsa_eml_feynman | QNSPSA-EML-Feynman: 11 iters, 1123 evals, loss=2.3434, speedup_vs_spsa=27.3×, converged=True
+10:57:59 | INFO     | qnim.infrastructure.qiskit_vqc_trainer | Big-O benchmark: SPSA 600 evals / 0.01s, QNSPSA 1123 evals / 0.04s, speedup=27.3x (calidad), 0.4x (time), 0.5x (evals)
+10:57:59 | INFO     | qnim.infrastructure.qiskit_vqc_trainer |   NOTA TFM: reportar speedup_quality=27.3x como metrica principal (epocas hasta convergencia = jobs IBM)
+10:57:59 | INFO     | qnim.application.generate_experiment_results |   Speedup en benchmark SINTÉTICO (paisaje de loss analítico fijo, seed=42, NO depende de batch_size/lr/ansatz_reps/shots de esta corrida): 27.3× vs SPSA. Para el TFM, reportar esto como 'complejidad teórica en paisaje controlado', separado del speedup REAL medido en Step 3 (ese sí varía por configuración).
+10:57:59 | INFO     | qnim.application.generate_experiment_results | [Step 8] Generando figuras y reportes...
+10:58:01 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig1_convergence.png
+10:58:03 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig2_confusion_matrix.png
+10:58:03 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+10:58:03 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+10:58:03 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+10:58:03 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+10:58:03 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+10:58:03 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+10:58:03 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+10:58:03 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+10:58:03 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+10:58:04 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+10:58:04 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+10:58:04 | INFO     | matplotlib.mathtext | Substituting symbol F from STIXNonUnicode
+10:58:04 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig3_qfi_cfi.png
+10:58:05 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig4_accuracy_snr.png
+10:58:07 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig5_barren_plateaus.png
+10:58:08 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig6_gw150914.png
+10:58:11 | INFO     | qnim.infrastructure.reporting |   Figura generada: reports/figures/fig7_dashboard.png
+10:58:11 | INFO     | qnim.application.generate_experiment_results |   Figuras: 7/7 generadas
+10:58:11 | INFO     | qnim.infrastructure.reporting | JSON guardado: reports/full_results.json
+10:58:11 | INFO     | qnim.application.generate_experiment_results |   JSON: reports/full_results.json
+10:58:11 | INFO     | qnim.infrastructure.reporting | CSV guardado: reports/results_summary.csv (19 filas)
+10:58:11 | INFO     | qnim.application.generate_experiment_results |   CSV: reports/results_summary.csv
+10:58:11 | INFO     | qnim.application.generate_experiment_results |   Tablas LaTeX: 1 en reports/latex/
+10:58:11 | INFO     | qnim.application.generate_experiment_results | Pipeline completado en 15920.1s

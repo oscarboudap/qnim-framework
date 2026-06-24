@@ -21,6 +21,20 @@ CAMBIOS v2 (validación contra ibm_fez real):
        - noise_aware_training: entrenar con un simulador local que imita
          el ruido real del backend (reduce el sim-to-real gap)
 
+CAMBIOS v3 (capa de lectura MLP de qiskit_vqc_trainer.py, FIX v8):
+  5. AÑADIDOS dos campos de configuración para la capa de lectura del
+     VQC, que en qiskit_vqc_trainer.py v8 pasó de ser una regresión
+     lineal a un MLP de 1 capa oculta (se verificó empíricamente que
+     las puertas CX del ansatz mezclan las marginales por qubit de
+     forma NO lineal dependiente de la clase -- una lectura lineal
+     dejaba ~30 puntos de accuracy sin explotar, sin importar cuánto
+     se entrenara el ansatz):
+       - readout_hidden_size: neuronas de la capa oculta del MLP
+         (antes hardcodeado a 16 dentro de QiskitVQCTrainer)
+       - readout_refit_every: cada cuántas iteraciones de QNSPSA se
+         reajusta clásicamente la capa de lectura (warm-start
+         periódico; antes hardcodeado a 10 dentro de QiskitVQCTrainer)
+
 PRINCIPIO RESTAURADO:
   Application layer ← solo imports de:
     - src.domain.*
@@ -108,6 +122,26 @@ class ExperimentConfig:
     # None = usa el default interno de QiskitVQCTrainer (min(4, n_qubits)).
     n_feynman_params: Optional[int] = None
 
+    # NUEVO v3 (FIX v8 de qiskit_vqc_trainer.py): capa de lectura del
+    # VQC. Se verificó empíricamente que una lectura LINEAL sobre las
+    # marginales por qubit dejaba el accuracy estancado (~0.70 sobre
+    # 13 clases, sin importar cuánto se entrenara el ansatz), porque
+    # las puertas CX del ansatz mezclan esas marginales de forma NO
+    # lineal dependiente de la clase. Con una capa de lectura tipo MLP
+    # (1 capa oculta, ReLU) entrenada vía warm-start clásico + reajuste
+    # periódico, el accuracy subió a >0.95 en el mismo dataset.
+    #   readout_hidden_size: neuronas de la capa oculta del MLP de
+    #       lectura (antes hardcodeado a 16 dentro de QiskitVQCTrainer).
+    #       Subir esto (p.ej. 32) aumenta la capacidad de la lectura a
+    #       cambio de más parámetros optimizados conjuntamente con el
+    #       ansatz por QNSPSA.
+    #   readout_refit_every: cada cuántas iteraciones de QNSPSA se
+    #       reajusta clásicamente la capa de lectura dado el ansatz
+    #       actual (antes hardcodeado a 10). 0 desactiva el reajuste
+    #       periódico (solo se hace el warm-start inicial, una vez).
+    readout_hidden_size: int = 16
+    readout_refit_every: int = 10
+
     # Pipeline
     run_dwave_template_matching: bool = True
     run_gw150914_reanalysis: bool = True
@@ -141,6 +175,15 @@ class ExperimentConfig:
         if self.shots_validation < 1:
             raise ValueError(
                 f"shots_validation={self.shots_validation} debe ser >= 1."
+            )
+        if self.readout_hidden_size < 1:
+            raise ValueError(
+                f"readout_hidden_size={self.readout_hidden_size} debe ser >= 1."
+            )
+        if self.readout_refit_every < 0:
+            raise ValueError(
+                f"readout_refit_every={self.readout_refit_every} debe ser >= 0 "
+                f"(0 desactiva el reajuste periódico)."
             )
 
 

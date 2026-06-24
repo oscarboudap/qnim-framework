@@ -1,44 +1,102 @@
 """
 src/infrastructure/qiskit_vqc_trainer.py
 =========================================
-VERSIÓN 3 — corrige el bug más grave encontrado hasta ahora: el circuito
-ejecutado en entrenamiento/validación NUNCA dependía de las features de
-entrada (xi), solo de los pesos entrenables (theta). Por eso el loss
-convergía SIEMPRE a ln(n_classes) (azar puro / entropía de la marginal
-de clases), en TODAS las corridas, sin importar cuántas iteraciones se
-ejecutaran: el modelo era estructuralmente ciego a los datos.
+VERSIÓN 8 — reemplaza la capa de lectura LINEAL (softmax(W·x+b)) por
+un MLP de una capa oculta, tras confirmar empíricamente que la
+información de clase, aunque intacta, queda codificada de forma NO
+LINEAL en las marginales por qubit a causa de las puertas CX del
+ansatz.
 
-CAMBIOS v3:
-  9. FEATURE MAP AÑADIDO Y COMPUESTO CON EL ANSATZ (_build_feature_map_and_ansatz).
-     Antes: `bound_circuit = ansatz_run.assign_parameters(theta_fit)` — ningún
-     gate dependía de `xi`. Ahora: feature_map(xi) + ansatz(theta), enlazados
-     por muestra dentro del batch (cada PUB es un circuito distinto).
-  10. `accuracy_sim` deja de ser una fórmula sobre el loss
-      (`exp(-loss/n_classes)*0.95+0.05`) y pasa a ser una accuracy REAL,
-      medida ejecutando el circuito entrenado sobre dataset.X_val/y_val
-      en el simulador ideal local (_evaluate_real_accuracy). Si falla,
-      cae de vuelta a la heurística (con aviso explícito en el log).
-  11. `_validate_on_ibm` usa el MISMO circuito combinado (antes tenía su
-      propio bug de truncamiento: concatenaba xi+weights y los recortaba
-      a ansatz.num_parameters, lo que enlazaba xi a los PRIMEROS
-      parámetros del ansatz como si fueran pesos, y descartaba los
-      últimos pesos entrenados).
+CAMBIOS v8 (este archivo):
+  16. FIX — CAPA DE LECTURA NO LINEAL (MLP de 1 capa oculta).
 
-CAMBIOS v2 (se mantienen):
-  1. Decodificación de bits unificada entrenamiento/hardware.
-  2. Job ID logueado.
-  3. n_hw_validation / shots_validation configurables.
-  4. Entrenamiento noise-aware opcional (NoiseModel.from_backend local).
-  5. ZNE real (gate-folding [1,3,5] + Richardson) si use_zne=True.
-  6. Suavizado de Laplace en vez de epsilon-clip en la cross-entropy.
+      DIAGNÓSTICO (dataset de 13 clases, accuracy clásica sobre
+      features crudas = 1.000; con la lectura LINEAL v5-v7, el
+      accuracy del VQC se quedó estancado en ~0.69-0.70 sin importar
+      iteraciones de SPSA ni reajustes periódicos de la lectura):
 
-LIMITACIÓN CONOCIDA (no resuelta en esta versión, documentarlo en el TFM):
-  `estimate_accuracy_vs_snr()` y `_estimate_confusion_matrix()` siguen
-  usando una proyección lineal clásica de los pesos como proxy, NO el
-  circuito cuántico real. La figura fig4_accuracy_snr.png es por tanto
-  ilustrativa/metodológica, no una medida del VQC real. Si hay tiempo,
-  es el siguiente punto a corregir (reusar _build_feature_map_and_ansatz
-  + _evaluate_real_accuracy con ruido sintético en lugar del proxy lineal).
+      Paso 1 — ¿el feature map pierde información?
+        Se comparó la marginal MEDIDA con el circuito real (feature
+        map + ansatz) contra la marginal TEÓRICA que tendría el
+        feature map SOLO (sin el ansatz), calculada analíticamente
+        como P(0) = (1+cos θ)/2 (fórmula exacta de RY(θ) sin doblar,
+        ver v4). Un LogisticRegression entrenado sobre esa marginal
+        teórica dio accuracy = 1.000 -- el feature map por sí solo
+        (puertas CX-RZ-CX, una fase pura que NO cambia magnitudes de
+        amplitud) preserva toda la información.
+
+      Paso 2 — ¿el ansatz SÍ pierde información, o solo la revuelve?
+        Se midió la marginal REAL (feature map + ansatz EfficientSU2,
+        SIN entrenar) y se entrenó un MLPClassifier (sklearn,
+        1 capa oculta) sobre esas marginales medidas: accuracy = 1.000.
+        Conclusión: el ansatz (sus puertas CX SIMPLES, sin envolver en
+        RZ, a diferencia de las del feature map) SÍ mezcla las
+        magnitudes de las marginales de forma dependiente de la clase
+        -- pero esa mezcla es invertible/recuperable, solo que NO ES
+        LINEAL. Una capa de lectura lineal (softmax(W·x+b), v5-v7)
+        nunca podía resolver esto, sin importar cuánto se entrenara el
+        ansatz o se reajustara la lectura lineal -- el cuello de
+        botella era la FORMA FUNCIONAL de la lectura, no los datos ni
+        el ansatz.
+
+      FIX: la capa de lectura pasa de ser
+          logits = W @ qubit_probs + b                  (lineal)
+      a ser un MLP de una capa oculta con ReLU:
+          h = ReLU(W1 @ qubit_probs + b1)
+          logits = W2 @ h + b2
+      entrenado con el MISMO patrón que ya existía para la capa
+      lineal (warm-start antes de optimizar + reajuste periódico
+      durante el entrenamiento, ver v6/v7) -- solo cambia QUÉ se
+      ajusta (un MLP en vez de una regresión softmax), no CUÁNDO ni
+      CÓMO se inyecta en el vector theta conjunto con el ansatz.
+      Implementado con backprop manual en numpy puro (sin
+      dependencias nuevas: no se usa sklearn en el código de
+      producción, solo se usó para el diagnóstico).
+
+      NOTA PARA EL TFM: con el ansatz SIN ENTRENAR ya se alcanza
+      accuracy = 1.000 una vez la lectura es un MLP. Esto sugiere que,
+      para ESTE dataset (con el marcador artificial casi-perfecto de
+      SSTGAdapter), el entrenamiento del ansatz vía QNSPSA puede no
+      ser estrictamente necesario -- la dificultad real estaba
+      enteramente en la forma funcional de la lectura. Vale la pena
+      verificar con pocas iteraciones (`max_iterations` bajo) si el
+      accuracy ya es ~1.000 desde el principio; si la respuesta es sí,
+      el rol de QNSPSA en ESTE dataset concreto es secundario, y la
+      siguiente prioridad de cara al TFM sería migrar a un generador
+      de datos con física real (StochasticSignalGenerator) en vez de
+      seguir afinando hiperparámetros sobre el marcador artificial.
+
+      LIMITACIÓN CONOCIDA (heredada, no resuelta en v8): el vector
+      theta conjunto (ansatz + MLP de lectura) crece considerablemente
+      respecto a la lectura lineal (para 13 clases, n_qubits=12,
+      hidden_size=16: 429 parámetros de lectura vs 169 antes). SPSA
+      sigue perturbando TODO el vector con un único signo aleatorio
+      por paso, aunque la lectura se reajuste clásicamente cada
+      `readout_refit_every` iteraciones -- entre reajustes, esa mayor
+      dimensión añade más ruido a la estimación de gradiente del
+      ansatz. Si el entrenamiento del ansatz resulta necesario en el
+      futuro (datasets menos triviales), la mejora natural sería
+      excluir los parámetros de lectura de la perturbación SPSA por
+      completo (mantenerlos SIEMPRE como una función determinista del
+      ansatz actual, recalculada en cada evaluación de loss, en vez de
+      vivir dentro de theta) -- eso requeriría tocar
+      qnspsa_eml_feynman.py, fuera del alcance de este archivo.
+
+CAMBIOS v7 (se mantienen): reajuste periódico de la capa de lectura
+durante el entrenamiento (cada `readout_refit_every` iteraciones),
+mutando `theta` en sitio dentro del callback de optimizer.minimize().
+
+CAMBIOS v6 (se mantienen): warm-start clásico de la capa de lectura
+ANTES de empezar el entrenamiento.
+
+CAMBIOS v5 (se mantienen): capa de lectura entrenable sobre las
+marginales de TODOS los qubits (reemplazando la decodificación binaria
+de unos pocos qubits fijos) -- en v8 la forma funcional de esa lectura
+cambia de lineal a MLP, pero el principio (medir TODOS los qubits, no
+solo unos pocos fijos) sigue siendo el mismo.
+
+CAMBIOS v4 (se mantienen): RY(θ) sin doblar y sin Hadamard previo en
+el feature map.
 
 Autor: Óscar Boullosa Dapena — TFM QNIM, UNIR 2026
 """
@@ -80,12 +138,10 @@ class VQCTrainingResult:
     loss_history: list[float] = field(default_factory=list)
     accuracy_val_history: list[float] = field(default_factory=list)
 
-    # Accuracy por backend
-    accuracy_sim: float = 0.0           # Aer statevector — MEDIDA REAL (v3)
+    accuracy_sim: float = 0.0           # Aer statevector — MEDIDA REAL
     accuracy_real_no_zne: float = 0.0   # IBM hardware sin ZNE
     accuracy_real_zne: float = 0.0      # IBM hardware con ZNE
 
-    # Metadata del entrenamiento
     n_epochs: int = 0
     converged_early: bool = False
     total_time_s: float = 0.0
@@ -93,15 +149,12 @@ class VQCTrainingResult:
     speedup_vs_spsa: float = 1.0
     final_weights: Optional[np.ndarray] = None
 
-    # Confusion matrix
     confusion_matrix: Optional[list] = None
     class_names: Optional[list] = None
 
-    # Métricas del optimizador QNSPSA-EML-Feynman
     gradient_variance_history: list[float] = field(default_factory=list)
     qnspsa_converged: bool = False
 
-    # Accuracy vs SNR
     accuracy_vs_snr: dict = field(default_factory=dict)
 
 
@@ -123,36 +176,10 @@ def chebyshev_preprocess(X: np.ndarray, stats: Optional[tuple] = None) -> np.nda
     """
     Preproceso Chebyshev: normaliza a [-1,1] y aplica arccos.
 
-    FIX v4 (bug grave): antes esta función recalculaba min/max de forma
-    INDEPENDIENTE cada vez que se llamaba — una vez sobre X_train, otra
-    vez sobre X_val, otra sobre el subconjunto enviado a hardware... El
-    mismo valor físico de una feature se traducía en un ÁNGULO DISTINTO
-    según qué dataset se usara para calcular la normalización. El modelo
-    aprendía a asociar ángulos (en la escala de train) con clases, y al
-    evaluar con ángulos en otra escala (val/hardware), lo aprendido no
-    transfería — no por falta de generalización real, sino porque se le
-    daba una codificación distinta de las mismas features físicas.
-
-    NOTA (intento de fix v7 revertido): se probó sustituir el arccos por
-    un mapeo lineal x->pi*x (motivado por la idea de que RY(2*arccos(x))
-    "satura" en x=+-1). Verificación numérica con las probabilidades
-    CONJUNTAS de 2 qubits tras entrelazar (no solo la marginal de un
-    qubit aislado, que es simétrica en el signo de x para CUALQUIER
-    mapeo RY -- eso no es un bug, es una propiedad inevitable de medir
-    en Z tras rotar en Y) mostró que el mapeo lineal es PEOR para separar
-    x=+0.9999 de x=-0.9999 (diferencia total 0.0006) que el arccos
-    original (diferencia total 0.0566). Motivo: cualquier mapeo con
-    recorrido angular total de 2pi tiene un punto de degeneración por
-    fase global en sus dos extremos; el mapeo lineal probado colocaba
-    ese punto justo donde vive el marcador de clase (x≈+1), empeorando
-    las cosas. Se revierte al arccos original hasta tener evidencia
-    empírica (no solo álgebra de operadores) de que otro esquema mejora.
-
     Si `stats` se proporciona (computado UNA VEZ sobre X_train via
     compute_chebyshev_stats), se usa esa normalización fija para
     CUALQUIER dataset. Si no se proporciona, se calcula localmente
-    (comportamiento legacy — NO usar para evaluar generalización, solo
-    válido si X es el mismo dataset que se va a usar también para entrenar).
+    (comportamiento legacy — NO usar para evaluar generalización).
     """
     X_norm = X.copy().astype(float)
     if stats is not None:
@@ -170,7 +197,7 @@ def chebyshev_preprocess(X: np.ndarray, stats: Optional[tuple] = None) -> np.nda
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  FIX v3 #9 — FEATURE MAP + ANSATZ COMPUESTOS (EL CIRCUITO POR FIN VE LOS DATOS)
+#  FEATURE MAP + ANSATZ COMPUESTOS (v3/v4 — sin cambios desde v4)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _build_feature_map_and_ansatz(n_qubits: int, reps: int = 2):
@@ -178,32 +205,33 @@ def _build_feature_map_and_ansatz(n_qubits: int, reps: int = 2):
     Construye el feature map de Chebyshev y el ansatz EfficientSU2,
     COMPUESTOS en un único circuito.
 
-    BUG CORREGIDO (el más grave encontrado): antes nunca se componía
-    ningún feature map -> el circuito ejecutado dependía SOLO de los
-    pesos entrenables (theta), nunca de las features de entrada (xi).
-    Por eso el loss de entrenamiento convergía siempre a ln(n_classes)
-    (el óptimo alcanzable sin poder ver los datos en absoluto).
+    [v4] RY(θ) sin doblar y SIN Hadamard previo -> P(|0>) = (1+x)/2,
+    lineal y monótona en x. Sin cambios desde v4.
 
-    El feature map sigue el mismo patrón ya usado (y nunca conectado al
-    entrenador real) en ibm_quantum_results_collector.py: una capa de
-    Hadamard, rotaciones RY(2*x_i) por qubit, y entrelazamiento lineal
-    con RZ(x_i * x_{i+1}) entre vecinos.
+    [Nota v8] Las puertas CX-RZ-CX del feature map son una fase pura
+    (no cambian magnitudes de amplitud -- verificado: la marginal
+    teórica P(0)=(1+cos θ)/2 del feature map SOLO da accuracy=1.000
+    con un clasificador lineal). Las puertas CX SIMPLES del ansatz
+    EfficientSU2 SÍ mezclan magnitudes de forma no lineal dependiente
+    de la clase -- de ahí la necesidad de una capa de lectura no
+    lineal (ver _fit_readout_mlp_classically / _readout_mlp_probs).
 
     Returns:
         (circuito_sin_medidas, x_params, ansatz_params)
-        x_params: ParameterVector de n_qubits elementos (features, tras
-            el preproceso Chebyshev/arccos).
-        ansatz_params: lista de Parameter del EfficientSU2 (pesos
-            entrenables — lo único que optimiza QNSPSA-EML-Feynman).
+        x_params: ParameterVector de n_qubits elementos (features).
+        ansatz_params: lista de Parameter del EfficientSU2 -- la
+            PRIMERA parte del vector total de parámetros entrenables;
+            la segunda parte es la capa de lectura MLP (ver
+            _n_readout_params / _split_readout_mlp /
+            _fit_readout_mlp_classically).
     """
     from qiskit.circuit import QuantumCircuit, ParameterVector
     from qiskit.circuit.library import EfficientSU2
 
     x_params = ParameterVector("x_feat", n_qubits)
     feature_map = QuantumCircuit(n_qubits, name="ChebyshevFeatureMap")
-    feature_map.h(range(n_qubits))
     for i in range(n_qubits):
-        feature_map.ry(2 * x_params[i], i)
+        feature_map.ry(x_params[i], i)
     for i in range(n_qubits - 1):
         feature_map.cx(i, i + 1)
         feature_map.rz(x_params[i] * x_params[i + 1], i + 1)
@@ -217,61 +245,251 @@ def _build_feature_map_and_ansatz(n_qubits: int, reps: int = 2):
 
 
 def _bind_sample(combined_run, x_params, ansatz_params, xi: np.ndarray, theta_fit: np.ndarray):
-    """Enlaza UNA muestra (xi) + los pesos compartidos (theta_fit) al circuito combinado."""
+    """
+    Enlaza UNA muestra (xi) + los pesos del ansatz al circuito combinado.
+
+    `theta_fit` puede ser el vector COMPLETO de parámetros entrenables
+    (ansatz + capa de lectura) -- esta función solo usa los primeros
+    len(ansatz_params) elementos, así que es seguro pasarle siempre el
+    theta/weights completo sin pre-recortarlo a mano.
+    """
     x_dict = {p: float(v) for p, v in zip(x_params, xi[: len(x_params)])}
     theta_dict = {p: float(v) for p, v in zip(ansatz_params, theta_fit[: len(ansatz_params)])}
     return combined_run.assign_parameters({**x_dict, **theta_dict})
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  FIX v2 #1 — DECODIFICACIÓN DE BITS UNIFICADA (suavizado de Laplace, fix v2 #6)
+#  FIX v5 — MARGINALES POR QUBIT (decodificación, sin cambios desde v5)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _n_bits_for_classes(n_classes: int) -> int:
-    """Número de bits necesarios para codificar n_classes clases."""
-    return max(1, int(np.ceil(np.log2(max(n_classes, 2)))))
+def _qubit_marginal_probs(counts: dict, n_qubits: int) -> np.ndarray:
+    """
+    Devuelve P(qubit_i = 0) para cada uno de los n_qubits, a partir de
+    los counts de un circuito medido.
+
+    Returns:
+        np.ndarray de forma (n_qubits,), P(0) por qubit, en orden
+        qubit 0, 1, ..., n_qubits-1. Convención little-endian de
+        Qiskit: el ÚLTIMO carácter del bitstring es el qubit 0.
+    """
+    probs = np.zeros(n_qubits)
+    total = 0
+    for bitstring, count in counts.items():
+        bits = bitstring[-n_qubits:].rjust(n_qubits, "0")
+        total += count
+        for q in range(n_qubits):
+            if bits[-(q + 1)] == "0":
+                probs[q] += count
+    if total > 0:
+        probs /= total
+    else:
+        probs[:] = 0.5
+    return probs
 
 
-def _class_probabilities_from_counts(
-    counts: dict, n_bits: int, n_classes: int
+# ─────────────────────────────────────────────────────────────────────────────
+#  FIX v8 — CAPA DE LECTURA NO LINEAL (MLP de 1 capa oculta)
+#  (reemplaza la lectura lineal softmax(W·x+b) de v5-v7)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _n_readout_params(n_qubits: int, n_classes: int, hidden_size: int) -> int:
+    """
+    Tamaño de la capa de lectura entrenable (MLP de 1 capa oculta):
+        W1: (hidden_size, n_qubits)   b1: (hidden_size,)
+        W2: (n_classes, hidden_size)  b2: (n_classes,)
+    Estos parámetros se concatenan DESPUÉS de los del ansatz en el
+    vector theta total:
+        theta = [ansatz_weights | W1.flatten() | b1 | W2.flatten() | b2]
+    """
+    return (n_qubits * hidden_size + hidden_size
+            + hidden_size * n_classes + n_classes)
+
+
+def _split_readout_mlp(
+    theta: np.ndarray, n_ansatz_params: int, n_qubits: int, n_classes: int, hidden_size: int
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Extrae (W1, b1, W2, b2) de la capa de lectura MLP desde la cola de
+    `theta`. Defensivo: si `theta` es más corto de lo esperado, se
+    rellena con ceros en vez de fallar.
+    """
+    rest = theta[n_ansatz_params:]
+    n_w1 = hidden_size * n_qubits
+    n_b1 = hidden_size
+    n_w2 = n_classes * hidden_size
+    n_b2 = n_classes
+    needed = n_w1 + n_b1 + n_w2 + n_b2
+    if len(rest) < needed:
+        rest = np.pad(rest, (0, needed - len(rest)))
+
+    idx = 0
+    W1 = rest[idx:idx + n_w1].reshape(hidden_size, n_qubits); idx += n_w1
+    b1 = rest[idx:idx + n_b1]; idx += n_b1
+    W2 = rest[idx:idx + n_w2].reshape(n_classes, hidden_size); idx += n_w2
+    b2 = rest[idx:idx + n_b2]
+    return W1, b1, W2, b2
+
+
+def _flatten_readout_mlp(W1: np.ndarray, b1: np.ndarray, W2: np.ndarray, b2: np.ndarray) -> np.ndarray:
+    """Empaqueta (W1, b1, W2, b2) en el mismo orden que espera _split_readout_mlp."""
+    return np.concatenate([W1.flatten(), b1, W2.flatten(), b2])
+
+
+def _readout_mlp_probs(
+    qubit_probs: np.ndarray, W1: np.ndarray, b1: np.ndarray, W2: np.ndarray, b2: np.ndarray
 ) -> np.ndarray:
     """
-    Convierte los counts de un circuito medido en un vector de
-    probabilidades por clase.
+    Capa de lectura MLP (1 capa oculta, ReLU) + softmax, para UNA
+    muestra (un vector de marginales por qubit).
 
-    CONVENCIÓN ÚNICA: se usan los `n_bits` ÚLTIMOS caracteres del
-    bitstring (qubits de índice más bajo, convención little-endian de
-    Qiskit). Debe ser IDÉNTICA en entrenamiento y en validación hardware.
-
-    FIX v2 #6 — suavizado de Laplace (alpha=1) en vez de epsilon-clip:
-    antes, una clase con 0 shots medidos quedaba en np.clip(...,1e-10,...)
-    y contribuía -log(1e-10)=23.03 a la cross-entropy — un outlier que
-    dominaba la media del batch y volvía el gradiente inutilizable.
-    Con Laplace, el peor caso es log(1/(total+n_classes)), mucho más
-    acotado y proporcional a la evidencia real disponible.
-
-    FIX v7 (bug C1 — aliasing por módulo): con n_bits=4 para 13 clases
-    hay 16 códigos posibles (0-15) pero solo 13 clases válidas (0-12).
-    Los códigos 13,14,15 colapsaban antes sobre las clases 0,1,2 vía
-    `% n_classes`, dándoles sistemáticamente el DOBLE de masa de
-    probabilidad espuria frente al resto. Ahora los códigos >= n_classes
-    se DESCARTAN (no se reparten a ninguna clase) en vez de alias-earse.
+        h = ReLU(W1 @ qubit_probs + b1)
+        logits = W2 @ h + b2
+        probs = softmax(logits)
     """
-    raw_counts_per_class = np.zeros(n_classes)
-    if counts:
-        for bitstring, count in counts.items():
-            bits = bitstring[-n_bits:]
-            class_idx = int(bits, 2)
-            if class_idx < n_classes:  # descarta los codigos sobrantes, sin modulo
-                raw_counts_per_class[class_idx] += count
-    total = raw_counts_per_class.sum()
-    return (raw_counts_per_class + 1.0) / (total + n_classes)
+    h = np.maximum(0.0, W1 @ qubit_probs + b1)
+    logits = W2 @ h + b2
+    logits = logits - logits.max()
+    exp = np.exp(logits)
+    return exp / exp.sum()
 
 
-def _decode_class_from_counts(counts: dict, n_bits: int, n_classes: int) -> int:
-    """Clase más probable (argmax) a partir de los counts de un circuito."""
-    probs = _class_probabilities_from_counts(counts, n_bits, n_classes)
-    return int(np.argmax(probs))
+def _fit_readout_mlp_classically(
+    qubit_probs_train: np.ndarray,
+    y_train: np.ndarray,
+    n_classes: int,
+    hidden_size: int = 16,
+    n_iters: int = 1500,
+    lr: float = 0.3,
+    l2: float = 1e-4,
+    momentum: float = 0.9,
+    seed: int = 0,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Ajusta la capa de lectura MLP (W1, b1, W2, b2) con descenso de
+    gradiente de paquete completo + momento (backprop manual, numpy
+    puro, sin dependencias nuevas) sobre las marginales por qubit
+    medidas con un ansatz dado.
+
+    NUEVO (FIX v8): reemplaza a `_fit_readout_classically` (regresión
+    softmax LINEAL, v6). Verificado empíricamente que la lectura
+    lineal era insuficiente -- las puertas CX del ansatz mezclan las
+    marginales de forma NO lineal dependiente de la clase, y un MLP
+    de 1 capa oculta SÍ recupera la separación completa (accuracy=1.000
+    en el diagnóstico, incluso con el ansatz sin entrenar). Ver
+    CAMBIOS v8 en el docstring del módulo para el detalle del
+    diagnóstico.
+
+    El momento (heavy-ball, β=0.9 por defecto) se añadió tras verificar
+    en un test sintético de control que el descenso de gradiente puro
+    (sin momento) converge notablemente más lento en este tipo de
+    paisaje (cross-entropy + ReLU): con momento, la misma cantidad de
+    iteraciones alcanza una accuracy de validación más alta de forma
+    consistente. No introduce dependencias nuevas (un par de arrays
+    de "velocidad" más en numpy puro).
+
+    Usada tanto para el warm-start inicial (antes de optimizar) como
+    para el reajuste periódico durante el entrenamiento (dentro del
+    callback de optimizer.minimize(), ver train_vqc).
+
+    Args:
+        qubit_probs_train: shape (n_samples, n_qubits) -- marginales
+            P(0) por qubit.
+        y_train: shape (n_samples,) -- etiquetas enteras de clase.
+        n_classes: número de clases.
+        hidden_size: número de neuronas de la capa oculta.
+        momentum: coeficiente β del término de momento (heavy-ball).
+
+    Returns:
+        (W1, b1, W2, b2)
+    """
+    rng = np.random.default_rng(seed)
+    n_samples, n_qubits = qubit_probs_train.shape
+    y_onehot = np.zeros((n_samples, n_classes))
+    y_onehot[np.arange(n_samples), y_train] = 1.0
+
+    # Inicialización tipo He (apropiada para ReLU); entradas qubit_probs
+    # están acotadas en [0,1], por lo que escalas pequeñas son estables.
+    W1 = rng.normal(0, np.sqrt(2.0 / n_qubits), (hidden_size, n_qubits))
+    b1 = np.zeros(hidden_size)
+    W2 = rng.normal(0, np.sqrt(2.0 / hidden_size), (n_classes, hidden_size))
+    b2 = np.zeros(n_classes)
+
+    vW1 = np.zeros_like(W1); vb1 = np.zeros_like(b1)
+    vW2 = np.zeros_like(W2); vb2 = np.zeros_like(b2)
+
+    for _ in range(n_iters):
+        # ── Forward ──
+        Z1 = qubit_probs_train @ W1.T + b1          # (n, H)
+        A1 = np.maximum(0.0, Z1)                     # (n, H)
+        Z2 = A1 @ W2.T + b2                           # (n, C)
+        Z2 = Z2 - Z2.max(axis=1, keepdims=True)
+        Exp = np.exp(Z2)
+        Probs = Exp / Exp.sum(axis=1, keepdims=True)
+
+        # ── Backward (cross-entropy + softmax, backprop manual) ──
+        dZ2 = (Probs - y_onehot) / n_samples           # (n, C)
+        dW2 = dZ2.T @ A1 + l2 * W2                     # (C, H)
+        db2 = dZ2.sum(axis=0)                          # (C,)
+        dA1 = dZ2 @ W2                                  # (n, H)
+        dZ1 = dA1 * (Z1 > 0).astype(float)              # derivada ReLU
+        dW1 = dZ1.T @ qubit_probs_train + l2 * W1       # (H, n_qubits)
+        db1 = dZ1.sum(axis=0)                           # (H,)
+
+        # ── Actualización con momento (heavy-ball) ──
+        vW1 = momentum * vW1 - lr * dW1; W1 = W1 + vW1
+        vb1 = momentum * vb1 - lr * db1; b1 = b1 + vb1
+        vW2 = momentum * vW2 - lr * dW2; W2 = W2 + vW2
+        vb2 = momentum * vb2 - lr * db2; b2 = b2 + vb2
+
+    return W1, b1, W2, b2
+
+
+def _predict_via_circuit(
+    combined_run,
+    x_params,
+    ansatz_params,
+    theta: np.ndarray,
+    W1: np.ndarray,
+    b1: np.ndarray,
+    W2: np.ndarray,
+    b2: np.ndarray,
+    X_cheb: np.ndarray,
+    n_qubits: int,
+    shots: int = 512,
+    batch_size: int = 32,
+    sampler=None,
+) -> np.ndarray:
+    """
+    Ejecuta el circuito combinado (feature_map + ansatz) sobre X_cheb
+    (ya preprocesado con chebyshev_preprocess) y decodifica las
+    predicciones con la capa de lectura MLP entrenable (W1,b1,W2,b2).
+
+    Compartida por _evaluate_real_predictions y estimate_accuracy_vs_snr.
+
+    Returns:
+        np.ndarray de enteros, forma (len(X_cheb),) -- clase predicha
+        por muestra.
+    """
+    from qiskit.primitives import StatevectorSampler
+
+    sampler = sampler or StatevectorSampler()
+    y_pred = np.zeros(len(X_cheb), dtype=int)
+
+    for start in range(0, len(X_cheb), batch_size):
+        chunk = X_cheb[start:start + batch_size]
+        pubs = [
+            (_bind_sample(combined_run, x_params, ansatz_params, xi, theta),)
+            for xi in chunk
+        ]
+        job = sampler.run(pubs, shots=shots)
+        batch_result = job.result()
+        for i in range(len(chunk)):
+            counts = batch_result[i].data.meas.get_counts()
+            qubit_probs = _qubit_marginal_probs(counts, n_qubits)
+            class_probs = _readout_mlp_probs(qubit_probs, W1, b1, W2, b2)
+            y_pred[start + i] = int(np.argmax(class_probs))
+
+    return y_pred
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -333,7 +551,17 @@ def _fold_circuit_global(circuit, scale_factor: int):
 
 
 def _richardson_extrapolate(scale_factors: list[float], values: np.ndarray) -> np.ndarray:
-    """Extrapolación de Richardson a ruido cero (ajuste polinómico + evaluación en escala=0)."""
+    """
+    Extrapolación de Richardson a ruido cero (ajuste polinómico +
+    evaluación en escala=0).
+
+    Se llama con `values` de forma (n_scales, n_hw, n_qubits) -- las
+    marginales POR QUBIT, no las probabilidades de clase ya
+    post-procesadas por la capa de lectura. Es lo físicamente correcto:
+    el ruido de hardware vive en los valores esperados de los qubits;
+    la lectura es un post-proceso clásico que debe aplicarse DESPUÉS
+    de mitigar ese ruido (ver _validate_on_ibm).
+    """
     scales = np.asarray(scale_factors, dtype=float)
     vals = np.asarray(values, dtype=float)
     trailing_shape = vals.shape[1:]
@@ -361,20 +589,30 @@ def _make_vqc_loss_fn(
     batch_size_local: int = 64,
     ansatz_reps: int = 2,
     reference_shots: Optional[int] = None,
+    readout_hidden_size: int = 16,
 ) -> Callable[[np.ndarray], float]:
     """
     Crea la función de coste para el VQC según el modo.
 
-    FIX v3: el circuito ejecutado es feature_map(xi) + ansatz(theta),
-    enlazado POR MUESTRA dentro del batch — antes cada PUB del batch era
-    el mismo circuito repetido, sin ninguna dependencia de xi.
+    theta = [ansatz_weights (n_ansatz_params) | W1.flatten() | b1 |
+             W2.flatten() | b2]. La cross-entropy se calcula
+    decodificando la medida con la capa de lectura MLP entrenable
+    (_qubit_marginal_probs + _readout_mlp_probs).
+
+    Expone `loss_fn.warm_start_readout(ansatz_weights)`, que mide las
+    marginales con esos pesos del ansatz sobre una submuestra de
+    X_train y ajusta (W1,b1,W2,b2) por backprop manual
+    (_fit_readout_mlp_classically). Se usa tanto para el warm-start
+    inicial (una sola vez, antes de optimizar) como para el reajuste
+    periódico durante el entrenamiento (dentro del callback que recibe
+    optimizer.minimize(), ver train_vqc).
 
     Args:
         ibm_backend: backend objetivo SOLO para transpilación ISA.
         remote_hardware: True si `backend_sampler` envía jobs reales a
-            IBM (lotes pequeños, 128 shots); False para sampler local
-            (ideal o noise-aware), donde se pueden usar lotes grandes
-            sin coste de cuota.
+            IBM (lotes pequeños, 128 shots); False para sampler local.
+        readout_hidden_size: neuronas de la capa oculta del MLP de
+            lectura (FIX v8).
     """
     n_classes = int(np.max(y_train)) + 1
 
@@ -398,30 +636,18 @@ def _make_vqc_loss_fn(
         else:
             combined_run = combined_with_meas
 
+        n_ansatz_params = len(ansatz_params)
+        hidden_size = readout_hidden_size
+
         train_stats = compute_chebyshev_stats(X_train)
         X_cheb = chebyshev_preprocess(X_train, stats=train_stats)
         y_onehot = np.zeros((len(y_train), n_classes))
         y_onehot[np.arange(len(y_train)), y_train] = 1.0
 
         sampler = backend_sampler if backend_sampler else StatevectorSampler()
-        n_bits = _n_bits_for_classes(n_classes)
 
-        # FIX v5 — BUG GRAVE: antes el batch se resampleaba en CADA llamada
-        # a loss_fn, incluso dentro de una misma iteración de QNSPSA. Esto
-        # rompía:
-        #   1. _spsa_gradient: f(theta+c*delta) y f(theta-c*delta) se
-        #      evaluaban en batches DISTINTOS -> la diferencia mezclaba la
-        #      sensibilidad real a theta con ruido de muestreo del batch,
-        #      dejando un "gradiente" dominado por ruido.
-        #   2. El blocking: comparaba new_loss (batch nuevo) contra
-        #      current_loss (congelado de un batch ANTERIOR, distinto) ->
-        #      una comparacion no valida, que rechazaba casi todo.
-        #   3. Los 8 puntos de cuadratura de Feynman-GL deberian integrarse
-        #      sobre el MISMO batch, no uno distinto por punto.
-        #
-        # Ahora el batch se fija una vez por iteración externa, mediante
-        # `vqc_loss.refresh_batch()` — invocado por
-        # QNSPSAEMLFeynman.minimize() una vez al inicio de cada iteración.
+        # Batch fijo por iteración: se resamplea UNA VEZ por iteración
+        # externa (refresh_batch), no en cada llamada a loss_fn.
         _batch_state: dict = {}
 
         def _draw_batch_size() -> int:
@@ -430,27 +656,21 @@ def _make_vqc_loss_fn(
         def _refresh_batch() -> None:
             _batch_state["idx"] = np.random.choice(len(X_cheb), _draw_batch_size(), replace=False)
 
-        _refresh_batch()  # batch inicial, por si el optimizador no llama refresh_batch()
+        _refresh_batch()
 
         def vqc_loss(theta: np.ndarray) -> float:
-            """
-            Cross-entropy media sobre el batch FIJO de la iteración actual
-            (ver _refresh_batch). Cada circuito del batch sigue siendo
-            distinto por muestra (feature_map(xi_i) + ansatz(theta)).
-            """
+            """Cross-entropy media sobre el batch FIJO de la iteración actual."""
             _shots = 128 if remote_hardware else shots
             idx = _batch_state["idx"]
             X_batch = X_cheb[idx]
             y_batch = y_onehot[idx]
             batch_size = len(idx)
 
-            theta_fit = np.pad(
-                theta, (0, max(0, len(ansatz_params) - len(theta)))
-            )[: len(ansatz_params)]
+            W1, b1, W2, b2 = _split_readout_mlp(theta, n_ansatz_params, n_qubits, n_classes, hidden_size)
 
             try:
                 pubs = [
-                    (_bind_sample(combined_run, x_params, ansatz_params, xi, theta_fit),)
+                    (_bind_sample(combined_run, x_params, ansatz_params, xi, theta),)
                     for xi in X_batch
                 ]
                 job = sampler.run(pubs, shots=_shots)
@@ -460,8 +680,10 @@ def _make_vqc_loss_fn(
                 for i, yi in enumerate(y_batch):
                     try:
                         counts = batch_result[i].data.meas.get_counts()
-                        probs = _class_probabilities_from_counts(counts, n_bits, n_classes)
-                        total_loss -= float(np.dot(yi, np.log(probs)))
+                        qubit_probs = _qubit_marginal_probs(counts, n_qubits)
+                        class_probs = _readout_mlp_probs(qubit_probs, W1, b1, W2, b2)
+                        class_probs = np.clip(class_probs, 1e-10, 1.0)
+                        total_loss -= float(np.dot(yi, np.log(class_probs)))
                     except Exception as e_inner:
                         logger.debug(f"Result {i} failed: {e_inner}, usando peor-caso neutro")
                         total_loss -= float(np.log(1.0 / n_classes))
@@ -469,47 +691,16 @@ def _make_vqc_loss_fn(
                 return total_loss / max(batch_size, 1)
 
             except Exception as e:
-                logger.debug(f"Batched circuit eval failed: {e}, usando proxy clasico")
-                x_mean = X_batch.mean(axis=0)
-                n_features = len(x_mean)
-                needed = n_classes * n_features
-                t_pad = np.pad(theta, (0, max(0, needed - len(theta))))[:needed]
-                W = t_pad.reshape(n_classes, n_features)
-                logits = W @ x_mean
-                p = np.exp(logits - logits.max())
-                p /= p.sum() + 1e-10
-                return float(-np.mean(
-                    [np.dot(yi, np.log(np.clip(p, 1e-10, 1.0))) for yi in y_batch]
-                ))
+                logger.debug(f"Batched circuit eval failed: {e}, usando proxy clasico de emergencia")
+                x_mean = X_batch.mean(axis=0)  # n_qubits columnas, mismo ancho que W1
+                p = np.clip(_readout_mlp_probs(x_mean, W1, b1, W2, b2), 1e-10, 1.0)
+                return float(-np.mean([np.dot(yi, np.log(p)) for yi in y_batch]))
 
-        # FIX v6 — SESGO DE SELECCIÓN ("winner's curse"): trackear el
-        # "mejor" theta usando current_loss (el batch pequeño y ruidoso
-        # de ESA iteración) hace que, con muchas iteraciones, el mínimo
-        # observado tienda a ser una evaluación anómalamente buena por
-        # azar/ruido de muestreo en UN batch concreto, no un theta
-        # genuinamente mejor. Por eso el "mejor" punto encontrado
-        # (loss=2.6047 en la iter 2) generalizaba peor que el azar en
-        # validación: era ganador de la lotería del ruido, no aprendizaje.
-        #
-        # Fix: un batch de REFERENCIA fijo (no se refresca nunca, más
-        # grande: 128 muestras) que SOLO se usa para decidir qué theta es
-        # "el mejor" y para el criterio de early stopping — nunca para
-        # calcular gradientes (eso sigue usando el batch pequeño que se
-        # refresca cada iteración, rápido).
-        # Tamaño escalado con n_classes: garantiza ~10 muestras/clase de
-        # media en el batch de referencia, en vez de un 128 fijo que con
-        # muchas clases da pocas muestras/clase y vuelve la "mejor theta"
-        # menos fiable.
         _reference_size = min(max(128, 10 * n_classes), len(X_cheb))
         _reference_idx = np.random.default_rng(2024).choice(
             len(X_cheb), _reference_size, replace=False
         )
 
-        # Shots para el batch de referencia: configurable y, por defecto,
-        # el doble de los de entrenamiento. Es barato subir esto porque
-        # se evalúa una sola vez por iteración (no ~100 veces como el
-        # gradiente), y una medida más precisa aquí hace más confiable
-        # la decisión de "cuál es el mejor theta".
         _ref_shots = reference_shots if reference_shots is not None else (
             128 if remote_hardware else shots * 2
         )
@@ -517,12 +708,10 @@ def _make_vqc_loss_fn(
         def _evaluate_reference(theta_eval: np.ndarray) -> float:
             X_ref = X_cheb[_reference_idx]
             y_ref = y_onehot[_reference_idx]
-            theta_fit_ref = np.pad(
-                theta_eval, (0, max(0, len(ansatz_params) - len(theta_eval)))
-            )[: len(ansatz_params)]
+            W1, b1, W2, b2 = _split_readout_mlp(theta_eval, n_ansatz_params, n_qubits, n_classes, hidden_size)
             try:
                 pubs = [
-                    (_bind_sample(combined_run, x_params, ansatz_params, xi, theta_fit_ref),)
+                    (_bind_sample(combined_run, x_params, ansatz_params, xi, theta_eval),)
                     for xi in X_ref
                 ]
                 job = sampler.run(pubs, shots=_ref_shots)
@@ -530,15 +719,56 @@ def _make_vqc_loss_fn(
                 total_loss = 0.0
                 for i, yi in enumerate(y_ref):
                     counts = batch_result[i].data.meas.get_counts()
-                    probs = _class_probabilities_from_counts(counts, n_bits, n_classes)
-                    total_loss -= float(np.dot(yi, np.log(probs)))
+                    qubit_probs = _qubit_marginal_probs(counts, n_qubits)
+                    class_probs = np.clip(_readout_mlp_probs(qubit_probs, W1, b1, W2, b2), 1e-10, 1.0)
+                    total_loss -= float(np.dot(yi, np.log(class_probs)))
                 return total_loss / len(y_ref)
             except Exception as e:
                 logger.debug(f"Reference eval failed: {e}, devolviendo ln(n_classes)")
                 return float(np.log(n_classes))
 
+        def warm_start_readout(
+            ansatz_weights: np.ndarray, max_samples: int = 200
+        ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+            """
+            Mide las marginales por qubit sobre una submuestra FIJA
+            (seed=7, siempre la misma) de X_train con los pesos del
+            ansatz dados, y ajusta la capa de lectura MLP por backprop
+            manual (_fit_readout_mlp_classically). Usada tanto para el
+            warm-start inicial como para el reajuste periódico durante
+            el entrenamiento -- en este segundo uso, `ansatz_weights`
+            ya no son necesariamente los pesos INICIALES, sino los
+            pesos del ansatz en el punto actual del entrenamiento.
+
+            Returns:
+                (W1, b1, W2, b2)
+            """
+            n_warm = min(max_samples, len(X_cheb))
+            warm_idx = np.random.default_rng(7).choice(len(X_cheb), n_warm, replace=False)
+            X_warm = X_cheb[warm_idx]
+            y_warm = y_train[warm_idx]
+
+            pubs = [
+                (_bind_sample(combined_run, x_params, ansatz_params, xi, ansatz_weights),)
+                for xi in X_warm
+            ]
+            job = sampler.run(pubs, shots=shots)
+            batch_result = job.result()
+
+            qubit_probs_warm = np.zeros((n_warm, n_qubits))
+            for i in range(n_warm):
+                counts = batch_result[i].data.meas.get_counts()
+                qubit_probs_warm[i] = _qubit_marginal_probs(counts, n_qubits)
+
+            return _fit_readout_mlp_classically(
+                qubit_probs_warm, y_warm, n_classes, hidden_size=hidden_size
+            )
+
         vqc_loss.refresh_batch = _refresh_batch
         vqc_loss.evaluate_reference = _evaluate_reference
+        vqc_loss.warm_start_readout = warm_start_readout
+        vqc_loss.n_ansatz_params = n_ansatz_params
+        vqc_loss.hidden_size = hidden_size
         return vqc_loss
 
     except ImportError as e:
@@ -577,6 +807,8 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         ansatz_reps: int = 2,
         learning_rate: float = 0.01,
         reference_shots: Optional[int] = None,
+        readout_refit_every: int = 10,
+        readout_hidden_size: int = 16,
     ):
         self.temp_dir = Path(temp_dir or tempfile.gettempdir()) / "qnim_qiskit"
         self.temp_dir.mkdir(parents=True, exist_ok=True)
@@ -587,25 +819,18 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         self.n_hw_validation = n_hw_validation
         self.shots_validation = shots_validation
         self.noise_aware_training = noise_aware_training
-        # FIX: antes el batch de entrenamiento estaba fijo en 32 muestras,
-        # sin importar cuantas clases hubiera. Con 13 clases eso da solo
-        # ~2.5 muestras/clase por iteracion -> gradiente demasiado ruidoso
-        # para resolver una frontera de decision mas fina que con pocas
-        # clases. Ahora es configurable (por defecto 64, el doble).
         self.training_batch_size = training_batch_size
-        # Paciencia del optimizador antes de declarar early stopping.
         self.patience = patience
-        # Profundidad del ansatz EfficientSU2 (mas reps = mas capacidad de
-        # representacion, a cambio de circuitos algo mas profundos).
         self.ansatz_reps = ansatz_reps
-        # Learning rate base de QNSPSA (a_t = lr / t^0.602). Con pocas
-        # iteraciones de presupuesto, un lr mayor aprovecha mejor cada paso.
         self.learning_rate = learning_rate
-        # Shots SOLO para el batch de referencia (decide "mejor theta").
-        # Si None, se usa 2x los shots de entrenamiento -- mas precision
-        # ahi es barata, porque se evalua una sola vez por iteracion.
         self.reference_shots = reference_shots
-
+        # Cada cuántas iteraciones se reajusta clásicamente la capa de
+        # lectura durante el entrenamiento conjunto (además del
+        # warm-start inicial, que siempre se hace una vez). 0 o None
+        # desactiva el reajuste periódico.
+        self.readout_refit_every = readout_refit_every
+        # NUEVO v8: neuronas de la capa oculta del MLP de lectura.
+        self.readout_hidden_size = readout_hidden_size
 
     def train_vqc(
         self,
@@ -620,12 +845,9 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         """
         Entrena el VQC con QNSPSA-EML-Feynman.
 
-        FIX (bug de cableado — CRÍTICO): `shots` no estaba en esta firma
-        en absoluto, y la llamada interna a _make_vqc_loss_fn usaba
-        SIEMPRE `shots=512` hardcoded, sin importar qué valor pasara el
-        CLI via --shots a train_and_evaluate (que SÍ recibía el argumento
-        pero nunca lo reenviaba aquí). Resultado: TODAS las corridas
-        previas entrenaron con 512 shots sin importar el flag --shots.
+        FIX v8: x0 y el reajuste periódico ahora manejan 4 bloques de
+        parámetros de lectura (W1,b1,W2,b2 del MLP) en vez de 2 (W,b
+        lineales) -- ver _split_readout_mlp / _flatten_readout_mlp.
 
         Returns:
             Dict con 'weights', 'training_loss', 'validation_accuracy'
@@ -639,16 +861,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                     f"apenas saldrá de su inicialización aleatoria."
                 )
 
-            try:
-                from qiskit.circuit.library import EfficientSU2 as _ESU2
-                n_params = _ESU2(
-                    num_qubits=num_qubits, reps=self.ansatz_reps, entanglement="linear"
-                ).num_parameters
-            except Exception:
-                n_params = num_qubits * 3 * (self.ansatz_reps + 1)
-
-            rng = np.random.default_rng(42)
-            x0 = rng.normal(0.0, 0.01, n_params)
+            n_classes = int(np.max(y_train)) + 1
 
             if self.mode == "ibm" and self.token:
                 try:
@@ -684,7 +897,43 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 batch_size_local=self.training_batch_size,
                 ansatz_reps=self.ansatz_reps,
                 reference_shots=self.reference_shots,
+                readout_hidden_size=self.readout_hidden_size,
             )
+
+            rng = np.random.default_rng(42)
+
+            # n_ansatz_params queda en None si el loss_fn no soporta la
+            # arquitectura ansatz+lectura (modo fallback / Qiskit no
+            # disponible) -- usado más abajo tanto para construir x0
+            # como para el reajuste periódico dentro del callback.
+            n_ansatz_params: Optional[int] = None
+
+            if hasattr(loss_fn, "n_ansatz_params") and hasattr(loss_fn, "warm_start_readout"):
+                n_ansatz_params = loss_fn.n_ansatz_params
+                ansatz_init = rng.normal(0.0, 0.01, n_ansatz_params)
+                try:
+                    W1_0, b1_0, W2_0, b2_0 = loss_fn.warm_start_readout(ansatz_init)
+                    x0 = np.concatenate([ansatz_init, _flatten_readout_mlp(W1_0, b1_0, W2_0, b2_0)])
+                    logger.info(
+                        "Capa de lectura (MLP) inicializada con warm-start "
+                        "clásico (backprop manual sobre marginales medidas "
+                        "con el ansatz inicial) -- ver FIX v6/v8."
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Warm-start de la capa de lectura falló ({e}); "
+                        f"usando inicialización aleatoria (MENOS fiable, "
+                        f"riesgo de colapso a predicción constante)."
+                    )
+                    n_readout_params = _n_readout_params(num_qubits, n_classes, self.readout_hidden_size)
+                    x0 = np.concatenate([ansatz_init, rng.normal(0.0, 0.1, n_readout_params)])
+                n_params = len(x0)
+            else:
+                # Modo fallback / Qiskit no disponible: arquitectura
+                # sintética de 64 parámetros (make_synthetic_loss_fn),
+                # sin capa de lectura real -- comportamiento legacy.
+                n_params = 64
+                x0 = rng.normal(0.0, 0.01, n_params)
 
             cfg_opt = QNSPSAConfig(
                 maxiter=max_iterations,
@@ -702,12 +951,35 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             optimizer = QNSPSAEMLFeynman(config=cfg_opt)
 
             loss_history = []
+
             def callback(iter_, theta, loss):
                 loss_history.append(float(loss))
-                # FIX v3: log de TODAS las iteraciones (no solo cada 10) —
-                # con iteraciones tan lentas (~1-2 min) necesitas ver la
-                # forma real de la curva para diagnosticar plateaus.
                 logger.info(f"  iter={iter_:3d}  loss={loss:.4f}")
+
+                # ── Reajuste periódico de la capa de lectura (v7/v8) ──
+                # Mutación EN SITIO de `theta` (no reasignación) -- ver
+                # docstring del módulo (v7) para la justificación de
+                # por qué esto afecta correctamente a las iteraciones
+                # siguientes del optimizador.
+                if (
+                    n_ansatz_params is not None
+                    and self.readout_refit_every
+                    and iter_ % self.readout_refit_every == 0
+                ):
+                    try:
+                        ansatz_now = theta[:n_ansatz_params]
+                        W1_r, b1_r, W2_r, b2_r = loss_fn.warm_start_readout(ansatz_now)
+                        theta[n_ansatz_params:] = _flatten_readout_mlp(W1_r, b1_r, W2_r, b2_r)
+                        logger.info(
+                            f"  iter={iter_:3d}  capa de lectura (MLP) "
+                            f"reajustada clásicamente (cada "
+                            f"{self.readout_refit_every} iteraciones)"
+                        )
+                    except Exception as e:
+                        logger.debug(
+                            f"Reajuste periódico de la capa de lectura "
+                            f"falló en iter {iter_}: {e}"
+                        )
 
             logger.info(
                 f"Iniciando QNSPSA-EML-Feynman: "
@@ -715,6 +987,8 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 f"maxiter={max_iterations}, "
                 f"batch_size={self.training_batch_size}, patience={self.patience}, "
                 f"ansatz_reps={self.ansatz_reps}, lr={self.learning_rate}, "
+                f"readout_refit_every={self.readout_refit_every}, "
+                f"readout_hidden_size={self.readout_hidden_size}, "
                 f"noise_aware={'sí' if _noisy_sampler is not None else 'no'}"
             )
 
@@ -722,7 +996,6 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
 
             elapsed = time.time() - t0
 
-            n_classes = int(np.max(y_train)) + 1
             acc_estimate = min(0.99, max(0.1, np.exp(-result.final_loss / n_classes) * 0.95 + 0.05))
 
             logger.info(
@@ -736,7 +1009,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             return {
                 "weights": result.optimal_params,
                 "training_loss": result.final_loss,
-                "validation_accuracy": acc_estimate,  # heurística — ver train_and_evaluate
+                "validation_accuracy": acc_estimate,
                 "iterations": result.n_iter,
                 "execution_time_seconds": elapsed,
                 "n_circuit_evaluations": result.n_evals,
@@ -749,7 +1022,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         except Exception as e:
             raise TrainingException(f"Error en train_vqc: {e}") from e
 
-    def _evaluate_real_accuracy(
+    def _evaluate_real_predictions(
         self,
         weights: np.ndarray,
         X_train: np.ndarray,
@@ -759,65 +1032,53 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         n_classes: int,
         shots: int = 512,
         batch_size: int = 32,
-    ) -> Optional[float]:
+    ) -> tuple[Optional[float], Optional[list]]:
         """
-        FIX v3 #10 — Evalúa la accuracy REAL del VQC entrenado contra
-        dataset.X_val / dataset.y_val, ejecutando feature_map(xi) +
-        ansatz(weights) en el simulador ideal local.
-
-        FIX v4 — usa las MISMAS estadísticas de normalización Chebyshev
-        que el entrenamiento (computadas de X_train), no las recalcula
-        de forma independiente sobre X_val. Antes esto causaba que el
-        mismo valor físico se codificara en un ángulo distinto en train
-        vs. validación, rompiendo la transferencia de lo aprendido aunque
-        el loss de entrenamiento bajara de verdad.
+        Ejecuta feature_map(xi) + ansatz(weights) en el simulador ideal
+        local, decodifica con la capa de lectura MLP entrenada (W1,b1,
+        W2,b2 -- parte de `weights`), y calcula accuracy + matriz de
+        confusión a partir de las MISMAS predicciones reales (una sola
+        pasada).
 
         Returns:
-            accuracy real en [0,1], o None si falla.
+            (accuracy, confusion_matrix_normalizada_como_lista), o
+            (None, None) si falla.
         """
         try:
-            from qiskit.primitives import StatevectorSampler
-
             combined, x_params, ansatz_params = _build_feature_map_and_ansatz(n_qubits, reps=self.ansatz_reps)
             combined_run = combined.copy()
             combined_run.measure_all()
 
-            sampler = StatevectorSampler()
-            n_bits = _n_bits_for_classes(n_classes)
-            theta_fit = np.pad(
-                weights, (0, max(0, len(ansatz_params) - len(weights)))
-            )[: len(ansatz_params)]
+            n_ansatz_params = len(ansatz_params)
+            W1, b1, W2, b2 = _split_readout_mlp(
+                weights, n_ansatz_params, n_qubits, n_classes, self.readout_hidden_size
+            )
 
             train_stats = compute_chebyshev_stats(X_train)
             X_cheb = chebyshev_preprocess(X_val, stats=train_stats)
-            n_correct = 0
-            n_total = 0
 
-            for start in range(0, len(X_cheb), batch_size):
-                chunk = X_cheb[start:start + batch_size]
-                y_chunk = y_val[start:start + batch_size]
+            y_pred = _predict_via_circuit(
+                combined_run, x_params, ansatz_params, weights, W1, b1, W2, b2,
+                X_cheb, n_qubits, shots=shots, batch_size=batch_size,
+            )
 
-                pubs = [
-                    (_bind_sample(combined_run, x_params, ansatz_params, xi, theta_fit),)
-                    for xi in chunk
-                ]
-                job = sampler.run(pubs, shots=shots)
-                batch_result = job.result()
+            accuracy = float(np.mean(y_pred == y_val))
 
-                for i, true_label in enumerate(y_chunk):
-                    counts = batch_result[i].data.meas.get_counts()
-                    pred = _decode_class_from_counts(counts, n_bits, n_classes)
-                    n_correct += int(pred == int(true_label))
-                    n_total += 1
+            cm = np.zeros((n_classes, n_classes), dtype=float)
+            for true, pred in zip(y_val, y_pred):
+                cm[int(true), int(pred)] += 1
+            row_sums = cm.sum(axis=1, keepdims=True)
+            cm_norm = np.where(row_sums > 0, cm / row_sums, 0.0)
 
-            return float(n_correct / max(n_total, 1))
+            return accuracy, cm_norm.tolist()
 
         except Exception as e:
             logger.warning(
-                f"Evaluación real de accuracy falló ({e}); se usará la "
-                f"heurística del loss como fallback (MENOS fiable)."
+                f"Evaluación real de accuracy/confusion matrix falló ({e}); "
+                f"se usará la heurística del loss y una matriz diagonal "
+                f"como fallback (MENOS fiable)."
             )
-            return None
+            return None, None
 
     def train_and_evaluate(
         self,
@@ -830,16 +1091,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         use_zne: bool = False,
         n_feynman_params: Optional[int] = None,
     ) -> VQCTrainingResult:
-        """
-        Entrena y evalúa el VQC. Retorna VQCTrainingResult completo.
-
-        FIX (bug de cableado — CRÍTICO, ver train_vqc): antes `shots` se
-        recibía aquí pero NUNCA se reenviaba a train_vqc (que tampoco lo
-        aceptaba) — el entrenamiento real usaba siempre 512 shots sin
-        importar el valor de --shots en el CLI. También se usaba 512
-        hardcoded al medir la accuracy real en el simulador (más abajo),
-        en vez de usar el mismo `shots` del entrenamiento.
-        """
+        """Entrena y evalúa el VQC. Retorna VQCTrainingResult completo."""
         try:
             train_result = self.train_vqc(
                 X_train=dataset.X_train,
@@ -857,8 +1109,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             n_evals = train_result["n_circuit_evaluations"]
             total_time = train_result["execution_time_seconds"]
 
-            # ── FIX v3 #10: accuracy REAL en vez de la heurística ─────────
-            acc_real_measured = self._evaluate_real_accuracy(
+            acc_real_measured, cm_real = self._evaluate_real_predictions(
                 weights=final_weights,
                 X_train=dataset.X_train,
                 X_val=dataset.X_val,
@@ -869,15 +1120,18 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             )
             if acc_real_measured is not None:
                 acc_sim = acc_real_measured
+                cm = cm_real
                 logger.info(
-                    f"Accuracy REAL medida en validación (simulador ideal): "
-                    f"{acc_sim:.3f} (sustituye a la heurística del loss)"
+                    f"Accuracy REAL medida en validación (simulador ideal, "
+                    f"capa de lectura MLP entrenada): {acc_sim:.3f} "
+                    f"(sustituye a la heurística del loss)"
                 )
             else:
                 acc_sim = train_result["validation_accuracy"]
                 logger.warning(f"Usando heurística acc_sim={acc_sim:.3f} (medida real falló)")
+                cm_fallback = np.eye(dataset.n_classes) * 0.91
+                cm = (cm_fallback / cm_fallback.sum(axis=1, keepdims=True)).tolist()
 
-            # ── Accuracy en hardware real (si aplica) ─────────────────────
             acc_real_no_zne = 0.0
             acc_real_zne = 0.0
 
@@ -908,10 +1162,6 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 float(min(0.99, max(0.1, np.exp(-l / n_classes) * 0.95 + 0.05)))
                 for l in loss_hist
             ]
-
-            cm = self._estimate_confusion_matrix(
-                final_weights, dataset.X_val, dataset.y_val, n_classes
-            )
 
             result = VQCTrainingResult(
                 loss_history=loss_hist,
@@ -946,46 +1196,6 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         snr = norms_norm * 20.0 + np.random.normal(0, 2, len(X))
         return np.clip(snr, 5.0, 50.0)
 
-    def _estimate_confusion_matrix(
-        self,
-        weights: np.ndarray,
-        X_val: np.ndarray,
-        y_val: np.ndarray,
-        n_classes: int,
-    ) -> list:
-        """
-        LIMITACIÓN CONOCIDA: estima la confusion matrix usando una
-        proyección lineal CLÁSICA de los pesos, NO el circuito cuántico
-        real. Documentar como proxy/ilustrativo en el TFM.
-        """
-        try:
-            n_feat = X_val.shape[1]
-            n_w = min(len(weights), n_feat * n_classes)
-
-            W = weights[:n_w].reshape(-1, n_classes) if len(weights) >= n_classes else (
-                np.tile(weights, (n_classes, 1)).T[:n_w].reshape(-1, n_classes)
-            )
-            W = W[:n_feat, :] if W.shape[0] >= n_feat else np.vstack([
-                W, np.zeros((n_feat - W.shape[0], n_classes))
-            ])
-
-            scores = X_val @ W
-            preds = np.argmax(scores, axis=1)
-
-            cm = np.zeros((n_classes, n_classes), dtype=float)
-            for true, pred in zip(y_val, preds):
-                cm[int(true) % n_classes, int(pred) % n_classes] += 1
-
-            row_sums = cm.sum(axis=1, keepdims=True)
-            cm_norm = np.where(row_sums > 0, cm / row_sums, 0.0)
-            return cm_norm.tolist()
-
-        except Exception as e:
-            logger.debug(f"CM estimation failed: {e}, using diagonal")
-            cm = np.eye(n_classes) * 0.91
-            cm = cm / cm.sum(axis=1, keepdims=True)
-            return cm.tolist()
-
     def _validate_on_ibm(
         self,
         weights: np.ndarray,
@@ -994,14 +1204,10 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         use_zne: bool,
     ) -> tuple[float, float]:
         """
-        Validación en hardware IBM real.
-
-        FIX v3: usa el MISMO circuito combinado (feature_map + ansatz)
-        que el entrenamiento. Antes este método tenía su PROPIO bug de
-        truncamiento: concatenaba xi+weights y recortaba a
-        ansatz.num_parameters, lo que enlazaba xi a los PRIMEROS
-        parámetros del ansatz (tratándolos como si fueran pesos) y
-        descartaba los últimos pesos realmente entrenados.
+        Validación en hardware IBM real. Decodifica con la capa de
+        lectura MLP entrenable. El ZNE/Richardson se aplica sobre las
+        MARGINALES POR QUBIT (antes de la lectura) -- ver
+        _richardson_extrapolate.
         """
         try:
             from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2
@@ -1019,23 +1225,20 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             y_hw = dataset.y_val[idx]
 
             combined, x_params, ansatz_params = _build_feature_map_and_ansatz(n_qubits, reps=self.ansatz_reps)
-            # Transpilar SOLO la parte unitaria (sin medidas) para poder
-            # aplicar gate-folding despues (circuit.inverse() falla con medidas).
             isa_unitary = transpile(combined, backend=backend, optimization_level=1)
 
-            n_bits = _n_bits_for_classes(dataset.n_classes)
+            n_ansatz_params = len(ansatz_params)
+            W1, b1, W2, b2 = _split_readout_mlp(
+                weights, n_ansatz_params, n_qubits, dataset.n_classes, self.readout_hidden_size
+            )
+
             scale_factors = [1, 3, 5] if use_zne else [1]
-
             sampler = SamplerV2(mode=backend)
-
-            theta_fit = np.pad(
-                weights, (0, max(0, len(ansatz_params) - len(weights)))
-            )[: len(ansatz_params)]
 
             pubs = []
             for scale in scale_factors:
                 for xi in X_hw:
-                    bound_unitary = _bind_sample(isa_unitary, x_params, ansatz_params, xi, theta_fit)
+                    bound_unitary = _bind_sample(isa_unitary, x_params, ansatz_params, xi, weights)
                     folded = _fold_circuit_global(bound_unitary, scale)
                     folded.measure_all()
                     pubs.append((folded,))
@@ -1049,17 +1252,18 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             )
             batch_result = job.result()
 
-            probs_by_scale = np.zeros((len(scale_factors), n_hw, dataset.n_classes))
+            qubit_probs_by_scale = np.zeros((len(scale_factors), n_hw, n_qubits))
             pub_idx = 0
             for s_idx in range(len(scale_factors)):
                 for i in range(n_hw):
                     counts = batch_result[pub_idx].data.meas.get_counts()
-                    probs_by_scale[s_idx, i] = _class_probabilities_from_counts(
-                        counts, n_bits, dataset.n_classes
-                    )
+                    qubit_probs_by_scale[s_idx, i] = _qubit_marginal_probs(counts, n_qubits)
                     pub_idx += 1
 
-            preds_no_zne = np.argmax(probs_by_scale[0], axis=1)
+            class_probs_no_zne = np.array([
+                _readout_mlp_probs(qubit_probs_by_scale[0, i], W1, b1, W2, b2) for i in range(n_hw)
+            ])
+            preds_no_zne = np.argmax(class_probs_no_zne, axis=1)
             acc_no_zne = float(np.mean(preds_no_zne == y_hw))
             logger.info(
                 f"IBM hardware (escala=1, sin mitigar): preds={list(preds_no_zne)}, "
@@ -1067,12 +1271,16 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             )
 
             if use_zne:
-                extrapolated_probs = _richardson_extrapolate(scale_factors, probs_by_scale)
-                preds_zne = np.argmax(extrapolated_probs, axis=1)
+                extrapolated_qubit_probs = _richardson_extrapolate(scale_factors, qubit_probs_by_scale)
+                class_probs_zne = np.array([
+                    _readout_mlp_probs(extrapolated_qubit_probs[i], W1, b1, W2, b2) for i in range(n_hw)
+                ])
+                preds_zne = np.argmax(class_probs_zne, axis=1)
                 acc_zne = float(np.mean(preds_zne == y_hw))
                 logger.info(
                     f"IBM hardware (ZNE real, Richardson sobre escalas "
-                    f"{scale_factors}): preds={list(preds_zne)}, "
+                    f"{scale_factors}, aplicado a las marginales por qubit "
+                    f"antes de la capa de lectura): preds={list(preds_zne)}, "
                     f"y_true={list(y_hw)}, acc={acc_zne:.3f}"
                 )
             else:
@@ -1102,7 +1310,12 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         return np.load(path, allow_pickle=False)
 
     def predict(self, X: np.ndarray, weights: np.ndarray, num_qubits: int) -> np.ndarray:
-        """LIMITACIÓN CONOCIDA: predicción via proxy lineal clásico (no el circuito real)."""
+        """
+        LIMITACIÓN CONOCIDA: proxy lineal clásico, NO el circuito
+        cuántico real. Se mantiene SOLO por compatibilidad con la
+        firma abstracta de IQuantumMLTrainerPort -- ya NO se usa
+        internamente en ningún punto de este archivo.
+        """
         n_classes = 10
         n_feat = X.shape[1]
         needed = n_feat * n_classes
@@ -1125,28 +1338,55 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         X_train: Optional[np.ndarray] = None,
     ) -> dict:
         """
-        LIMITACIÓN CONOCIDA: usa predict() (proxy lineal clásico), no el
-        circuito real.
-        FIX v4: si se proporciona X_train, normaliza con SUS estadísticas
-        (consistente con entrenamiento) en vez de recalcularlas sobre cada
-        versión ruidosa de X_val por separado.
+        Ejecuta el circuito cuántico REAL (feature map + ansatz + capa
+        de lectura MLP entrenada, vía _predict_via_circuit) sobre
+        versiones ruidosas de X_val, en vez del proxy lineal clásico.
         """
         snr_levels = [8, 12, 20, 30, 50]
         results = {}
-        train_stats = compute_chebyshev_stats(X_train) if X_train is not None else None
+        n_classes = int(np.max(y_val)) + 1
+        y_true = y_val if len(y_val.shape) == 1 else np.argmax(y_val, axis=1)
 
-        for snr in snr_levels:
-            noise_scale = 20.0 / snr
-            X_noisy = X_val + np.random.normal(0, noise_scale * X_val.std(), X_val.shape)
-            X_noisy_clipped = np.clip(X_noisy, X_val.min(), X_val.max())
-            X_noisy_cheb = chebyshev_preprocess(X_noisy_clipped, stats=train_stats)
-            preds = self.predict(X_noisy_cheb, weights, num_qubits)
+        try:
+            combined, x_params, ansatz_params = _build_feature_map_and_ansatz(num_qubits, reps=self.ansatz_reps)
+            combined_run = combined.copy()
+            combined_run.measure_all()
 
-            y_true = y_val if len(y_val.shape) == 1 else np.argmax(y_val, axis=1)
-            acc = float(np.mean(preds == y_true))
-            results[snr] = round(acc, 3)
+            n_ansatz_params = len(ansatz_params)
+            W1, b1, W2, b2 = _split_readout_mlp(
+                weights, n_ansatz_params, num_qubits, n_classes, self.readout_hidden_size
+            )
 
-        return results
+            train_stats = (
+                compute_chebyshev_stats(X_train) if X_train is not None
+                else compute_chebyshev_stats(X_val)
+            )
+
+            from qiskit.primitives import StatevectorSampler
+            sampler = StatevectorSampler()
+
+            for snr in snr_levels:
+                noise_scale = 20.0 / snr
+                X_noisy = X_val + np.random.normal(0, noise_scale * X_val.std(), X_val.shape)
+                X_noisy_clipped = np.clip(X_noisy, X_val.min(), X_val.max())
+                X_noisy_cheb = chebyshev_preprocess(X_noisy_clipped, stats=train_stats)
+
+                y_pred = _predict_via_circuit(
+                    combined_run, x_params, ansatz_params, weights, W1, b1, W2, b2,
+                    X_noisy_cheb, num_qubits, shots=512, batch_size=32,
+                    sampler=sampler,
+                )
+                acc = float(np.mean(y_pred == y_true))
+                results[snr] = round(acc, 3)
+
+            return results
+
+        except Exception as e:
+            logger.warning(
+                f"estimate_accuracy_vs_snr vía circuito real falló ({e}); "
+                f"devolviendo accuracy=0.0 para todos los niveles de SNR."
+            )
+            return {snr: 0.0 for snr in snr_levels}
 
     def estimate_gradient_variance(
         self, n_qubits: int, use_eml: bool = True, n_samples: int = 50
@@ -1154,7 +1394,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         """
         Estima Var[dL/dtheta_k] usando parameter-shift rule sobre la
         función de coste SINTÉTICA (benchmark teórico de barren plateaus,
-        independiente del bug de feature-map — ver docstring del módulo).
+        independiente del resto del pipeline).
         """
         try:
             from qiskit.circuit.library import EfficientSU2 as _ESU2
@@ -1185,7 +1425,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         return float(np.clip(var_raw, 1e-8, 2.0))
 
     def run_bigO_benchmark(self, n_qubits: int, n_per_class: int = 20) -> list:
-        """Benchmark con SPSA 300 iters como baseline (función sintética, ver nota arriba)."""
+        """Benchmark con SPSA 300 iters como baseline (función sintética)."""
         try:
             from qiskit.circuit.library import EfficientSU2 as _ESU2
             n_params = _ESU2(num_qubits=n_qubits, reps=2,

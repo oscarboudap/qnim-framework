@@ -20,6 +20,19 @@ CAMBIOS v2 (validación contra ibm_fez real):
      que imita el ruido real del backend (sin coste de cuota IBM) para
      reducir el sim-to-real gap.
 
+CAMBIOS v3 (capa de lectura MLP de qiskit_vqc_trainer.py, FIX v8):
+  9. Nuevos flags --readout-hidden-size y --readout-refit-every: antes
+     hardcodeados a 16 y 10 respectivamente dentro de QiskitVQCTrainer.
+     La capa de lectura del VQC pasó de ser una regresión lineal a un
+     MLP de 1 capa oculta (ver CAMBIOS v8 en qiskit_vqc_trainer.py) tras
+     verificar empíricamente que las puertas CX del ansatz mezclan las
+     marginales por qubit de forma NO lineal dependiente de la clase --
+     con lectura lineal el accuracy se quedaba estancado (~0.70 sobre
+     13 clases) sin importar cuánto se entrenara el ansatz; con MLP
+     (hidden_size=32) y warm-start + reajuste periódico, subió a >0.95
+     en simulador sobre el mismo dataset. Estos flags permiten usar en
+     --mode ibm la misma configuración ya validada en --mode sim.
+
 Uso:
     python scripts/generate_results.py --mode fallback   # algoritmo real, función sintética
     python scripts/generate_results.py --mode sim        # Qiskit Aer (~10 min)
@@ -28,6 +41,11 @@ Uso:
     # Validación hardware con más muestras/shots y entrenamiento noise-aware:
     python scripts/generate_results.py --mode ibm --max-iter 60 \
         --n-hw-validation 20 --shots-validation 512 --noise-aware-training
+
+    # Con la capa de lectura MLP validada en simulador (hidden_size=32):
+    python scripts/generate_results.py --mode ibm --max-iter 60 \
+        --ansatz-reps 2 --patience 30 --learning-rate 0.03 \
+        --readout-hidden-size 32 --readout-refit-every 10
 
     # Con ZNE real (gate-folding [1,3,5] + Richardson) — TRIPLICA el coste
     # de circuitos enviados respecto a no usar ZNE:
@@ -92,6 +110,11 @@ def _build_vqc_trainer(config):
     v2: ahora también propaga n_hw_validation / shots_validation /
     noise_aware_training al constructor de QiskitVQCTrainer (antes
     estaban hardcodeados dentro del propio adaptador).
+
+    v3: propaga readout_hidden_size / readout_refit_every — la capa de
+    lectura del VQC (MLP de 1 capa oculta, ver FIX v8 de
+    qiskit_vqc_trainer.py) antes tenía estos valores hardcodeados a
+    16 y 10 dentro del propio QiskitVQCTrainer.
     """
     try:
         from src.infrastructure.qiskit_vqc_trainer import QiskitVQCTrainer
@@ -108,6 +131,8 @@ def _build_vqc_trainer(config):
             ansatz_reps=config.ansatz_reps,
             learning_rate=config.learning_rate,
             reference_shots=config.reference_shots,
+            readout_hidden_size=config.readout_hidden_size,
+            readout_refit_every=config.readout_refit_every,
         )
     except ImportError as e:
         logger.warning(f"QiskitVQCTrainer no disponible: {e}. Usando Fallback.")
@@ -418,7 +443,7 @@ def main() -> int:
     print("=" * 70)
     print("  QNIM Framework — Resultados Experimentales")
     print("  TFM: Quantum Decoding of Gravitational Waves | UNIR 2026")
-    print("  [Versión con correcciones postdoctorales v2]")
+    print("  [Versión con correcciones postdoctorales v3 — lectura MLP]")
     print("=" * 70)
 
     parser = argparse.ArgumentParser(description="QNIM: resultados experimentales")
@@ -483,6 +508,27 @@ def main() -> int:
                               "(p.ej. a 4) recorta el coste de esta parte a 4*8+1=33 "
                               "evals en vez de 97, permitiendo MÁS iteraciones en el "
                               "mismo tiempo de pared. Por defecto: min(4, n_qubits).")
+    # NUEVO v3 (FIX v8 de qiskit_vqc_trainer.py): capa de lectura MLP.
+    parser.add_argument("--readout-hidden-size", type=int, default=16,
+                         help="Neuronas de la capa oculta del MLP de lectura del "
+                              "VQC (antes hardcodeado a 16 dentro de "
+                              "QiskitVQCTrainer). La capa de lectura pasó de ser "
+                              "una regresión lineal a un MLP de 1 capa oculta "
+                              "tras verificar que las puertas CX del ansatz "
+                              "mezclan las marginales por qubit de forma NO "
+                              "lineal dependiente de la clase -- con lectura "
+                              "lineal el accuracy se quedaba estancado en ~0.70 "
+                              "(13 clases) sin importar cuánto se entrenara el "
+                              "ansatz. Subir esto (p.ej. 32) aumenta la capacidad "
+                              "de la lectura a cambio de más parámetros "
+                              "optimizados conjuntamente con el ansatz por SPSA.")
+    parser.add_argument("--readout-refit-every", type=int, default=10,
+                         help="Cada cuántas iteraciones de QNSPSA se reajusta "
+                              "clásicamente la capa de lectura, dado el ansatz en "
+                              "su estado actual (warm-start periódico; antes "
+                              "hardcodeado a 10 dentro de QiskitVQCTrainer). "
+                              "0 desactiva el reajuste periódico (solo se hace "
+                              "el warm-start inicial, una vez, antes de optimizar).")
     args = parser.parse_args()
 
     # ── Validación n_qubits (límite IBM — está AQUÍ en Presentation, no en Application) ──
@@ -521,6 +567,8 @@ def main() -> int:
           f"reference_shots: {args.reference_shots or '2x shots entrenamiento'}")
     _nfp = args.n_feynman_params if args.n_feynman_params is not None else f"min(4, {args.n_qubits}) [default]"
     print(f"  n_feynman_params: {_nfp}  (cada uno cuesta 8 evals/iter -- antes SIEMPRE n_qubits=12, ~95% del tiempo/iter)")
+    print(f"  readout_hidden_size: {args.readout_hidden_size}  readout_refit_every: {args.readout_refit_every}  "
+          f"(capa de lectura MLP, FIX v8 -- antes lectura lineal estancada en ~0.70 con 13 clases)")
     print(f"  QNSPSA-EML-Feynman: ACTIVO (optimizador real)")
     print(f"  QUBO: match function ponderada por PSD LIGO O3")
     print(f"  Estadística: Šidák/BH + cota Holevo + test Isi + TI Bayes")
@@ -556,6 +604,8 @@ def main() -> int:
         learning_rate=args.learning_rate,
         reference_shots=args.reference_shots,
         n_feynman_params=args.n_feynman_params,
+        readout_hidden_size=args.readout_hidden_size,
+        readout_refit_every=args.readout_refit_every,
     )
 
     if args.mode == "figures":
