@@ -1,690 +1,234 @@
 """
-scripts/generate_results.py
-============================
-PUNTO DE ENTRADA — actualizado con todas las correcciones postdoctorales.
-
-CAMBIOS RESPECTO A LA VERSIÓN ANTERIOR:
-  1. Los adaptadores fallback usan el OPTIMIZADOR REAL (no pérdidas hardcoded)
-  2. El QUBO usa match function ponderada por PSD LIGO O3
-  3. El análisis estadístico incluye correcciones BH, cota de Holevo, test Isi
-  4. La validación n_qubits ≤ 27/50 está AQUÍ (Presentation), no en Application
-  5. Todos los resultados del fallback son COMPUTADOS, no hardcoded
-
-CAMBIOS v2 (validación contra ibm_fez real):
-  6. --max-iter por defecto pasa de 2 a 50 (con 2 el VQC no llega ni a
-     empezar a converger; el aviso se mantiene si bajas de 10).
-  7. Nuevos flags --n-hw-validation y --shots-validation: antes la
-     validación en hardware real estaba hardcodeada a 8 muestras / 128
-     shots dentro de QiskitVQCTrainer; ahora son configurables desde CLI.
-  8. Nuevo flag --noise-aware-training: entrena con un simulador LOCAL
-     que imita el ruido real del backend (sin coste de cuota IBM) para
-     reducir el sim-to-real gap.
-
-CAMBIOS v3 (capa de lectura MLP de qiskit_vqc_trainer.py, FIX v8):
-  9. Nuevos flags --readout-hidden-size y --readout-refit-every: antes
-     hardcodeados a 16 y 10 respectivamente dentro de QiskitVQCTrainer.
-     La capa de lectura del VQC pasó de ser una regresión lineal a un
-     MLP de 1 capa oculta (ver CAMBIOS v8 en qiskit_vqc_trainer.py) tras
-     verificar empíricamente que las puertas CX del ansatz mezclan las
-     marginales por qubit de forma NO lineal dependiente de la clase --
-     con lectura lineal el accuracy se quedaba estancado (~0.70 sobre
-     13 clases) sin importar cuánto se entrenara el ansatz; con MLP
-     (hidden_size=32) y warm-start + reajuste periódico, subió a >0.95
-     en simulador sobre el mismo dataset. Estos flags permiten usar en
-     --mode ibm la misma configuración ya validada en --mode sim.
-
-Uso:
-    python scripts/generate_results.py --mode fallback   # algoritmo real, función sintética
-    python scripts/generate_results.py --mode sim        # Qiskit Aer (~10 min)
-    python scripts/generate_results.py --mode ibm        # IBM ibm_fez real
-
-    # Validación hardware con más muestras/shots y entrenamiento noise-aware:
-    python scripts/generate_results.py --mode ibm --max-iter 60 \
-        --n-hw-validation 20 --shots-validation 512 --noise-aware-training
-
-    # Con la capa de lectura MLP validada en simulador (hidden_size=32):
-    python scripts/generate_results.py --mode ibm --max-iter 60 \
-        --ansatz-reps 2 --patience 30 --learning-rate 0.03 \
-        --readout-hidden-size 32 --readout-refit-every 10
-
-    # Con ZNE real (gate-folding [1,3,5] + Richardson) — TRIPLICA el coste
-    # de circuitos enviados respecto a no usar ZNE:
-    python scripts/generate_results.py --mode ibm --use-zne --n-hw-validation 10
-
-Autor: Óscar Boullosa Dapena — TFM QNIM, UNIR 2026
+generate_results.py  (v7 — version final con todos los fixes)
+Sustituye scripts/generate_results.py
 """
 
-from __future__ import annotations
-
-import argparse
-import logging
-import os
-import sys
-import time
+import argparse, sys, time, os
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
 
-Path("logs").mkdir(exist_ok=True)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-    datefmt="%H:%M:%S",
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler("logs/generate_results.log", mode="w", encoding="utf-8"),
-    ],
+from src.application.use_cases.generate_experiment_results_use_case import (
+    GenerateExperimentResultsUseCase, ExperimentConfig,
 )
-logger = logging.getLogger("qnim.scripts.generate_results")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  ENSAMBLAJE DE ADAPTADORES
-# ─────────────────────────────────────────────────────────────────────────────
+def parse_args():
+    p = argparse.ArgumentParser(
+        description="QNIM Framework — Resultados Experimentales",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    p.add_argument("--mode", choices=["sim", "ibm"], default="sim")
 
-def _build_sstg_adapter(config):
-    try:
-        from src.infrastructure.sstg_adapter import SSTGAdapter
-        return SSTGAdapter()
-    except ImportError as e:
-        logger.warning(f"SSTGAdapter no disponible: {e}. Usando Fallback.")
-        return _FallbackSSTGAdapter(config)
+    # VQC
+    p.add_argument("--max-iter",            type=int,   default=60)
+    p.add_argument("--batch-size",          type=int,   default=512,
+                   help="Batch QNSPSA. Usar >=512 con datasets grandes.")
+    p.add_argument("--patience",            type=int,   default=20)
+    p.add_argument("--learning-rate",       type=float, default=0.03)
+    p.add_argument("--ansatz-reps",         type=int,   default=2)
+    p.add_argument("--shots",               type=int,   default=1024)
+    p.add_argument("--reference-shots",     type=int,   default=4096)
+    p.add_argument("--readout-hidden-size", type=int,   default=32)
+    p.add_argument("--readout-refit-every", type=int,   default=10)
+    p.add_argument("--use-zne",             action="store_true")
+    p.add_argument("--n-feynman-params",    type=int,   default=4)
 
+    # Generador
+    p.add_argument("--ligo-pca",           action="store_true",
+                   help="Pipeline del paper: blanqueo PSD O3 + PCA + ZZFeatureMap")
+    p.add_argument("--physics-generator",  action="store_true",
+                   help="PhysicsSSTGAdapter (PyCBC sin PCA)")
+    p.add_argument("--approximant",        type=str,   default="IMRPhenomPv2",
+                   help="Aproximante PyCBC. IMRPhenomPv2 es 300x mas rapido que IMRPhenomD.")
+    p.add_argument("--n-per-class",        type=int,   default=4200,
+                   help="Eventos train/clase. 4200 -> 54600 total (como el paper).")
+    p.add_argument("--n-val-per-class",    type=int,   default=600)
+    p.add_argument("--max-classes",        type=int,   default=None)
 
-def _build_dwave_adapter():
-    """
-    Adaptador D-Wave CORREGIDO: usa QUBO con match function LIGO O3.
-    """
-    try:
-        from src.infrastructure.neal_annealer_adapter import NealSimulatedAnnealerAdapter
-        return NealSimulatedAnnealerAdapter()
-    except ImportError as e:
-        logger.warning(f"NealAnnealerAdapter no disponible: {e}. Usando Fallback.")
-        return _FallbackDWaveAdapter()
+    # Dataset pregenerado en disco
+    p.add_argument("--from-disk",          action="store_true",
+                   help="Cargar dataset desde data/dataset_full/ (ya generado).")
+    p.add_argument("--data-dir",           type=str,   default="data/dataset_full")
 
-
-def _build_vqc_trainer(config):
-    """
-    VQC trainer CORREGIDO: usa QNSPSA-EML-Feynman real.
-
-    v2: ahora también propaga n_hw_validation / shots_validation /
-    noise_aware_training al constructor de QiskitVQCTrainer (antes
-    estaban hardcodeados dentro del propio adaptador).
-
-    v3: propaga readout_hidden_size / readout_refit_every — la capa de
-    lectura del VQC (MLP de 1 capa oculta, ver FIX v8 de
-    qiskit_vqc_trainer.py) antes tenía estos valores hardcodeados a
-    16 y 10 dentro del propio QiskitVQCTrainer.
-    """
-    try:
-        from src.infrastructure.qiskit_vqc_trainer import QiskitVQCTrainer
-        return QiskitVQCTrainer(
-            use_real_hardware=config.use_real_hardware,
-            backend_name=config.backend_name,
-            token=os.environ.get("IBM_QUANTUM_TOKEN", ""),
-            mode=config.mode,
-            n_hw_validation=config.n_hw_validation,
-            shots_validation=config.shots_validation,
-            noise_aware_training=config.noise_aware_training,
-            training_batch_size=config.training_batch_size,
-            patience=config.patience,
-            ansatz_reps=config.ansatz_reps,
-            learning_rate=config.learning_rate,
-            reference_shots=config.reference_shots,
-            readout_hidden_size=config.readout_hidden_size,
-            readout_refit_every=config.readout_refit_every,
-        )
-    except ImportError as e:
-        logger.warning(f"QiskitVQCTrainer no disponible: {e}. Usando Fallback.")
-        return _FallbackVQCTrainer(config)
+    return p.parse_args()
 
 
-def _build_statistical_analyzer():
-    """
-    Análisis estadístico CORREGIDO: incluye Holevo, Isi, TI, BH.
-    """
-    try:
-        from src.infrastructure.statistical_analysis_service import StatisticalAnalysisService
-        return StatisticalAnalysisService()
-    except ImportError as e:
-        logger.warning(f"StatisticalAnalysisService no disponible: {e}. Usando Fallback.")
-        return _FallbackStatisticalAnalyzer()
+def main():
+    args = parse_args()
 
+    if args.ligo_pca and args.physics_generator:
+        print("ERROR: --ligo-pca y --physics-generator son mutuamente excluyentes.")
+        sys.exit(1)
 
-def _build_reporter():
-    from src.infrastructure.reporting.matplotlib_results_reporter import MatplotlibResultsReporter
-    return MatplotlibResultsReporter()
+    gen_str = ("LIGOPCAAdapter + ZZFeatureMap (paper)" if args.ligo_pca else
+               "PhysicsSSTGAdapter (PyCBC)" if args.physics_generator else
+               "SSTGAdapter (marcador artificial)")
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  ADAPTADORES FALLBACK (usan el ALGORITMO REAL con datos sintéticos)
-# ─────────────────────────────────────────────────────────────────────────────
-
-class _FallbackDataset:
-    """Dataset fallback físicamente honesto."""
-    def __init__(self, config, max_classes=None):
-        import numpy as np
-        from src.infrastructure.matricula_vectors import generate_physically_valid_dataset
-
-        nc_total = 13
-        nc = nc_total if max_classes is None else max(1, min(max_classes, nc_total))
-
-        try:
-            X_tr, y_tr, X_v, y_v, stats = generate_physically_valid_dataset(
-                n_per_class=config.n_events_per_class,
-                n_val_per_class=config.n_val_per_class,
-                n_qubits=config.n_qubits,
-                snr_range=(config.target_snr_min, config.target_snr_max),
-                seed=config.seed,
-            )
-            if max_classes is not None:
-                mask_tr = y_tr < nc
-                mask_v = y_v < nc
-                X_tr, y_tr = X_tr[mask_tr], y_tr[mask_tr]
-                X_v, y_v = X_v[mask_v], y_v[mask_v]
-            self.X_train = X_tr
-            self.y_train = y_tr
-            self.X_val = X_v
-            self.y_val = y_v
-            self.snr_mean = stats.snr_mean
-            self.snr_std = stats.snr_std
-            self.is_physically_valid = stats.is_physically_valid
-            logger.info(f"Dataset físico: SNR={stats.snr_mean:.1f}±{stats.snr_std:.1f}")
-        except Exception as e:
-            logger.warning(f"Dataset físico falló ({e}), usando sintético simple")
-            rng = np.random.default_rng(seed=config.seed)
-            n, v = config.n_events_per_class, config.n_val_per_class
-            centers = rng.uniform(-3, 3, (nc, config.n_qubits)) * 2.0
-            Xs, ys = [], []
-            for c in range(nc):
-                X = rng.normal(centers[c], 0.35, (n, config.n_qubits))
-                Xs.append(X); ys.append(np.full(n, c))
-            self.X_train = np.vstack(Xs)[rng.permutation(n * nc)]
-            self.y_train = np.concatenate(ys)[rng.permutation(n * nc)]
-            Xv, yv = [], []
-            for c in range(nc):
-                X = rng.normal(centers[c], 0.35, (v, config.n_qubits))
-                Xv.append(X); yv.append(np.full(v, c))
-            self.X_val = np.vstack(Xv)
-            self.y_val = np.concatenate(yv)
-            self.snr_mean = 19.5
-            self.snr_std = 7.2
-            self.is_physically_valid = False
-
-        self.n_train = len(self.X_train)
-        self.n_val = len(self.X_val)
-        self.n_classes = nc
-        self.snr_val = None
-        self.class_names = [
-            "GR", "standard-siren", "qnm-21", "qnm-33",
-            "pn-deformation", "extra-dimensions", "scalar-tensor",
-            "graviton-mass", "chern-simons", "liv-alpha2",
-            "liv-alpha4", "loop-quantum-gravity", "gup",
-        ][:nc]
-
-
-class _FallbackSSTGAdapter:
-    def __init__(self, config): self._cfg = config
-    def generate_balanced_dataset(self, n_per_class, n_val_per_class, target_snr_range, seed, max_classes=None):
-        return _FallbackDataset(self._cfg, max_classes=max_classes)
-
-
-class _FallbackDWaveAdapter:
-    """Fallback D-Wave: usa QUBO con match function real cuando sea posible."""
-    def extract_physical_parameters(self, dataset, n_templates=64, regularization=0.01):
-        try:
-            from src.infrastructure.qubo_match_ligo import build_ligo_match_qubo
-            import numpy as np
-            observed = dataset.X_train.mean(axis=0)
-            qubo_result = build_ligo_match_qubo(
-                observed_features=observed,
-                n_templates=min(n_templates, 32),  # reducido para fallback
-                seed=42,
-            )
-            class _R:
-                m1_msun = qubo_result.m1_msun
-                m2_msun = qubo_result.m2_msun
-                chi_eff = qubo_result.chi_eff
-                best_match = qubo_result.best_match
-                is_gr_consistent = qubo_result.is_gr_consistent
-            return _R()
-        except Exception as e:
-            logger.debug(f"QUBO LIGO falló ({e}), usando valores por defecto")
-            class _R:
-                m1_msun = 35.2; m2_msun = 30.1; chi_eff = -0.04
-                best_match = 0.97; is_gr_consistent = True
-            return _R()
-
-
-class _FallbackVQCTrainer:
-    """
-    VQC Trainer FALLBACK: ejecuta QNSPSA-EML-Feynman REAL con función sintética.
-    CORRECCIÓN CRÍTICA: ya no usa pérdidas hardcoded.
-    """
-    def __init__(self, config): self._cfg = config
-
-    def train_and_evaluate(self, dataset, n_qubits, shots, max_iterations,
-                            use_real_hardware, backend_name, use_zne):
-        from src.infrastructure.qnspsa_eml_feynman import (
-            QNSPSAConfig, QNSPSAEMLFeynman, make_synthetic_loss_fn, QNSPSAResult
-        )
-        from src.infrastructure.qiskit_vqc_trainer import VQCTrainingResult, chebyshev_preprocess
-        import numpy as np
-
-        n_params = 64  # EfficientSU2(n=12, reps=2)
-        n_classes = dataset.n_classes
-
-        logger.info(
-            f"Fallback VQC: ejecutando QNSPSA-EML-Feynman real "
-            f"(función sintética, {max_iterations} iters)"
-        )
-
-        # Función de coste sintética (no hardcoded — computada en tiempo de ejecución)
-        loss_fn = make_synthetic_loss_fn(
-            n_classes=n_classes, n_params=n_params, seed=self._cfg.seed
-        )
-
-        x0 = np.random.default_rng(42).normal(0.0, 0.01, n_params)
-        cfg_opt = QNSPSAConfig(
-            maxiter=max_iterations,
-            patience=10,
-            lr=0.01,
-            lambda_eml=0.01,
-            n_feynman_params=n_qubits,
-            seed=self._cfg.seed,
-        )
-        optimizer = QNSPSAEMLFeynman(config=cfg_opt)
-
-        loss_history = []
-        def cb(iter_, theta, loss):
-            loss_history.append(float(loss))
-
-        result_opt: QNSPSAResult = optimizer.minimize(loss_fn, x0, callback=cb)
-
-        # Accuracy estimada del loss final (física: acc ≈ exp(-loss/n_classes) × 0.95 + 0.05)
-        acc_sim = float(min(0.99, max(0.1, np.exp(-result_opt.final_loss / n_classes) * 0.95 + 0.05)))
-        acc_real_no_zne = acc_sim * 0.807
-        acc_real_zne = acc_sim * 0.932
-
-        n_classes_acc = dataset.n_classes
-        acc_val_history = [
-            float(min(0.99, max(0.1, np.exp(-l / n_classes_acc) * 0.95 + 0.05)))
-            for l in result_opt.loss_history
-        ]
-
-        # Confusion matrix estimada
-        rng = np.random.default_rng(42)
-        cm = np.eye(n_classes) * acc_sim
-        # Confusiones realistas entre teorías similares
-        off_diag = (1.0 - acc_sim) / (n_classes - 1)
-        for i in range(n_classes):
-            for j in range(n_classes):
-                if i != j:
-                    cm[i, j] = off_diag + rng.normal(0, off_diag * 0.3)
-        cm = np.clip(cm, 0, 1)
-        cm = cm / cm.sum(axis=1, keepdims=True)
-
-        # Accuracy vs SNR (usando la función de coste con ruido añadido)
-        acc_vs_snr = {}
-        for snr in [8, 12, 20, 30, 50]:
-            noise_scale = 20.0 / snr
-            acc_snr = float(min(0.99, acc_sim * (1.0 - 0.3 * noise_scale)))
-            acc_vs_snr[snr] = round(acc_snr, 3)
-
-        return VQCTrainingResult(
-            loss_history=result_opt.loss_history,
-            accuracy_val_history=acc_val_history,
-            accuracy_sim=acc_sim,
-            accuracy_real_no_zne=acc_real_no_zne,
-            accuracy_real_zne=acc_real_zne,
-            n_epochs=result_opt.n_iter,
-            converged_early=result_opt.converged,
-            total_time_s=result_opt.time_s,
-            n_circuit_evaluations=result_opt.n_evals,
-            speedup_vs_spsa=result_opt.speedup_vs_spsa,
-            final_weights=result_opt.optimal_params,
-            confusion_matrix=cm.tolist(),
-            gradient_variance_history=result_opt.gradient_variance_history,
-            qnspsa_converged=result_opt.converged,
-            accuracy_vs_snr=acc_vs_snr,
-        )
-
-    def estimate_gradient_variance(self, n_qubits, use_eml=True, n_samples=30):
-        from src.infrastructure.qnspsa_eml_feynman import (
-            QNSPSAConfig, QNSPSAEMLFeynman, make_synthetic_loss_fn
-        )
-        import numpy as np
-
-        loss_fn = make_synthetic_loss_fn(n_classes=10, n_params=n_qubits * 2, seed=42)
-        x0 = np.random.default_rng(42).normal(0, 0.01, n_qubits * 2)
-        cfg = QNSPSAConfig(
-            maxiter=min(n_samples, 15), seed=42,
-            lambda_eml=0.01 if use_eml else 0.0
-        )
-        opt = QNSPSAEMLFeynman(config=cfg)
-        result = opt.minimize(loss_fn, x0)
-        if result.gradient_variance_history:
-            return float(sum(result.gradient_variance_history[-5:]) / max(1, len(result.gradient_variance_history[-5:])))
-        return float(2 ** (-n_qubits / 2) * (20 if use_eml else 4))
-
-    def run_bigO_benchmark(self, n_qubits, n_per_class=20):
-        try:
-            from src.infrastructure.qiskit_vqc_trainer import QiskitVQCTrainer
-            trainer = QiskitVQCTrainer(mode="fallback")
-            return trainer.run_bigO_benchmark(n_qubits, n_per_class)
-        except Exception as e:
-            logger.debug(f"BigO benchmark via QiskitVQCTrainer falló ({e})")
-            return [
-                {"name": "SPSA estándar", "evals_total": 600, "speedup_vs_spsa": 1.0},
-                {"name": "QNSPSA-EML-Feynman", "evals_total": 200, "speedup_vs_spsa": 3.3},
-            ]
-
-    def load_weights(self, path):
-        import numpy as np
-        return np.load(path, allow_pickle=False)
-
-
-class _FallbackStatisticalAnalyzer:
-    """
-    Análisis estadístico fallback: incluye todas las correcciones postdoctorales.
-    """
-    def compute_qfi_vs_cfi(self, vqc_weights, n_bootstrap=500):
-        import numpy as np
-        try:
-            from src.infrastructure.statistical_analysis_service import StatisticalAnalysisService
-            svc = StatisticalAnalysisService()
-            weights = np.asarray(vqc_weights) if vqc_weights is not None else np.zeros(64)
-            return svc.compute_qfi_vs_cfi(weights, n_bootstrap=min(n_bootstrap, 200))
-        except Exception as e:
-            logger.debug(f"StatService falló ({e}), usando valores calibrados")
-            from src.infrastructure.statistical_analysis_service import QFICFIResult
-            from src.infrastructure.statistical_corrections import compute_holevo_bound
-            holevo = compute_holevo_bound(n_qubits=12, entanglement_entropy_bits=3.82)
-            return [
-                QFICFIResult("δQ",  24.3, 11.8, 0.15, 3.1, holevo.holevo_lower_bound, holevo.improved_lower_bound, True),
-                QFICFIResult("m_g", 18.7,  9.2, 0.18, 2.9, holevo.holevo_lower_bound, holevo.improved_lower_bound, True),
-                QFICFIResult("|R|", 31.5, 14.1, 0.12, 4.2, holevo.holevo_lower_bound, holevo.improved_lower_bound, True),
-                QFICFIResult("Δs",  15.2,  8.7, 0.21, 2.3, holevo.holevo_lower_bound, holevo.improved_lower_bound, True),
-                QFICFIResult("α",   22.8, 10.3, 0.14, 3.7, holevo.holevo_lower_bound, holevo.improved_lower_bound, True),
-            ]
-
-    def reanalyze_gw150914(self, vqc_weights):
-        import numpy as np
-        try:
-            from src.infrastructure.statistical_analysis_service import StatisticalAnalysisService
-            svc = StatisticalAnalysisService()
-            weights = np.asarray(vqc_weights) if vqc_weights is not None else np.zeros(64)
-            return svc.reanalyze_gw150914(weights)
-        except Exception as e:
-            logger.debug(f"GW150914 analysis falló ({e}), usando defaults corregidos")
-            from src.infrastructure.statistical_analysis_service import GW150914Result
-            return GW150914Result(
-                m1_msun=35.2, m2_msun=30.1, chi_eff=-0.04, d_l_mpc=418,
-                m_final_msun=63.5, chi_final=0.672,
-                m1_uncertainty=1.8, m2_uncertainty=1.5,
-                chi_eff_uncertainty=0.08, d_l_uncertainty=52,
-                all_within_90pct_ci=True,
-                bayes_factors={
-                    "GR": 0.0, "scalar-tensor": -0.32, "f(R)-gravity": 0.18,
-                    "loop-quantum-gravity": 0.41, "extra-dimensions": -0.28,
-                    "graviton-mass": -0.15, "echo-hypothesis": -0.18,
-                    "axion-superradiance": 0.08, "string-inspired": 0.25,
-                    "quantum-entanglement": -0.12,
-                },
-                h0_km_s_mpc=69.5, h0_upper_68=14.2, h0_lower_68=8.7,
-            )
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  PUNTO DE ENTRADA
-# ─────────────────────────────────────────────────────────────────────────────
-
-def main() -> int:
     print("=" * 70)
     print("  QNIM Framework — Resultados Experimentales")
-    print("  TFM: Quantum Decoding of Gravitational Waves | UNIR 2026")
-    print("  [Versión con correcciones postdoctorales v3 — lectura MLP]")
+    print("=" * 70)
+    print(f"  Modo:                   {args.mode.upper()}")
+    print(f"  Generador:              {gen_str}")
+    if args.ligo_pca or args.physics_generator:
+        print(f"  Aproximante:            {args.approximant}")
+        if args.from_disk:
+            print(f"  Dataset:                desde disco ({args.data_dir})")
+        else:
+            print(f"  Eventos train/clase:    {args.n_per_class}")
+            print(f"  Eventos val/clase:      {args.n_val_per_class}")
+    print(f"  max_iter:               {args.max_iter}")
+    print(f"  batch_size:             {args.batch_size}")
+    print(f"  patience:               {args.patience}")
+    print(f"  learning_rate:          {args.learning_rate}")
+    print(f"  readout_hidden_size:    {args.readout_hidden_size}")
+    print(f"  readout_refit_every:    {args.readout_refit_every}")
+    print(f"  shots:                  {args.shots}")
+    print(f"  use_zne:                {args.use_zne}")
+    print(f"  max_classes:            {args.max_classes or 'todas (13)'}")
     print("=" * 70)
 
-    parser = argparse.ArgumentParser(description="QNIM: resultados experimentales")
-    parser.add_argument("--mode", choices=["sim", "ibm", "figures", "fallback"], default="fallback")
-    parser.add_argument("--n-qubits", type=int, default=12)
-    parser.add_argument("--shots",    type=int, default=512)
-    # FIX v2: el default anterior era 2 — el VQC no llegaba ni a empezar a
-    # converger antes de desplegarse en hardware real. 50 es un mínimo
-    # razonable; sube esto si tu presupuesto de tiempo lo permite.
-    parser.add_argument("--max-iter", type=int, default=50)
-    parser.add_argument("--n-per-class", type=int, default=80)
-    parser.add_argument("--seed",     type=int, default=42)
-    parser.add_argument("--backend",  default="ibm_fez")
-    parser.add_argument("--use-zne",  action="store_true",
-                         help="Activa ZNE REAL (gate-folding [1,3,5] + Richardson). "
-                              "TRIPLICA el numero de circuitos enviados a hardware.")
-    parser.add_argument("--output-dir", default="reports")
-    # FIX v2: parámetros antes hardcodeados dentro de QiskitVQCTrainer.
-    parser.add_argument("--n-hw-validation", type=int, default=20,
-                         help="Num. de muestras de validacion enviadas a hardware "
-                              "real (antes hardcodeado a 8).")
-    parser.add_argument("--shots-validation", type=int, default=512,
-                         help="Shots por circuito en la validacion hardware "
-                              "(antes hardcodeado a 128).")
-    parser.add_argument("--noise-aware-training", action="store_true",
-                         help="Entrena con un simulador LOCAL que imita el ruido "
-                              "real del backend (NoiseModel.from_backend), sin "
-                              "coste de cuota IBM, para reducir el sim-to-real gap.")
-    parser.add_argument("--max-classes", type=int, default=None,
-                         help="Trunca el problema a las primeras N teorías (de 13). "
-                              "Útil para pruebas de cordura rápidas (p.ej. 3-4 clases) "
-                              "antes de escalar al problema completo.")
-    parser.add_argument("--batch-size", type=int, default=64,
-                         help="Tamaño del batch de entrenamiento local (antes fijo en "
-                              "32). Con muchas clases, sube esto para tener más "
-                              "muestras/clase por iteración (gradiente menos ruidoso, "
-                              "a cambio de iteraciones más lentas).")
-    parser.add_argument("--patience", type=int, default=20,
-                         help="Iteraciones sin mejora antes de early stopping "
-                              "(antes fijo en 10).")
-    parser.add_argument("--ansatz-reps", type=int, default=2,
-                         help="Profundidad del ansatz EfficientSU2 (mas reps = "
-                              "mas capacidad de representacion, circuitos algo "
-                              "mas profundos).")
-    parser.add_argument("--learning-rate", type=float, default=0.01,
-                         help="Learning rate base de QNSPSA (a_t = lr/t^0.602). "
-                              "Con pocas iteraciones de presupuesto, subir esto "
-                              "aprovecha mejor cada paso.")
-    parser.add_argument("--reference-shots", type=int, default=None,
-                         help="Shots del batch de referencia (decide 'mejor theta'). "
-                              "Por defecto, 2x los shots de entrenamiento.")
-    parser.add_argument("--n-feynman-params", type=int, default=None,
-                         help="Cuántos de los parámetros del ansatz reciben el "
-                              "refinamiento caro de cuadratura Gauss-Legendre de 8 "
-                              "puntos (EML-Feynman) en vez de SPSA puro. ANTES "
-                              "estaba hardcodeado a n_qubits (12) en TODAS las "
-                              "corridas, sin exponerse via CLI: eso significa 12*8="
-                              "96 evaluaciones de circuito SOLO para esta parte, en "
-                              "CADA iteración, sea cual sea batch_size/shots/lr — "
-                              "es la causa real de los ~6-8 min/iteración observados "
-                              "(≈95%% del coste total por iteración). Bajar esto "
-                              "(p.ej. a 4) recorta el coste de esta parte a 4*8+1=33 "
-                              "evals en vez de 97, permitiendo MÁS iteraciones en el "
-                              "mismo tiempo de pared. Por defecto: min(4, n_qubits).")
-    # NUEVO v3 (FIX v8 de qiskit_vqc_trainer.py): capa de lectura MLP.
-    parser.add_argument("--readout-hidden-size", type=int, default=16,
-                         help="Neuronas de la capa oculta del MLP de lectura del "
-                              "VQC (antes hardcodeado a 16 dentro de "
-                              "QiskitVQCTrainer). La capa de lectura pasó de ser "
-                              "una regresión lineal a un MLP de 1 capa oculta "
-                              "tras verificar que las puertas CX del ansatz "
-                              "mezclan las marginales por qubit de forma NO "
-                              "lineal dependiente de la clase -- con lectura "
-                              "lineal el accuracy se quedaba estancado en ~0.70 "
-                              "(13 clases) sin importar cuánto se entrenara el "
-                              "ansatz. Subir esto (p.ej. 32) aumenta la capacidad "
-                              "de la lectura a cambio de más parámetros "
-                              "optimizados conjuntamente con el ansatz por SPSA.")
-    parser.add_argument("--readout-refit-every", type=int, default=10,
-                         help="Cada cuántas iteraciones de QNSPSA se reajusta "
-                              "clásicamente la capa de lectura, dado el ansatz en "
-                              "su estado actual (warm-start periódico; antes "
-                              "hardcodeado a 10 dentro de QiskitVQCTrainer). "
-                              "0 desactiva el reajuste periódico (solo se hace "
-                              "el warm-start inicial, una vez, antes de optimizar).")
-    args = parser.parse_args()
+    # ---- Cargar dataset ----
+    if args.from_disk:
+        import numpy as np
+        from dataclasses import dataclass
+        from typing import List
 
-    # ── Validación n_qubits (límite IBM — está AQUÍ en Presentation, no en Application) ──
-    n_max = 50 if args.use_zne else 27
-    if args.n_qubits > n_max:
-        logger.warning(
-            f"n_qubits={args.n_qubits} > {n_max} (límite ibm_fez "
-            f"{'con' if args.use_zne else 'sin'} ZNE). Reduciendo a {n_max}."
-        )
-        args.n_qubits = n_max
+        @dataclass
+        class DiskDataset:
+            X_train: np.ndarray
+            y_train: np.ndarray
+            X_val:   np.ndarray
+            y_val:   np.ndarray
+            n_classes: int
+            theory_names: List[str]
 
-    # FIX v2: aviso explícito si max-iter es demasiado bajo para converger.
-    if args.mode in ("sim", "ibm") and args.max_iter < 10:
-        logger.warning(
-            f"--max-iter={args.max_iter} es muy bajo: el VQC apenas saldrá de "
-            f"su inicialización aleatoria. Se recomienda >= 30-50, especialmente "
-            f"antes de desplegar en hardware real (--mode ibm)."
-        )
-
-    if args.use_zne:
-        logger.warning(
-            f"--use-zne activo: se enviarán 3x circuitos (escalas 1,3,5 de "
-            f"gate-folding) por cada muestra de validación hardware. "
-            f"Con --n-hw-validation={args.n_hw_validation} eso son "
-            f"{args.n_hw_validation * 3} circuitos en un único job."
-        )
-
-    print(f"\n  Modo:      {args.mode.upper()}")
-    print(f"  n_qubits:  {args.n_qubits}")
-    print(f"  Backend:   {args.backend}")
-    print(f"  max_iter:  {args.max_iter}")
-    if args.max_classes is not None:
-        print(f"  max_classes: {args.max_classes} (PRUEBA DE CORDURA, no las 13 completas)")
-    print(f"  batch_size: {args.batch_size}  patience: {args.patience}")
-    print(f"  ansatz_reps: {args.ansatz_reps}  learning_rate: {args.learning_rate}  "
-          f"reference_shots: {args.reference_shots or '2x shots entrenamiento'}")
-    _nfp = args.n_feynman_params if args.n_feynman_params is not None else f"min(4, {args.n_qubits}) [default]"
-    print(f"  n_feynman_params: {_nfp}  (cada uno cuesta 8 evals/iter -- antes SIEMPRE n_qubits=12, ~95% del tiempo/iter)")
-    print(f"  readout_hidden_size: {args.readout_hidden_size}  readout_refit_every: {args.readout_refit_every}  "
-          f"(capa de lectura MLP, FIX v8 -- antes lectura lineal estancada en ~0.70 con 13 clases)")
-    print(f"  QNSPSA-EML-Feynman: ACTIVO (optimizador real)")
-    print(f"  QUBO: match function ponderada por PSD LIGO O3")
-    print(f"  Estadística: Šidák/BH + cota Holevo + test Isi + TI Bayes")
-    if args.mode == "ibm":
-        print(f"  Validación HW: n_hw={args.n_hw_validation}, shots={args.shots_validation}, "
-              f"ZNE={'real (folding+Richardson)' if args.use_zne else 'no'}, "
-              f"noise-aware-training={'sí' if args.noise_aware_training else 'no'}")
-    print()
-
-    from src.application.use_cases.generate_experiment_results_use_case import (
-        GenerateExperimentResultsUseCase, ExperimentConfig,
-    )
-
-    config = ExperimentConfig(
-        n_events_per_class=args.n_per_class,
-        n_val_per_class=max(10, args.n_per_class // 4),
-        seed=args.seed,
-        n_qubits=args.n_qubits,
-        shots=args.shots,
-        max_iterations=args.max_iter,
-        use_real_hardware=(args.mode == "ibm"),
-        backend_name=args.backend,
-        use_zne=args.use_zne,
-        mode=args.mode,
-        output_dir=args.output_dir,
-        n_hw_validation=args.n_hw_validation,
-        shots_validation=args.shots_validation,
-        noise_aware_training=args.noise_aware_training,
-        max_classes=args.max_classes,
-        training_batch_size=args.batch_size,
-        patience=args.patience,
-        ansatz_reps=args.ansatz_reps,
-        learning_rate=args.learning_rate,
-        reference_shots=args.reference_shots,
-        n_feynman_params=args.n_feynman_params,
-        readout_hidden_size=args.readout_hidden_size,
-        readout_refit_every=args.readout_refit_every,
-    )
-
-    if args.mode == "figures":
-        import json
-        report_path = f"{args.output_dir}/full_results.json"
-        if not Path(report_path).exists():
-            logger.error(f"No se encontró {report_path}. Ejecutar primero --mode fallback.")
-            return 1
-        reporter = _build_reporter()
-        from src.application.ports.results_reporter_port import (
-            FullExperimentResultDTO, VQCTrainingResultDTO, GW150914ReanalysisDTO, QFIAdvantageDTO
-        )
-        with open(report_path) as f:
-            data = json.load(f)
-        result = FullExperimentResultDTO(timestamp=data.get("timestamp", ""))
-        vqc_d = data.get("vqc_training", {})
-        result.vqc_training = VQCTrainingResultDTO(
-            loss_history=vqc_d.get("loss_history", []),
-            accuracy_sim=vqc_d.get("accuracy_sim", 0),
-            accuracy_real_no_zne=vqc_d.get("accuracy_real_no_zne", 0),
-            accuracy_real_zne=vqc_d.get("accuracy_real_zne", 0),
-            n_epochs_converged=vqc_d.get("n_epochs", 0),
-            speedup_vs_spsa=vqc_d.get("speedup_vs_spsa", 0),
-            backend_name=vqc_d.get("backend_name", args.backend),
-            n_qubits_used=vqc_d.get("n_qubits_used", args.n_qubits),
-        )
-        result.qfi_advantages = [
-            QFIAdvantageDTO(**q) for q in data.get("qfi_results", [])
+        data_dir = Path(args.data_dir)
+        print(f"Cargando dataset desde {data_dir}...")
+        X_train = np.load(data_dir / "X_train.npy")
+        y_train = np.load(data_dir / "y_train.npy")
+        X_val   = np.load(data_dir / "X_val.npy")
+        y_val   = np.load(data_dir / "y_val.npy")
+        n_classes = len(np.unique(y_train))
+        if args.max_classes:
+            mask_tr = y_train < args.max_classes
+            mask_va = y_val   < args.max_classes
+            X_train, y_train = X_train[mask_tr], y_train[mask_tr]
+            X_val,   y_val   = X_val[mask_va],   y_val[mask_va]
+            n_classes = args.max_classes
+        THEORY_CLASSES = [
+            "GR","standard-siren","qnm-21","qnm-33","pn-deformation",
+            "extra-dimensions","scalar-tensor","graviton-mass","chern-simons",
+            "liv-alpha2","liv-alpha4","loop-quantum-gravity","gup",
         ]
-        result.accuracy_vs_snr = {int(k): v for k, v in data.get("accuracy_vs_snr", {}).items()}
-        out_dir = f"{args.output_dir}/figures"
-        paths = reporter.generate_all_figures(result, out_dir)
-        n_ok = sum(1 for p in paths.values() if "ERROR" not in str(p))
-        print(f"\n  Figuras: {n_ok}/{len(paths)} generadas en {out_dir}/")
-        return 0
+        dataset = DiskDataset(X_train, y_train, X_val, y_val,
+                              n_classes, THEORY_CLASSES[:n_classes])
+        print(f"  X_train: {X_train.shape}  X_val: {X_val.shape}  n_classes: {n_classes}")
 
-    t0 = time.time()
+        # Baseline clasico rapido
+        from sklearn.ensemble import RandomForestClassifier
+        rf = RandomForestClassifier(n_estimators=100, random_state=0, n_jobs=-1)
+        rf.fit(X_train, y_train)
+        print(f"  RF val: {rf.score(X_val, y_val):.3f}  azar: {1/n_classes:.3f}")
 
-    sstg   = _build_sstg_adapter(config)
-    dwave  = _build_dwave_adapter()
-    vqc    = _build_vqc_trainer(config)
-    stats  = _build_statistical_analyzer()
-    reporter = _build_reporter()
+        # Entrenar VQC directamente
+        from src.infrastructure.qiskit_vqc_trainer import QiskitVQCTrainer
+        trainer = QiskitVQCTrainer(
+            mode=args.mode,
+            ansatz_reps=args.ansatz_reps,
+            patience=args.patience,
+            learning_rate=args.learning_rate,
+            readout_hidden_size=args.readout_hidden_size,
+            readout_refit_every=args.readout_refit_every,
+            training_batch_size=args.batch_size,
+        )
+        t0 = time.perf_counter()
+        result = trainer.train_and_evaluate(
+            dataset, n_qubits=12, shots=args.shots,
+            max_iterations=args.max_iter,
+            use_zne=args.use_zne,
+            n_feynman_params=args.n_feynman_params,
+        )
+        elapsed = time.perf_counter() - t0
 
-    use_case = GenerateExperimentResultsUseCase(
-        sstg_generator=sstg,
-        dwave_optimizer=dwave,
-        vqc_trainer=vqc,
-        statistical_analyzer=stats,
-        results_reporter=reporter,
-        config=config,
-    )
+        acc  = getattr(result, 'accuracy_sim', getattr(result, 'accuracy', 0.0))
+        lh   = getattr(result, 'loss_history', [])
+        loss = lh[-1] if lh else float('nan')
+        ep   = getattr(result, 'n_epochs', '?')
 
-    result = use_case.execute()
-    elapsed = time.time() - t0
+        # IBM si procede
+        acc_ibm = None
+        if args.mode == "ibm":
+            token = os.environ.get("IBM_QUANTUM_TOKEN", "")
+            if token:
+                try:
+                    final_w = getattr(result, 'final_weights', None)
+                    if final_w is not None:
+                        _, acc_ibm = trainer._validate_on_ibm(
+                            weights=final_w,
+                            dataset=dataset,
+                            n_qubits=12,
+                            use_zne=args.use_zne,
+                        )
+                    else:
+                        print("  ⚠️  No hay pesos finales disponibles para validar en IBM.")
+                except Exception as e:
+                    print(f"  ⚠️  IBM falló: {e}")
+            else:
+                print("  ⚠️  IBM_QUANTUM_TOKEN no exportado.")
+                print("       Ejecuta: export IBM_QUANTUM_TOKEN='tu_token'")
 
-    vqc_r = result.vqc_training
-    print("\n" + "=" * 70)
-    print("  RESULTADOS FINALES (valores COMPUTADOS, no hardcoded)")
-    print("=" * 70)
-    if vqc_r:
-        print(f"  Accuracy simulador:    {vqc_r.accuracy_sim*100:.1f}%")
-        print(f"  Accuracy IBM sin ZNE:  {vqc_r.accuracy_real_no_zne*100:.1f}%")
-        print(f"  Accuracy IBM con ZNE:  {vqc_r.accuracy_real_zne*100:.1f}%")
-        print(f"  Speedup MEDIDO:        {vqc_r.speedup_vs_spsa:.1f}×")
-        print(f"  Épocas convergencia:   {vqc_r.n_epochs_converged}")
-    if result.qfi_advantages:
-        avg_ratio = sum(q.ratio for q in result.qfi_advantages) / len(result.qfi_advantages)
-        print(f"  QFI/CFI (media):       {avg_ratio:.2f}×")
-    if result.gw150914:
-        print(f"  GW150914 GR-consiste:  {result.gw150914.is_gr_consistent}")
-        print(f"  H₀:                    {result.gw150914.h0_km_s_mpc:.1f} km/s/Mpc")
-    print(f"  Tiempo total:          {elapsed:.1f}s")
-    print(f"  Optimizador:           QNSPSA-EML-Feynman (REAL)")
-    print(f"  QUBO:                  match function PSD LIGO O3")
-    print(f"  Estadística:           Šidák/BH + Holevo + Isi + TI")
-    print("=" * 70 + "\n")
-    return 0
+        print("\n" + "=" * 70)
+        print("  RESULTADOS")
+        print("=" * 70)
+        print(f"  Accuracy simulador (val):  {acc:.3f}")
+        if acc_ibm is not None:
+            print(f"  Accuracy IBM (val):        {acc_ibm:.3f}")
+        print(f"  RF baseline (val):         {rf.score(X_val, y_val):.3f}")
+        print(f"  Loss final:                {loss:.4f}  (ln({n_classes})={__import__('math').log(n_classes):.4f})")
+        print(f"  Épocas:                    {ep}")
+        print(f"  Tiempo:                    {elapsed:.1f}s")
+        print("=" * 70)
+
+    else:
+        # Flujo normal via ExperimentConfig
+        config = ExperimentConfig(
+            mode=args.mode,
+            max_iterations=args.max_iter,
+            batch_size=args.batch_size,
+            patience=args.patience,
+            learning_rate=args.learning_rate,
+            ansatz_reps=args.ansatz_reps,
+            shots=args.shots,
+            reference_shots=args.reference_shots,
+            readout_hidden_size=args.readout_hidden_size,
+            readout_refit_every=args.readout_refit_every,
+            max_classes=args.max_classes,
+            n_feynman_params=args.n_feynman_params,
+            use_zne=args.use_zne,
+            use_physics_generator=args.physics_generator,
+            use_ligo_pca=args.ligo_pca,
+            physics_approximant=args.approximant,
+            n_per_class=args.n_per_class,
+            n_val_per_class=args.n_val_per_class,
+        )
+
+        t0     = time.perf_counter()
+        result = GenerateExperimentResultsUseCase(config).execute()
+        elapsed = time.perf_counter() - t0
+
+        print("\n" + "=" * 70)
+        print("  RESULTADOS")
+        print("=" * 70)
+        print(f"  Accuracy simulador (val):  {result.accuracy_sim:.3f}")
+        if result.accuracy_ibm is not None:
+            print(f"  Accuracy IBM (val):        {result.accuracy_ibm:.3f}")
+        print(f"  Loss final:                {result.final_loss:.4f}")
+        print(f"  Épocas entrenadas:         {result.n_epochs}")
+        print(f"  Tiempo total:              {elapsed:.1f} s")
+        print("=" * 70)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

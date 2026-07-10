@@ -202,48 +202,38 @@ def chebyshev_preprocess(X: np.ndarray, stats: Optional[tuple] = None) -> np.nda
 
 def _build_feature_map_and_ansatz(n_qubits: int, reps: int = 2):
     """
-    Construye el feature map de Chebyshev y el ansatz EfficientSU2,
-    COMPUESTOS en un único circuito.
-
-    [v4] RY(θ) sin doblar y SIN Hadamard previo -> P(|0>) = (1+x)/2,
-    lineal y monótona en x. Sin cambios desde v4.
-
-    [Nota v8] Las puertas CX-RZ-CX del feature map son una fase pura
-    (no cambian magnitudes de amplitud -- verificado: la marginal
-    teórica P(0)=(1+cos θ)/2 del feature map SOLO da accuracy=1.000
-    con un clasificador lineal). Las puertas CX SIMPLES del ansatz
-    EfficientSU2 SÍ mezclan magnitudes de forma no lineal dependiente
-    de la clase -- de ahí la necesidad de una capa de lectura no
-    lineal (ver _fit_readout_mlp_classically / _readout_mlp_probs).
-
-    Returns:
-        (circuito_sin_medidas, x_params, ansatz_params)
-        x_params: ParameterVector de n_qubits elementos (features).
-        ansatz_params: lista de Parameter del EfficientSU2 -- la
-            PRIMERA parte del vector total de parámetros entrenables;
-            la segunda parte es la capa de lectura MLP (ver
-            _n_readout_params / _split_readout_mlp /
-            _fit_readout_mlp_classically).
+    ZZFeatureMap nativo de Qiskit + EfficientSU2 cíclico.
+    FIX v9 — implementación exacta del paper (Sec. 2.2.1, Ec. 1).
+    Feature map: ZZFeatureMap rϕ=2, entanglement='linear' → 12 params.
+    Ansatz: EfficientSU2 circular, reps=1 → 48 params (paper).
     """
-    from qiskit.circuit import QuantumCircuit, ParameterVector
+    import warnings
     from qiskit.circuit.library import EfficientSU2
 
-    x_params = ParameterVector("x_feat", n_qubits)
-    feature_map = QuantumCircuit(n_qubits, name="ChebyshevFeatureMap")
-    for i in range(n_qubits):
-        feature_map.ry(x_params[i], i)
-    for i in range(n_qubits - 1):
-        feature_map.cx(i, i + 1)
-        feature_map.rz(x_params[i] * x_params[i + 1], i + 1)
-        feature_map.cx(i, i + 1)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        try:
+            from qiskit.circuit.library import zz_feature_map
+            feature_map = zz_feature_map(
+                feature_dimension=n_qubits, reps=2, entanglement="linear",
+            )
+        except ImportError:
+            from qiskit.circuit.library import ZZFeatureMap
+            feature_map = ZZFeatureMap(
+                feature_dimension=n_qubits, reps=2, entanglement="linear",
+            )
 
-    ansatz = EfficientSU2(num_qubits=n_qubits, reps=reps, entanglement="linear")
+    x_params = feature_map.parameters  # ParameterView, indexable
 
-    combined = feature_map.compose(ansatz)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        ansatz = EfficientSU2(
+            num_qubits=n_qubits, reps=1, entanglement="circular",
+        )
+
+    combined      = feature_map.compose(ansatz)
     ansatz_params = list(ansatz.parameters)
     return combined, x_params, ansatz_params
-
-
 def _bind_sample(combined_run, x_params, ansatz_params, xi: np.ndarray, theta_fit: np.ndarray):
     """
     Enlaza UNA muestra (xi) + los pesos del ansatz al circuito combinado.

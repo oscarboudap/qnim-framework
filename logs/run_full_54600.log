@@ -1,0 +1,2 @@
+nohup: ignoring input
+PyCBC.libutils: pkg-config call failed, setting NO_PKGCONFIG=1

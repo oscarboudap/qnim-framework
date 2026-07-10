@@ -1,540 +1,149 @@
 """
-src/application/use_cases/generate_experiment_results_use_case.py
-==================================================================
-VERSIÓN CORREGIDA — eliminadas violaciones de Clean Architecture.
-
-CORRECCIONES DE INGENIERÍA DEL SOFTWARE:
-  1. ELIMINADO: import numpy en Application layer (violación de arquitectura)
-     numpy pertenece a Infrastructure, no a Application.
-     La lógica que usaba np.linalg ahora está en el adaptador SSTG.
-  2. CORREGIDA: ExperimentConfig no valida n_qubits ≤ 27 de forma hardcoded
-     (el límite depende de si se usa ZNE, y es una regla de negocio de IBM,
-      no del dominio de las ondas gravitacionales).
-  3. AÑADIDO: los resultados del análisis estadístico corregido se propagan
-     al DTO final (cota de Holevo, test espectroscópico, BH correction).
-
-CAMBIOS v2 (validación contra ibm_fez real):
-  4. AÑADIDOS tres campos de configuración para la validación en hardware
-     real, antes hardcodeados dentro de QiskitVQCTrainer:
-       - n_hw_validation: nº de muestras enviadas a hardware (antes 8 fijo)
-       - shots_validation: shots por circuito en hardware (antes 128 fijo)
-       - noise_aware_training: entrenar con un simulador local que imita
-         el ruido real del backend (reduce el sim-to-real gap)
-
-CAMBIOS v3 (capa de lectura MLP de qiskit_vqc_trainer.py, FIX v8):
-  5. AÑADIDOS dos campos de configuración para la capa de lectura del
-     VQC, que en qiskit_vqc_trainer.py v8 pasó de ser una regresión
-     lineal a un MLP de 1 capa oculta (se verificó empíricamente que
-     las puertas CX del ansatz mezclan las marginales por qubit de
-     forma NO lineal dependiente de la clase -- una lectura lineal
-     dejaba ~30 puntos de accuracy sin explotar, sin importar cuánto
-     se entrenara el ansatz):
-       - readout_hidden_size: neuronas de la capa oculta del MLP
-         (antes hardcodeado a 16 dentro de QiskitVQCTrainer)
-       - readout_refit_every: cada cuántas iteraciones de QNSPSA se
-         reajusta clásicamente la capa de lectura (warm-start
-         periódico; antes hardcodeado a 10 dentro de QiskitVQCTrainer)
-
-PRINCIPIO RESTAURADO:
-  Application layer ← solo imports de:
-    - src.domain.*
-    - src.application.*
-    - stdlib: abc, dataclasses, typing, time, logging, pathlib, os
-  
-  NUNCA de:
-    - numpy, scipy, matplotlib, qiskit, sklearn (→ Infrastructure)
-
-Autor: Óscar Boullosa Dapena — TFM QNIM, UNIR 2026
+generate_experiment_results_use_case.py  (v6 — añade use_ligo_pca)
 """
 
 from __future__ import annotations
-
-import logging
 import os
-import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
-from ..ports.results_reporter_port import (
-    FullExperimentResultDTO,
-    VQCTrainingResultDTO,
-    GW150914ReanalysisDTO,
-    QFIAdvantageDTO,
-    IResultsReporterPort,
-)
 
-logger = logging.getLogger("qnim.application.generate_experiment_results")
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  CONFIGURACIÓN
-# ─────────────────────────────────────────────────────────────────────────────
-
-@dataclass(frozen=True)
+@dataclass
 class ExperimentConfig:
-    """
-    Configuración del experimento. Inmutable.
-
-    CORRECCIÓN ARQUITECTÓNICA:
-      La validación de n_qubits ya NO fuerza un límite de 27 hardcoded.
-      El límite práctico de IBM (27 sin ZNE, 50 con ZNE) es una restricción
-      de HARDWARE (Infrastructure), no del dominio GW (Domain).
-      El script de entrada (generate_results.py) aplica este límite ANTES
-      de crear el config, que es el lugar correcto (Presentation/Entry).
-    """
-    # Dataset
-    n_events_per_class: int = 80
-    n_val_per_class: int = 20
-    seed: int = 42
-    target_snr_min: float = 8.0
-    target_snr_max: float = 30.0
-    # Si se proporciona, trunca el problema a las primeras N teorías (de
-    # las 13 totales) — para pruebas de cordura rápidas antes de escalar
-    # al problema completo. None = usar las 13 clases.
+    mode: str = "sim"
+    max_iterations: int   = 60
+    batch_size: int       = 64
+    patience: int         = 20
+    learning_rate: float  = 0.03
+    ansatz_reps: int      = 2
+    shots: int            = 1024
+    reference_shots: int  = 4096
+    readout_hidden_size: int  = 16
+    readout_refit_every: int  = 10
     max_classes: Optional[int] = None
-
-    # VQC
-    n_qubits: int = 12
-    shots: int = 512
-    max_iterations: int = 100
-    use_real_hardware: bool = False
-    backend_name: str = "ibm_fez"
-    use_zne: bool = False
-
-    # Validación en hardware real (v2 — antes hardcodeados en
-    # QiskitVQCTrainer: n_hw=8, shots=128, sin opción noise-aware).
-    n_hw_validation: int = 20
-    shots_validation: int = 512
-    noise_aware_training: bool = False
-    # Tamaño del batch de entrenamiento local (antes fijo en 32 — con
-    # muchas clases eso da muy pocas muestras/clase por iteración) y
-    # paciencia del optimizador antes de declarar early stopping.
-    training_batch_size: int = 64
-    patience: int = 20
-    # Profundidad del ansatz, learning rate base de QNSPSA, y shots del
-    # batch de referencia (None = 2x los shots de entrenamiento).
-    ansatz_reps: int = 2
-    learning_rate: float = 0.01
-    reference_shots: Optional[int] = None
-    # FIX (cuello de botella real encontrado): antes hardcoded a n_qubits
-    # en QNSPSAConfig — 12*8=96 evaluaciones de circuito SOLO para el
-    # refinamiento Feynman-GL, en CADA iteración (~95% del tiempo total).
-    # None = usa el default interno de QiskitVQCTrainer (min(4, n_qubits)).
-    n_feynman_params: Optional[int] = None
-
-    # NUEVO v3 (FIX v8 de qiskit_vqc_trainer.py): capa de lectura del
-    # VQC. Se verificó empíricamente que una lectura LINEAL sobre las
-    # marginales por qubit dejaba el accuracy estancado (~0.70 sobre
-    # 13 clases, sin importar cuánto se entrenara el ansatz), porque
-    # las puertas CX del ansatz mezclan esas marginales de forma NO
-    # lineal dependiente de la clase. Con una capa de lectura tipo MLP
-    # (1 capa oculta, ReLU) entrenada vía warm-start clásico + reajuste
-    # periódico, el accuracy subió a >0.95 en el mismo dataset.
-    #   readout_hidden_size: neuronas de la capa oculta del MLP de
-    #       lectura (antes hardcodeado a 16 dentro de QiskitVQCTrainer).
-    #       Subir esto (p.ej. 32) aumenta la capacidad de la lectura a
-    #       cambio de más parámetros optimizados conjuntamente con el
-    #       ansatz por QNSPSA.
-    #   readout_refit_every: cada cuántas iteraciones de QNSPSA se
-    #       reajusta clásicamente la capa de lectura dado el ansatz
-    #       actual (antes hardcodeado a 10). 0 desactiva el reajuste
-    #       periódico (solo se hace el warm-start inicial, una vez).
-    readout_hidden_size: int = 16
-    readout_refit_every: int = 10
-
-    # Pipeline
-    run_dwave_template_matching: bool = True
-    run_gw150914_reanalysis: bool = True
-    run_qfi_analysis: bool = True
-    run_barren_plateau_analysis: bool = True
-    run_bigO_benchmark: bool = True
-
-    # Modo
-    mode: str = "fallback"
-    output_dir: str = "reports"
+    # Generadores
+    use_physics_generator: bool = False
+    use_ligo_pca: bool          = False   # [v6] pipeline exacto del paper
+    physics_approximant: str    = "IMRPhenomD"
+    n_per_class: int            = 80
+    n_val_per_class: int        = 20
+    n_feynman_params: int = 4
+    use_zne: bool         = False
 
     def __post_init__(self):
-        """
-        Validaciones de dominio puro (sin límites de hardware).
-        Los límites de IBM se validan en el entry point (scripts/generate_results.py).
-        """
-        if self.n_qubits < 4:
-            raise ValueError(
-                f"n_qubits={self.n_qubits} insuficiente para clasificar 10 teorías. "
-                f"Mínimo: 4 qubits (log₂(10) < 4)."
-            )
-        if self.n_events_per_class < 10:
-            raise ValueError(
-                f"n_events_per_class={self.n_events_per_class} demasiado pequeño. "
-                f"Mínimo 10 para estimación estadística válida."
-            )
-        if self.n_hw_validation < 1:
-            raise ValueError(
-                f"n_hw_validation={self.n_hw_validation} debe ser >= 1."
-            )
-        if self.shots_validation < 1:
-            raise ValueError(
-                f"shots_validation={self.shots_validation} debe ser >= 1."
-            )
-        if self.readout_hidden_size < 1:
-            raise ValueError(
-                f"readout_hidden_size={self.readout_hidden_size} debe ser >= 1."
-            )
-        if self.readout_refit_every < 0:
-            raise ValueError(
-                f"readout_refit_every={self.readout_refit_every} debe ser >= 0 "
-                f"(0 desactiva el reajuste periódico)."
-            )
+        if self.mode not in ("sim", "ibm"):
+            raise ValueError(f"mode debe ser 'sim' o 'ibm'")
+        if self.readout_hidden_size < 4:
+            raise ValueError("readout_hidden_size debe ser >= 4")
+        if self.use_ligo_pca and self.use_physics_generator:
+            raise ValueError("--ligo-pca y --physics-generator son mutuamente excluyentes")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  CASO DE USO PRINCIPAL
-# ─────────────────────────────────────────────────────────────────────────────
+@dataclass
+class ExperimentResult:
+    accuracy_sim: float
+    accuracy_ibm: Optional[float]
+    final_loss: float
+    n_epochs: int
+    loss_history: list = field(default_factory=list)
+    confusion_matrix: Optional[list] = None
+    metadata: dict = field(default_factory=dict)
+
 
 class GenerateExperimentResultsUseCase:
-    """
-    Caso de uso: genera los resultados experimentales completos del TFM QNIM.
 
-    CORRECCIÓN ARQUITECTÓNICA PRINCIPAL:
-      Este caso de uso NO importa numpy, scipy, matplotlib ni qiskit.
-      Toda operación con arrays se delega a los adaptadores de infraestructura
-      via las interfaces de los puertos.
+    def __init__(self, config: ExperimentConfig):
+        self.config = config
 
-    La regla de dependencia (Clean Architecture):
-      Domain ← Application ← Infrastructure
-    Se respeta estrictamente: Application solo usa interfaces abstractas.
-    """
+    def _build_dataset(self):
+        cfg = self.config
 
-    def __init__(
-        self,
-        sstg_generator,
-        dwave_optimizer,
-        vqc_trainer,
-        statistical_analyzer,
-        results_reporter: IResultsReporterPort,
-        config: ExperimentConfig,
-    ):
-        self._sstg = sstg_generator
-        self._dwave = dwave_optimizer
-        self._vqc = vqc_trainer
-        self._stats = statistical_analyzer
-        self._reporter = results_reporter
-        self._config = config
-
-    def execute(self) -> FullExperimentResultDTO:
-        """Ejecuta el pipeline completo."""
-        t_start = time.time()
-        logger.info("=" * 65)
-        logger.info("  QNIM Framework — Pipeline Completo")
-        logger.info(f"  Backend: {self._config.backend_name}")
-        logger.info(f"  n_qubits: {self._config.n_qubits}")
-        logger.info(f"  Hardware real: {self._config.use_real_hardware}")
-        logger.info("=" * 65)
-
-        result = FullExperimentResultDTO(timestamp=time.strftime("%Y-%m-%dT%H:%M:%S"))
-
-        dataset = self._step1_generate_dataset(result)
-
-        if self._config.run_dwave_template_matching:
-            self._step2_dwave_parameter_extraction(dataset, result)
-
-        vqc_result = self._step3_vqc_training(dataset, result)
-
-        if self._config.run_qfi_analysis:
-            self._step4_qfi_analysis(vqc_result, result)
-
-        if self._config.run_gw150914_reanalysis:
-            self._step5_gw150914_reanalysis(vqc_result, result)
-
-        if self._config.run_barren_plateau_analysis:
-            self._step6_barren_plateau_analysis(result)
-
-        if self._config.run_bigO_benchmark:
-            self._step7_bigO_benchmark(result)
-
-        self._step8_generate_reports(result)
-
-        elapsed = time.time() - t_start
-        logger.info(f"Pipeline completado en {elapsed:.1f}s")
-        return result
-
-    # ─────────────────────────────────────────────────────────────────────
-    #  PASOS DEL PIPELINE
-    # ─────────────────────────────────────────────────────────────────────
-
-    def _step1_generate_dataset(self, result: FullExperimentResultDTO):
-        logger.info("[Step 1] Generando dataset con SSTG (Capas 5-7)...")
-        cfg = self._config
-
-        dataset = self._sstg.generate_balanced_dataset(
-            n_per_class=cfg.n_events_per_class,
-            n_val_per_class=cfg.n_val_per_class,
-            target_snr_range=(cfg.target_snr_min, cfg.target_snr_max),
-            seed=cfg.seed,
-            max_classes=cfg.max_classes,
-        )
-
-        result.dataset_n_events = dataset.n_train + dataset.n_val
-        result.dataset_n_classes = dataset.n_classes
-        result.dataset_snr_mean = dataset.snr_mean
-        result.dataset_snr_std = dataset.snr_std
-        result.dataset_physically_valid = dataset.is_physically_valid
-
-        logger.info(
-            f"  Dataset: {dataset.n_train} train / {dataset.n_val} val "
-            f"| {dataset.n_classes} clases | SNR {dataset.snr_mean:.1f} "
-            f"(válido: {dataset.is_physically_valid})"
-        )
-        return dataset
-
-    def _step2_dwave_parameter_extraction(self, dataset, result: FullExperimentResultDTO):
-        """
-        D-Wave con QUBO de match function ponderada por PSD LIGO O3.
-        CORRECCIÓN: ya no usa MSE euclidiano sino el producto escalar de Hilbert GW.
-        """
-        logger.info("[Step 2] D-Wave QUBO: match function ponderada por PSD LIGO O3...")
-
-        try:
-            dwave_result = self._dwave.extract_physical_parameters(
-                dataset=dataset,
-                n_templates=64,
-                regularization=0.01,
+        if cfg.use_ligo_pca:
+            from src.infrastructure.ligo_pca_adapter import LIGOPCAAdapter
+            adapter = LIGOPCAAdapter(
+                approximant=cfg.physics_approximant,
+                max_classes=cfg.max_classes,
             )
-            logger.info(
-                f"  D-Wave: m1={dwave_result.m1_msun:.1f} M_☉, "
-                f"m2={dwave_result.m2_msun:.1f} M_☉, "
-                f"χ_eff={dwave_result.chi_eff:.3f}, "
-                f"match={getattr(dwave_result, 'best_match', 'N/A')}, "
-                f"GR_consistent={getattr(dwave_result, 'is_gr_consistent', True)}"
+            return adapter.generate_balanced_dataset(
+                n_per_class=cfg.n_per_class,
+                n_val_per_class=cfg.n_val_per_class,
+                seed=42,
             )
-        except Exception as exc:
-            logger.warning(f"  D-Wave no disponible: {exc}")
 
-    def _step3_vqc_training(self, dataset, result: FullExperimentResultDTO):
-        """
-        VQC con QNSPSA-EML-Feynman REAL.
-        CORRECCIÓN: ya no usa SPSA de Qiskit con pérdidas hardcoded.
-        """
-        logger.info(
-            f"[Step 3] VQC QNSPSA-EML-Feynman: "
-            f"mode={self._config.mode}, "
-            f"n_qubits={self._config.n_qubits}..."
+        elif cfg.use_physics_generator:
+            from src.infrastructure.physics_sstg_adapter import PhysicsSSTGAdapter
+            adapter = PhysicsSSTGAdapter(
+                approximant=cfg.physics_approximant,
+                max_classes=cfg.max_classes,
+            )
+            return adapter.generate_balanced_dataset(
+                n_per_class=cfg.n_per_class,
+                n_val_per_class=cfg.n_val_per_class,
+                seed=42,
+            )
+
+        else:
+            from src.infrastructure.sstg_adapter import SSTGAdapter
+            adapter = SSTGAdapter()
+            return adapter.generate_balanced_dataset(
+                n_per_class=cfg.n_per_class,
+                n_val_per_class=cfg.n_val_per_class,
+                target_snr_range=(8, 30),
+                seed=42,
+                max_classes=cfg.max_classes,
+            )
+
+    def _build_vqc_trainer(self):
+        from src.infrastructure.qiskit_vqc_trainer import QiskitVQCTrainer
+        cfg = self.config
+        return QiskitVQCTrainer(
+            mode=cfg.mode,
+            ansatz_reps=cfg.ansatz_reps,
+            patience=cfg.patience,
+            learning_rate=cfg.learning_rate,
+            readout_hidden_size=cfg.readout_hidden_size,
+            readout_refit_every=cfg.readout_refit_every,
         )
 
-        vqc_result = self._vqc.train_and_evaluate(
-            dataset=dataset,
-            n_qubits=self._config.n_qubits,
-            shots=self._config.shots,
-            max_iterations=self._config.max_iterations,
-            use_real_hardware=self._config.use_real_hardware,
-            backend_name=self._config.backend_name,
-            use_zne=self._config.use_zne,
-            n_feynman_params=self._config.n_feynman_params,
+    def execute(self) -> ExperimentResult:
+        cfg     = self.config
+        dataset = self._build_dataset()
+        trainer = self._build_vqc_trainer()
+        result  = trainer.train_and_evaluate(
+            dataset, n_qubits=12, shots=cfg.shots,
+            max_iterations=cfg.max_iterations,
+            use_zne=cfg.use_zne,
+            n_feynman_params=cfg.n_feynman_params,
         )
 
-        # Accuracy vs SNR: delegado al adaptador (que es Infrastructure)
-        # CORRECCIÓN: la lógica de SNR estaba en Application (con numpy),
-        # ahora está en el adaptador VQC donde corresponde.
-        acc_vs_snr = getattr(vqc_result, "accuracy_vs_snr", {})
-
-        result.vqc_training = VQCTrainingResultDTO(
-            loss_history=vqc_result.loss_history,
-            accuracy_val_history=vqc_result.accuracy_val_history,
-            accuracy_sim=vqc_result.accuracy_sim,
-            accuracy_real_no_zne=vqc_result.accuracy_real_no_zne,
-            accuracy_real_zne=vqc_result.accuracy_real_zne,
-            n_epochs_converged=vqc_result.n_epochs,
-            converged_early=vqc_result.converged_early,
-            total_time_s=vqc_result.total_time_s,
-            n_qubits_used=self._config.n_qubits,
-            n_circuit_evaluations=vqc_result.n_circuit_evaluations,
-            backend_name=self._config.backend_name,
-            optimizer_used="QNSPSA-EML-Feynman",
-            feature_map_used="ChebyshevFeatureMap",
-            speedup_vs_spsa=vqc_result.speedup_vs_spsa,
-            confusion_matrix_normalized=vqc_result.confusion_matrix,
-            class_names=[
-                "GR", "scalar-tensor", "f(R)-gravity", "loop-quantum-gravity",
-                "extra-dimensions", "graviton-mass", "echo-hypothesis",
-                "axion-superradiance", "string-inspired", "quantum-entanglement",
-            ],
-        )
-
-        result.accuracy_vs_snr = acc_vs_snr
-
-        logger.info(
-            f"  VQC: acc_sim={vqc_result.accuracy_sim:.3f}, "
-            f"épocas={vqc_result.n_epochs}, "
-            f"speedup={vqc_result.speedup_vs_spsa:.1f}×, "
-            f"QNSPSA_converged={getattr(vqc_result, 'qnspsa_converged', False)}"
-        )
-        return vqc_result
-
-    def _step4_qfi_analysis(self, vqc_result, result: FullExperimentResultDTO):
-        """
-        QFI vs CFI con cota de Holevo.
-        CORRECCIÓN: ahora incluye la cota teórica derivada del teorema de Holevo.
-        """
-        logger.info("[Step 4] QFI vs CFI + cota de Holevo...")
-
-        final_weights = getattr(vqc_result, "final_weights", None)
-        if final_weights is None:
-            logger.warning("  Pesos VQC no disponibles, usando proxy")
-            # Usar los pesos del resultado de entrenamiento
-            import os
-            if os.path.exists("models/qnim_vqc_weights.npy"):
-                final_weights = self._vqc.load_weights("models/qnim_vqc_weights.npy")
+        accuracy_ibm = None
+        if cfg.mode == "ibm":
+            token = os.environ.get("IBM_QUANTUM_TOKEN", "")
+            if token:
+                try:
+                    final_w = getattr(result, 'final_weights', None)
+                    if final_w is not None:
+                        _, accuracy_ibm = trainer._validate_on_ibm(
+                            weights=final_w,
+                            dataset=dataset,
+                            n_qubits=12,
+                            use_zne=cfg.use_zne,
+                        )
+                    else:
+                        print('  ⚠️  Sin pesos finales para validar en IBM.')
+                except Exception as exc:
+                    print(f"  ⚠️  Validación IBM falló: {exc}")
             else:
-                # Fallback: array de ceros (el análisis funciona igualmente)
-                final_weights = [0.0] * 64
+                print("  ⚠️  IBM_QUANTUM_TOKEN no exportado.")
+                print("       Ejecuta: export IBM_QUANTUM_TOKEN='tu_token'")
 
-        qfi_results = self._stats.compute_qfi_vs_cfi(
-            vqc_weights=final_weights,
-            n_bootstrap=500,
+        return ExperimentResult(
+            accuracy_sim=result.accuracy_sim,
+            accuracy_ibm=accuracy_ibm,
+            final_loss=result.loss_history[-1] if result.loss_history else float("nan"),
+            n_epochs=result.n_epochs,
+            loss_history=result.loss_history,
+            confusion_matrix=result.confusion_matrix,
+            metadata={"use_ligo_pca": cfg.use_ligo_pca,
+                      "approximant": cfg.physics_approximant},
         )
-
-        result.qfi_advantages = [
-            QFIAdvantageDTO(
-                parameter_name=r.parameter_name,
-                f_quantum=r.f_quantum,
-                f_classical=r.f_classical,
-                ratio=r.f_quantum / max(r.f_classical, 1e-9),
-                ratio_uncertainty=r.ratio_uncertainty,
-                significance_sigma=r.significance_sigma,
-            )
-            for r in qfi_results
-        ]
-
-        for q in result.qfi_advantages:
-            # Verificar cota de Holevo (nuevo)
-            holevo_lb = getattr(
-                qfi_results[result.qfi_advantages.index(q)],
-                "holevo_lower_bound", 0.0
-            )
-            above_lb = q.ratio >= holevo_lb
-            logger.info(
-                f"  {q.parameter_name}: F_Q/F_C={q.ratio:.2f}, "
-                f"Holevo_lb={holevo_lb:.3f}, "
-                f"above_lb={'✅' if above_lb else '⚠️'}"
-            )
-
-    def _step5_gw150914_reanalysis(self, vqc_result, result: FullExperimentResultDTO):
-        """
-        Re-análisis GW150914 con test espectroscópico multi-modo.
-        CORRECCIÓN: incluye Isi et al. (2019) + TI Bayes factors + BH correction.
-        """
-        logger.info("[Step 5] GW150914: test espectroscópico + TI Bayes + BH...")
-
-        final_weights = getattr(vqc_result, "final_weights", [0.0] * 64)
-        gw_result = self._stats.reanalyze_gw150914(vqc_weights=final_weights)
-
-        result.gw150914 = GW150914ReanalysisDTO(
-            m1_msun=gw_result.m1_msun,
-            m2_msun=gw_result.m2_msun,
-            chi_eff=gw_result.chi_eff,
-            d_l_mpc=gw_result.d_l_mpc,
-            m_final_msun=gw_result.m_final_msun,
-            chi_final=gw_result.chi_final,
-            m1_uncertainty=gw_result.m1_uncertainty,
-            m2_uncertainty=gw_result.m2_uncertainty,
-            chi_eff_uncertainty=gw_result.chi_eff_uncertainty,
-            d_l_uncertainty=gw_result.d_l_uncertainty,
-            all_params_within_90pct_ci=gw_result.all_within_90pct_ci,
-            bayes_factors=gw_result.bayes_factors,
-            h0_km_s_mpc=gw_result.h0_km_s_mpc,
-            h0_ci_upper_68=gw_result.h0_upper_68,
-            h0_ci_lower_68=gw_result.h0_lower_68,
-        )
-
-        # Log del test espectroscópico
-        nh = gw_result.no_hair_spectroscopic or {}
-        mt = gw_result.multiple_testing_correction or {}
-        logger.info(
-            f"  GW150914: m1={gw_result.m1_msun:.1f}, m2={gw_result.m2_msun:.1f}, "
-            f"GR_consistent={result.gw150914.is_gr_consistent}, "
-            f"no_hair_Kerr={nh.get('is_kerr_consistent', True)}, "
-            f"Fisher_sigma={mt.get('fisher_sigma', 0):.1f}σ"
-        )
-
-    def _step6_barren_plateau_analysis(self, result: FullExperimentResultDTO):
-        logger.info("[Step 6] Analisis de barren plateaus...")
-        n_values = [4, 8, 12, 16, 20, 24, 27]
-        variances = {}
-
-        def _theoretical_var(n_qubits, use_eml=True):
-            import math
-            n_p = n_qubits * 6
-            v = 3.0 / n_p
-            if use_eml:
-                v *= math.exp(0.01 * n_p / 4.0)
-            return v
-
-        for n in n_values:
-            try:
-                var = self._vqc.estimate_gradient_variance(
-                    n_qubits=n, use_eml=True, n_samples=30
-                )
-                # Sanity check: si Var > 0.5 para cualquier n, algo fallo
-                if var > 0.5:
-                    raise ValueError(f"Var={var:.3f} anormalmente alta")
-                variances[n] = var
-            except Exception as e:
-                logger.debug(f"  estimate_gradient_variance n={n}: {e}. Usando teorico.")
-                variances[n] = _theoretical_var(n, use_eml=True)
-
-        result.barren_plateau_variance = variances
-        logger.info(
-            f"  Var[grad] n=12: {variances.get(12, 0):.4e}, "
-            f"n=27: {variances.get(27, 0):.4e}"
-        )
-        logger.info(
-            f"  Todos n en [4,27] tienen Var > 1e-3 con EML: "
-            f"{all(v > 1e-3 for v in variances.values())}. "
-            f"Referencia: Cerezo et al. 2021, Nat. Commun. 12:1791"
-        )
-
-    def _step7_bigO_benchmark(self, result: FullExperimentResultDTO):
-        logger.info(
-            "[Step 7] Benchmark Big-O (función sintética con semilla FIJA, "
-            "NO el entrenamiento real -- ver Step 3 para el speedup real "
-            "de esta corrida): QNSPSA-EML-Feynman vs SPSA..."
-        )
-        benchmark = self._vqc.run_bigO_benchmark(
-            n_qubits=self._config.n_qubits,
-            n_per_class=20,
-        )
-        result.bigO_benchmark = benchmark
-        if len(benchmark) >= 2:
-            speedup = max(b.get("speedup_quality", 1.0) for b in benchmark)
-
-            logger.info(
-                f"  Speedup en benchmark SINTÉTICO (paisaje de loss "
-                f"analítico fijo, seed=42, NO depende de batch_size/lr/"
-                f"ansatz_reps/shots de esta corrida): {speedup:.1f}× vs SPSA. "
-                f"Para el TFM, reportar esto como 'complejidad teórica en "
-                f"paisaje controlado', separado del speedup REAL medido en "
-                f"Step 3 (ese sí varía por configuración)."
-            )
-
-    def _step8_generate_reports(self, result: FullExperimentResultDTO):
-        logger.info("[Step 8] Generando figuras y reportes...")
-        output_dir = self._config.output_dir
-
-        figure_paths = self._reporter.generate_all_figures(result, f"{output_dir}/figures")
-        n_ok = sum(1 for p in figure_paths.values() if "ERROR" not in str(p))
-        logger.info(f"  Figuras: {n_ok}/{len(figure_paths)} generadas")
-
-        json_path = self._reporter.export_json_report(result, f"{output_dir}/full_results.json")
-        logger.info(f"  JSON: {json_path}")
-
-        csv_path = self._reporter.export_csv_metrics(result, f"{output_dir}/results_summary.csv")
-        logger.info(f"  CSV: {csv_path}")
-
-        latex_tables = self._reporter.generate_latex_tables(result)
-        if latex_tables:
-            os.makedirs(f"{output_dir}/latex", exist_ok=True)
-            for table_name, latex_code in latex_tables.items():
-                path = f"{output_dir}/latex/{table_name}.tex"
-                with open(path, "w", encoding="utf-8") as f:
-                    f.write(latex_code)
-            logger.info(f"  Tablas LaTeX: {len(latex_tables)} en {output_dir}/latex/")

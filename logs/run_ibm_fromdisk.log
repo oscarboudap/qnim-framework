@@ -1,0 +1,30 @@
+nohup: ignoring input
+======================================================================
+  QNIM Framework — Resultados Experimentales
+======================================================================
+  Modo:                   IBM
+  Generador:              SSTGAdapter (marcador artificial)
+  max_iter:               200
+  batch_size:             512
+  patience:               40
+  learning_rate:          0.01
+  readout_hidden_size:    32
+  readout_refit_every:    10
+  shots:                  1024
+  use_zne:                False
+  max_classes:            todas (13)
+======================================================================
+Cargando dataset desde data/dataset_full...
+  X_train: (54600, 12)  X_val: (7800, 12)  n_classes: 13
+  RF val: 0.457  azar: 0.077
+  ⚠️  IBM falló: 'QiskitVQCTrainer' object has no attribute 'validate_on_ibm'
+
+======================================================================
+  RESULTADOS
+======================================================================
+  Accuracy simulador (val):  0.105
+  RF baseline (val):         0.457
+  Loss final:                2.8584  (ln(13)=2.5649)
+  Épocas:                    109
+  Tiempo:                    111681.2s
+======================================================================
