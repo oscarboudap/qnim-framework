@@ -108,6 +108,8 @@ class QNSPSAConfig:
     min_improvement: float = 5e-4
     maxiter: int = 100
     seed: int = 42
+    eml_max_scale: float = 10.0
+    
 
 
 @dataclass
@@ -265,7 +267,10 @@ class QNSPSAEMLFeynman:
             # ── PASO 5: EML anti-plateau term ─────────────────────────────
             eigvals = np.linalg.eigvalsh(F_hat + 1e-8 * np.eye(n))
             lambda_min = max(eigvals.min(), 1e-10)
-            eml_grad = -(self.cfg.lambda_eml / lambda_min) * g_hat
+            if t <= 5 or t % 10 == 0:
+                logger.info(f"  [diagnóstico] iter={t} lambda_min={lambda_min:.2e}")
+            eml_scale = min(self.cfg.lambda_eml / lambda_min, self.cfg.eml_max_scale)
+            eml_grad = -eml_scale * g_hat
 
             # ── PASO 6: Gradiente total ────────────────────────────────────
             g_total = g_feynman + g_spsa_ansatz + eml_grad

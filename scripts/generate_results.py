@@ -3,8 +3,14 @@ generate_results.py  (v7 — version final con todos los fixes)
 Sustituye scripts/generate_results.py
 """
 
+import logging
 import argparse, sys, time, os
 from pathlib import Path
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(name)s: %(message)s",
+    datefmt="%H:%M:%S",
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))

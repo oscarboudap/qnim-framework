@@ -199,13 +199,34 @@ def chebyshev_preprocess(X: np.ndarray, stats: Optional[tuple] = None) -> np.nda
 # ─────────────────────────────────────────────────────────────────────────────
 #  FEATURE MAP + ANSATZ COMPUESTOS (v3/v4 — sin cambios desde v4)
 # ─────────────────────────────────────────────────────────────────────────────
-
 def _build_feature_map_and_ansatz(n_qubits: int, reps: int = 2):
     """
-    ZZFeatureMap nativo de Qiskit + EfficientSU2 cíclico.
-    FIX v9 — implementación exacta del paper (Sec. 2.2.1, Ec. 1).
-    Feature map: ZZFeatureMap rϕ=2, entanglement='linear' → 12 params.
-    Ansatz: EfficientSU2 circular, reps=1 → 48 params (paper).
+    ZZFeatureMap nativo de Qiskit + EfficientSU2 en cadena.
+
+    FIX v10 (16 jul 2026) -- dos correcciones medidas con
+    analyze_depth_reduction_options.py:
+
+      1) `reps` ahora SÍ controla los reps del feature map. Antes
+         estaba fijo a reps=2 sin mirar el argumento -- cualquier
+         llamada con self.ansatz_reps distinto de 2 no tenía ningún
+         efecto real hasta este fix.
+
+      2) El ansatz cambia de entanglement='circular' a 'linear',
+         igual que el feature map. 'circular' cierra un enlace extra
+         qubit_(n-1)--qubit_0 que heavy-hex no tiene de forma nativa
+         (no es un anillo), obligando al compilador a rodear con SWAPs
+         para conectar los dos extremos. Con 'linear', ambas capas
+         piden solo conectividad en cadena, que existe siempre en
+         cualquier grafo conexo (heavy-hex lo es), para cualquier
+         n_qubits -- overhead de rutina ~0% de forma sistemática, no
+         por suerte de layout.
+
+      Efecto medido (ver results/depth_reduction_*.csv): profundidad
+      -26% a -60% y fidelidad estimada por error de puerta +7% a +305%
+      según n_qubits, comparado con la versión v9 (circular, reps=2
+      fijo). Contrapartida: menos interacciones ZZ en el feature map
+      cuando reps=1 -- pendiente de confirmar en simulador que esto no
+      perjudica el accuracy antes de darlo por bueno para el TFM.
     """
     import warnings
     from qiskit.circuit.library import EfficientSU2
@@ -215,12 +236,12 @@ def _build_feature_map_and_ansatz(n_qubits: int, reps: int = 2):
         try:
             from qiskit.circuit.library import zz_feature_map
             feature_map = zz_feature_map(
-                feature_dimension=n_qubits, reps=2, entanglement="linear",
+                feature_dimension=n_qubits, reps=reps, entanglement="linear",
             )
         except ImportError:
             from qiskit.circuit.library import ZZFeatureMap
             feature_map = ZZFeatureMap(
-                feature_dimension=n_qubits, reps=2, entanglement="linear",
+                feature_dimension=n_qubits, reps=reps, entanglement="linear",
             )
 
     x_params = feature_map.parameters  # ParameterView, indexable
@@ -228,7 +249,7 @@ def _build_feature_map_and_ansatz(n_qubits: int, reps: int = 2):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", DeprecationWarning)
         ansatz = EfficientSU2(
-            num_qubits=n_qubits, reps=1, entanglement="circular",
+            num_qubits=n_qubits, reps=1, entanglement="linear",
         )
 
     combined      = feature_map.compose(ansatz)
