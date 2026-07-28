@@ -18,7 +18,11 @@ from datetime import datetime
 from typing import Optional
 
 import matplotlib.pyplot as plt
-import seaborn as sns
+
+try:
+    import seaborn as sns
+except ImportError:  # pragma: no cover - optional dependency
+    sns = None
 
 from src.application.dto import ConfusionMatrixData
 from src.application.ports import IMetricsReporterPort
@@ -81,16 +85,23 @@ class MatplotlibMetricsReporter(IMetricsReporterPort):
             
             # Plot
             fig, ax = plt.subplots(figsize=(8, 6))
-            sns.heatmap(
-                matrix_normalized,
-                annot=matrix,  # Mostrar números absolutos
-                fmt='d',
-                cmap='Blues',
-                cbar_kws={'label': 'Proporción'},
-                xticklabels=['Negativo', 'Positivo'],
-                yticklabels=['Negativo', 'Positivo'],
-                ax=ax
-            )
+            if sns is not None:
+                sns.heatmap(
+                    matrix_normalized,
+                    annot=matrix,  # Mostrar números absolutos
+                    fmt='d',
+                    cmap='Blues',
+                    cbar_kws={'label': 'Proporción'},
+                    xticklabels=['Negativo', 'Positivo'],
+                    yticklabels=['Negativo', 'Positivo'],
+                    ax=ax
+                )
+            else:
+                im = ax.imshow(matrix_normalized, cmap='Blues')
+                fig.colorbar(im, ax=ax, label='Proporción')
+                for i in range(matrix.shape[0]):
+                    for j in range(matrix.shape[1]):
+                        ax.text(j, i, f"{matrix[i, j]}", ha='center', va='center')
             
             ax.set_xlabel('Predicción')
             ax.set_ylabel('Verdadero')

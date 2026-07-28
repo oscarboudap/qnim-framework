@@ -1,0 +1,16 @@
+{
+  "default": {
+    "description": "Perfil base de 12 qubits para reproducciones rápidas",
+    "n_qubits": 12,
+    "feature_map_reps": 2,
+    "ansatz_reps": 2,
+    "entanglement": "linear"
+  },
+  "ibm_27q_proposal": {
+    "description": "Perfil propuesto para 27 qubits, feature map reps=1, ansatz reps=2, entanglement lineal",
+    "n_qubits": 27,
+    "feature_map_reps": 1,
+    "ansatz_reps": 2,
+    "entanglement": "linear"
+  }
+}

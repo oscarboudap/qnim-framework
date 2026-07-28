@@ -199,7 +199,12 @@ def chebyshev_preprocess(X: np.ndarray, stats: Optional[tuple] = None) -> np.nda
 # ─────────────────────────────────────────────────────────────────────────────
 #  FEATURE MAP + ANSATZ COMPUESTOS (v3/v4 — sin cambios desde v4)
 # ─────────────────────────────────────────────────────────────────────────────
-def _build_feature_map_and_ansatz(n_qubits: int, reps: int = 2):
+def _build_feature_map_and_ansatz(
+    n_qubits: int,
+    feature_map_reps: int = 2,
+    ansatz_reps: int = 1,
+    entanglement: str = "linear",
+):
     """
     ZZFeatureMap nativo de Qiskit + EfficientSU2 en cadena.
 
@@ -236,12 +241,12 @@ def _build_feature_map_and_ansatz(n_qubits: int, reps: int = 2):
         try:
             from qiskit.circuit.library import zz_feature_map
             feature_map = zz_feature_map(
-                feature_dimension=n_qubits, reps=reps, entanglement="linear",
+                feature_dimension=n_qubits, reps=feature_map_reps, entanglement=entanglement,
             )
         except ImportError:
             from qiskit.circuit.library import ZZFeatureMap
             feature_map = ZZFeatureMap(
-                feature_dimension=n_qubits, reps=reps, entanglement="linear",
+                feature_dimension=n_qubits, reps=feature_map_reps, entanglement=entanglement,
             )
 
     x_params = feature_map.parameters  # ParameterView, indexable
@@ -249,12 +254,33 @@ def _build_feature_map_and_ansatz(n_qubits: int, reps: int = 2):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", DeprecationWarning)
         ansatz = EfficientSU2(
-            num_qubits=n_qubits, reps=1, entanglement="linear",
+            num_qubits=n_qubits, reps=ansatz_reps, entanglement=entanglement,
         )
 
     combined      = feature_map.compose(ansatz)
     ansatz_params = list(ansatz.parameters)
     return combined, x_params, ansatz_params
+def _prepare_feature_vector(xi: np.ndarray, n_features: int) -> np.ndarray:
+    """Ajusta el vector clásico al número de features requerido por el circuito."""
+    xi = np.asarray(xi, dtype=float).reshape(-1)
+    if len(xi) >= n_features:
+        return xi[:n_features]
+    return np.pad(xi, (0, n_features - len(xi)))
+
+
+def _prepare_feature_matrix(X: np.ndarray, n_features: int) -> np.ndarray:
+    """Ajusta una matriz de features al número de features requerido por el circuito."""
+    X = np.asarray(X, dtype=float)
+    if X.ndim != 2:
+        raise ValueError("X debe ser una matriz 2D")
+    if X.shape[1] == n_features:
+        return X
+    if X.shape[1] > n_features:
+        return X[:, :n_features]
+    pad_width = ((0, 0), (0, n_features - X.shape[1]))
+    return np.pad(X, pad_width, mode="constant")
+
+
 def _bind_sample(combined_run, x_params, ansatz_params, xi: np.ndarray, theta_fit: np.ndarray):
     """
     Enlaza UNA muestra (xi) + los pesos del ansatz al circuito combinado.
@@ -264,7 +290,8 @@ def _bind_sample(combined_run, x_params, ansatz_params, xi: np.ndarray, theta_fi
     len(ansatz_params) elementos, así que es seguro pasarle siempre el
     theta/weights completo sin pre-recortarlo a mano.
     """
-    x_dict = {p: float(v) for p, v in zip(x_params, xi[: len(x_params)])}
+    xi_padded = _prepare_feature_vector(xi, len(x_params))
+    x_dict = {p: float(v) for p, v in zip(x_params, xi_padded)}
     theta_dict = {p: float(v) for p, v in zip(ansatz_params, theta_fit[: len(ansatz_params)])}
     return combined_run.assign_parameters({**x_dict, **theta_dict})
 
@@ -483,13 +510,23 @@ def _predict_via_circuit(
     """
     from qiskit.primitives import StatevectorSampler
 
-    sampler = sampler or StatevectorSampler()
+    if sampler is None:
+        try:
+            from qiskit_aer.primitives import SamplerV2 as AerSamplerV2
+            from qiskit_aer import AerSimulator
+            if n_qubits >= 20:
+                noisy_backend = AerSimulator(method="statevector")
+                sampler = AerSamplerV2.from_backend(noisy_backend)
+            else:
+                sampler = StatevectorSampler()
+        except Exception:
+            sampler = StatevectorSampler()
     y_pred = np.zeros(len(X_cheb), dtype=int)
 
     for start in range(0, len(X_cheb), batch_size):
         chunk = X_cheb[start:start + batch_size]
         pubs = [
-            (_bind_sample(combined_run, x_params, ansatz_params, xi, theta),)
+            ( _bind_sample(combined_run, x_params, ansatz_params, xi, theta), [] )
             for xi in chunk
         ]
         job = sampler.run(pubs, shots=shots)
@@ -598,7 +635,9 @@ def _make_vqc_loss_fn(
     ibm_backend=None,
     remote_hardware: bool = False,
     batch_size_local: int = 64,
+    feature_map_reps: int = 2,
     ansatz_reps: int = 2,
+    entanglement: str = "linear",
     reference_shots: Optional[int] = None,
     readout_hidden_size: int = 16,
 ) -> Callable[[np.ndarray], float]:
@@ -633,8 +672,19 @@ def _make_vqc_loss_fn(
     try:
         from qiskit.primitives import StatevectorSampler
         from qiskit import transpile as _transpile
+        try:
+            from qiskit_aer.primitives import SamplerV2 as AerSamplerV2
+            from qiskit_aer import AerSimulator
+        except Exception:
+            AerSamplerV2 = None
+            AerSimulator = None
 
-        combined, x_params, ansatz_params = _build_feature_map_and_ansatz(n_qubits, reps=ansatz_reps)
+        combined, x_params, ansatz_params = _build_feature_map_and_ansatz(
+            n_qubits,
+            feature_map_reps=feature_map_reps,
+            ansatz_reps=ansatz_reps,
+            entanglement=entanglement,
+        )
         combined_with_meas = combined.copy()
         combined_with_meas.measure_all()
 
@@ -650,12 +700,27 @@ def _make_vqc_loss_fn(
         n_ansatz_params = len(ansatz_params)
         hidden_size = readout_hidden_size
 
-        train_stats = compute_chebyshev_stats(X_train)
-        X_cheb = chebyshev_preprocess(X_train, stats=train_stats)
+        X_train_proc = _prepare_feature_matrix(X_train, n_qubits)
+        train_stats = compute_chebyshev_stats(X_train_proc)
+        X_cheb = chebyshev_preprocess(X_train_proc, stats=train_stats)
         y_onehot = np.zeros((len(y_train), n_classes))
         y_onehot[np.arange(len(y_train)), y_train] = 1.0
 
-        sampler = backend_sampler if backend_sampler else StatevectorSampler()
+        if backend_sampler is not None:
+            sampler = backend_sampler
+        elif AerSamplerV2 is not None and AerSimulator is not None and n_qubits >= 20:
+            try:
+                noisy_backend = AerSimulator(method="statevector")
+                sampler = AerSamplerV2.from_backend(noisy_backend)
+                logger.info(
+                    f"Usando sampler AerV2 con backend statevector para {n_qubits} qubits "
+                    f"(ruta de bajo consumo de memoria)."
+                )
+            except Exception as exc:
+                logger.warning(f"No se pudo construir sampler AerV2 ({exc}); usando StatevectorSampler")
+                sampler = StatevectorSampler()
+        else:
+            sampler = StatevectorSampler()
 
         # Batch fijo por iteración: se resamplea UNA VEZ por iteración
         # externa (refresh_batch), no en cada llamada a loss_fn.
@@ -681,7 +746,7 @@ def _make_vqc_loss_fn(
 
             try:
                 pubs = [
-                    (_bind_sample(combined_run, x_params, ansatz_params, xi, theta),)
+                    (_bind_sample(combined_run, x_params, ansatz_params, xi, theta), [])
                     for xi in X_batch
                 ]
                 job = sampler.run(pubs, shots=_shots)
@@ -703,7 +768,8 @@ def _make_vqc_loss_fn(
 
             except Exception as e:
                 logger.debug(f"Batched circuit eval failed: {e}, usando proxy clasico de emergencia")
-                x_mean = X_batch.mean(axis=0)  # n_qubits columnas, mismo ancho que W1
+                x_mean = X_batch.mean(axis=0)
+                x_mean = _prepare_feature_vector(x_mean, n_qubits)
                 p = np.clip(_readout_mlp_probs(x_mean, W1, b1, W2, b2), 1e-10, 1.0)
                 return float(-np.mean([np.dot(yi, np.log(p)) for yi in y_batch]))
 
@@ -722,7 +788,7 @@ def _make_vqc_loss_fn(
             W1, b1, W2, b2 = _split_readout_mlp(theta_eval, n_ansatz_params, n_qubits, n_classes, hidden_size)
             try:
                 pubs = [
-                    (_bind_sample(combined_run, x_params, ansatz_params, xi, theta_eval),)
+                    (_bind_sample(combined_run, x_params, ansatz_params, xi, theta_eval), [])
                     for xi in X_ref
                 ]
                 job = sampler.run(pubs, shots=_ref_shots)
@@ -815,7 +881,9 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         noise_aware_training: bool = False,
         training_batch_size: int = 64,
         patience: int = 20,
+        feature_map_reps: int = 2,
         ansatz_reps: int = 2,
+        entanglement: str = "linear",
         learning_rate: float = 0.01,
         reference_shots: Optional[int] = None,
         readout_refit_every: int = 10,
@@ -832,7 +900,9 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         self.noise_aware_training = noise_aware_training
         self.training_batch_size = training_batch_size
         self.patience = patience
+        self.feature_map_reps = feature_map_reps
         self.ansatz_reps = ansatz_reps
+        self.entanglement = entanglement
         self.learning_rate = learning_rate
         self.reference_shots = reference_shots
         # Cada cuántas iteraciones se reajusta clásicamente la capa de
@@ -906,7 +976,9 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 ibm_backend=_transpile_target,
                 remote_hardware=False,  # el entrenamiento NUNCA envía jobs reales
                 batch_size_local=self.training_batch_size,
+                feature_map_reps=self.feature_map_reps,
                 ansatz_reps=self.ansatz_reps,
+                entanglement=self.entanglement,
                 reference_shots=self.reference_shots,
                 readout_hidden_size=self.readout_hidden_size,
             )
@@ -1056,7 +1128,12 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             (None, None) si falla.
         """
         try:
-            combined, x_params, ansatz_params = _build_feature_map_and_ansatz(n_qubits, reps=self.ansatz_reps)
+            combined, x_params, ansatz_params = _build_feature_map_and_ansatz(
+                n_qubits,
+                feature_map_reps=self.feature_map_reps,
+                ansatz_reps=self.ansatz_reps,
+                entanglement=self.entanglement,
+            )
             combined_run = combined.copy()
             combined_run.measure_all()
 
@@ -1065,8 +1142,10 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 weights, n_ansatz_params, n_qubits, n_classes, self.readout_hidden_size
             )
 
-            train_stats = compute_chebyshev_stats(X_train)
-            X_cheb = chebyshev_preprocess(X_val, stats=train_stats)
+            X_train_proc = _prepare_feature_matrix(X_train, n_qubits)
+            X_val_proc = _prepare_feature_matrix(X_val, n_qubits)
+            train_stats = compute_chebyshev_stats(X_train_proc)
+            X_cheb = chebyshev_preprocess(X_val_proc, stats=train_stats)
 
             y_pred = _predict_via_circuit(
                 combined_run, x_params, ansatz_params, weights, W1, b1, W2, b2,
@@ -1231,11 +1310,18 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             n_hw = min(self.n_hw_validation, len(dataset.X_val))
             rng = np.random.default_rng(123)
             idx = rng.choice(len(dataset.X_val), n_hw, replace=False)
-            train_stats = compute_chebyshev_stats(dataset.X_train)
-            X_hw = chebyshev_preprocess(dataset.X_val[idx], stats=train_stats)
+            X_train_proc = _prepare_feature_matrix(dataset.X_train, n_qubits)
+            X_val_proc = _prepare_feature_matrix(dataset.X_val[idx], n_qubits)
+            train_stats = compute_chebyshev_stats(X_train_proc)
+            X_hw = chebyshev_preprocess(X_val_proc, stats=train_stats)
             y_hw = dataset.y_val[idx]
 
-            combined, x_params, ansatz_params = _build_feature_map_and_ansatz(n_qubits, reps=self.ansatz_reps)
+            combined, x_params, ansatz_params = _build_feature_map_and_ansatz(
+                n_qubits,
+                feature_map_reps=self.feature_map_reps,
+                ansatz_reps=self.ansatz_reps,
+                entanglement=self.entanglement,
+            )
             isa_unitary = transpile(combined, backend=backend, optimization_level=1)
 
             n_ansatz_params = len(ansatz_params)
@@ -1252,7 +1338,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                     bound_unitary = _bind_sample(isa_unitary, x_params, ansatz_params, xi, weights)
                     folded = _fold_circuit_global(bound_unitary, scale)
                     folded.measure_all()
-                    pubs.append((folded,))
+                    pubs.append((folded, []))
 
             job = sampler.run(pubs, shots=self.shots_validation)
             logger.info(
@@ -1368,9 +1454,11 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 weights, n_ansatz_params, num_qubits, n_classes, self.readout_hidden_size
             )
 
+            X_train_proc = _prepare_feature_matrix(X_train, num_qubits) if X_train is not None else None
+            X_val_proc = _prepare_feature_matrix(X_val, num_qubits)
             train_stats = (
-                compute_chebyshev_stats(X_train) if X_train is not None
-                else compute_chebyshev_stats(X_val)
+                compute_chebyshev_stats(X_train_proc) if X_train_proc is not None
+                else compute_chebyshev_stats(X_val_proc)
             )
 
             from qiskit.primitives import StatevectorSampler
@@ -1378,8 +1466,8 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
 
             for snr in snr_levels:
                 noise_scale = 20.0 / snr
-                X_noisy = X_val + np.random.normal(0, noise_scale * X_val.std(), X_val.shape)
-                X_noisy_clipped = np.clip(X_noisy, X_val.min(), X_val.max())
+                X_noisy = X_val_proc + np.random.normal(0, noise_scale * X_val_proc.std(), X_val_proc.shape)
+                X_noisy_clipped = np.clip(X_noisy, X_val_proc.min(), X_val_proc.max())
                 X_noisy_cheb = chebyshev_preprocess(X_noisy_clipped, stats=train_stats)
 
                 y_pred = _predict_via_circuit(

@@ -4,7 +4,7 @@ Sustituye scripts/generate_results.py
 """
 
 import logging
-import argparse, sys, time, os
+import argparse, sys, time, os, json
 from pathlib import Path
 logging.basicConfig(
     level=logging.INFO,
@@ -33,13 +33,21 @@ def parse_args():
                    help="Batch QNSPSA. Usar >=512 con datasets grandes.")
     p.add_argument("--patience",            type=int,   default=20)
     p.add_argument("--learning-rate",       type=float, default=0.03)
+    p.add_argument("--n-qubits",            type=int,   default=12,
+                   help="Número de qubits del VQC; usar 27 para el perfil propuesto.")
+    p.add_argument("--feature-map-reps",    type=int,   default=2,
+                   help="Repeticiones del feature map; usar 1 para el perfil 27q propuesto.")
     p.add_argument("--ansatz-reps",         type=int,   default=2)
+    p.add_argument("--entanglement",        type=str,   default="linear",
+                   choices=["linear", "circular", "full"])
     p.add_argument("--shots",               type=int,   default=1024)
     p.add_argument("--reference-shots",     type=int,   default=4096)
     p.add_argument("--readout-hidden-size", type=int,   default=32)
     p.add_argument("--readout-refit-every", type=int,   default=10)
     p.add_argument("--use-zne",             action="store_true")
     p.add_argument("--n-feynman-params",    type=int,   default=4)
+    p.add_argument("--profile",             type=str,   default=None,
+                   help="Nombre de un perfil en config/experiment_profiles.json")
 
     # Generador
     p.add_argument("--ligo-pca",           action="store_true",
@@ -72,6 +80,24 @@ def main():
                "PhysicsSSTGAdapter (PyCBC)" if args.physics_generator else
                "SSTGAdapter (marcador artificial)")
 
+    profile_config = None
+    if args.profile:
+        profile_path = ROOT / "config" / "experiment_profiles.json"
+        try:
+            with profile_path.open("r", encoding="utf-8") as fh:
+                profiles = json.load(fh)
+            if args.profile in profiles:
+                profile_config = profiles[args.profile]
+                args.n_qubits = profile_config.get("n_qubits", args.n_qubits)
+                args.feature_map_reps = profile_config.get("feature_map_reps", args.feature_map_reps)
+                args.ansatz_reps = profile_config.get("ansatz_reps", args.ansatz_reps)
+                args.entanglement = profile_config.get("entanglement", args.entanglement)
+                print(f"  Perfil cargado:         {args.profile} ({profile_config.get('description', '')})")
+            else:
+                print(f"  ⚠️  Perfil no encontrado: {args.profile}")
+        except Exception as exc:
+            print(f"  ⚠️  No se pudo cargar el perfil {args.profile}: {exc}")
+
     print("=" * 70)
     print("  QNIM Framework — Resultados Experimentales")
     print("=" * 70)
@@ -85,6 +111,10 @@ def main():
             print(f"  Eventos train/clase:    {args.n_per_class}")
             print(f"  Eventos val/clase:      {args.n_val_per_class}")
     print(f"  max_iter:               {args.max_iter}")
+    print(f"  n_qubits:               {args.n_qubits}")
+    print(f"  feature_map_reps:       {args.feature_map_reps}")
+    print(f"  ansatz_reps:            {args.ansatz_reps}")
+    print(f"  entanglement:           {args.entanglement}")
     print(f"  batch_size:             {args.batch_size}")
     print(f"  patience:               {args.patience}")
     print(f"  learning_rate:          {args.learning_rate}")
@@ -142,7 +172,9 @@ def main():
         from src.infrastructure.qiskit_vqc_trainer import QiskitVQCTrainer
         trainer = QiskitVQCTrainer(
             mode=args.mode,
+            feature_map_reps=args.feature_map_reps,
             ansatz_reps=args.ansatz_reps,
+            entanglement=args.entanglement,
             patience=args.patience,
             learning_rate=args.learning_rate,
             readout_hidden_size=args.readout_hidden_size,
@@ -151,7 +183,7 @@ def main():
         )
         t0 = time.perf_counter()
         result = trainer.train_and_evaluate(
-            dataset, n_qubits=12, shots=args.shots,
+            dataset, n_qubits=args.n_qubits, shots=args.shots,
             max_iterations=args.max_iter,
             use_zne=args.use_zne,
             n_feynman_params=args.n_feynman_params,
@@ -174,7 +206,7 @@ def main():
                         _, acc_ibm = trainer._validate_on_ibm(
                             weights=final_w,
                             dataset=dataset,
-                            n_qubits=12,
+                            n_qubits=args.n_qubits,
                             use_zne=args.use_zne,
                         )
                     else:
@@ -205,7 +237,10 @@ def main():
             batch_size=args.batch_size,
             patience=args.patience,
             learning_rate=args.learning_rate,
+            n_qubits=args.n_qubits,
+            feature_map_reps=args.feature_map_reps,
             ansatz_reps=args.ansatz_reps,
+            entanglement=args.entanglement,
             shots=args.shots,
             reference_shots=args.reference_shots,
             readout_hidden_size=args.readout_hidden_size,

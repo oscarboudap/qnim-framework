@@ -15,7 +15,10 @@ class ExperimentConfig:
     batch_size: int       = 64
     patience: int         = 20
     learning_rate: float  = 0.03
+    n_qubits: int = 12
+    feature_map_reps: int = 2
     ansatz_reps: int      = 2
+    entanglement: str = "linear"
     shots: int            = 1024
     reference_shots: int  = 4096
     readout_hidden_size: int  = 16
@@ -35,6 +38,14 @@ class ExperimentConfig:
             raise ValueError(f"mode debe ser 'sim' o 'ibm'")
         if self.readout_hidden_size < 4:
             raise ValueError("readout_hidden_size debe ser >= 4")
+        if not 2 <= self.n_qubits <= 27:
+            raise ValueError("n_qubits debe estar entre 2 y 27 para el flujo de hardware/TFM")
+        if self.feature_map_reps < 1 or self.feature_map_reps > 3:
+            raise ValueError("feature_map_reps debe estar entre 1 y 3")
+        if self.ansatz_reps < 1 or self.ansatz_reps > 4:
+            raise ValueError("ansatz_reps debe estar entre 1 y 4")
+        if self.entanglement not in {"linear", "circular", "full"}:
+            raise ValueError("entanglement debe ser 'linear', 'circular' o 'full'")
         if self.use_ligo_pca and self.use_physics_generator:
             raise ValueError("--ligo-pca y --physics-generator son mutuamente excluyentes")
 
@@ -98,7 +109,9 @@ class GenerateExperimentResultsUseCase:
         cfg = self.config
         return QiskitVQCTrainer(
             mode=cfg.mode,
+            feature_map_reps=cfg.feature_map_reps,
             ansatz_reps=cfg.ansatz_reps,
+            entanglement=cfg.entanglement,
             patience=cfg.patience,
             learning_rate=cfg.learning_rate,
             readout_hidden_size=cfg.readout_hidden_size,
@@ -110,7 +123,7 @@ class GenerateExperimentResultsUseCase:
         dataset = self._build_dataset()
         trainer = self._build_vqc_trainer()
         result  = trainer.train_and_evaluate(
-            dataset, n_qubits=12, shots=cfg.shots,
+            dataset, n_qubits=cfg.n_qubits, shots=cfg.shots,
             max_iterations=cfg.max_iterations,
             use_zne=cfg.use_zne,
             n_feynman_params=cfg.n_feynman_params,
@@ -126,7 +139,7 @@ class GenerateExperimentResultsUseCase:
                         _, accuracy_ibm = trainer._validate_on_ibm(
                             weights=final_w,
                             dataset=dataset,
-                            n_qubits=12,
+                            n_qubits=cfg.n_qubits,
                             use_zne=cfg.use_zne,
                         )
                     else:
@@ -145,5 +158,9 @@ class GenerateExperimentResultsUseCase:
             loss_history=result.loss_history,
             confusion_matrix=result.confusion_matrix,
             metadata={"use_ligo_pca": cfg.use_ligo_pca,
-                      "approximant": cfg.physics_approximant},
+                      "approximant": cfg.physics_approximant,
+                      "n_qubits": cfg.n_qubits,
+                      "feature_map_reps": cfg.feature_map_reps,
+                      "ansatz_reps": cfg.ansatz_reps,
+                      "entanglement": cfg.entanglement},
         )
