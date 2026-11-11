@@ -1,0 +1,17 @@
+{
+  "gps_start": 1256655618,
+  "gps_end_exclusive": 1269363618,
+  "event_catalog": "IAS O3b, 23 events; not a complete substitute for GWTC-3",
+  "event_margin_seconds": 2.0,
+  "gate_interval_policy": "center +/- zero half-width +/- taper, clipped to O3b",
+  "gate_intervals": 2213,
+  "event_intervals": 23,
+  "intervals_csv": "data\\o3b\\exclusions\\exclusion_intervals.csv",
+  "availability_segments_included": false,
+  "warning": "These are exclusion masks only; they do not establish H1_DATA/L1_DATA availability.",
+  "sources": {
+    "H1": "https://zenodo.org/api/records/5636796/files/H1-O3_GATES_1238166018-31197600.txt/content",
+    "L1": "https://zenodo.org/api/records/5636796/files/L1-O3_GATES_1238166018-31197600.txt/content",
+    "ias_events": "https://zenodo.org/api/records/15540558/files/ias-o3b.json/content"
+  }
+}

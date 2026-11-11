@@ -1,0 +1,5667 @@
+{
+  "catalog_name": "IAS-O3b",
+  "release_date": "2023-11-10",
+  "catalog_description": "The IAS-O3b catalog contains 23 binary black hole mergers in the public data from the second half of the third observing run (O3b) of advanced LIGO and advanced Virgo. Of these, 6 were reported there for the first time.",
+  "doi": "10.5281/zenodo.15540558",
+  "events": [
+    {
+      "event_name": "GW191105_143521",
+      "gps": 1256999739.9,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 0.99,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 4,
+              "best": 0.0076,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 2,
+              "best": 9.38,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 1,
+              "best": 7.7,
+              "upper_error": 0.8,
+              "lower_error": -0.7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 1,
+              "best": 9.6,
+              "upper_error": 0.8,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 1,
+              "best": 10.6,
+              "upper_error": 15.2,
+              "lower_error": -1.7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 1,
+              "best": 7.5,
+              "upper_error": 1.4,
+              "lower_error": -4.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 1,
+              "best": 18.3,
+              "upper_error": 11.3,
+              "lower_error": -1.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.0,
+              "upper_error": 0.6,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 1200,
+              "upper_error": 900,
+              "lower_error": -500,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.24,
+              "upper_error": 0.13,
+              "lower_error": -0.1,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 1,
+              "best": 7.7,
+              "upper_error": 0.8,
+              "lower_error": -0.7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 1,
+              "best": 9.6,
+              "upper_error": 0.6,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 1,
+              "best": 10.8,
+              "upper_error": 10.3,
+              "lower_error": -1.9,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 1,
+              "best": 7.4,
+              "upper_error": 1.5,
+              "lower_error": -3.8,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 1,
+              "best": 18.4,
+              "upper_error": 6.9,
+              "lower_error": -1.5,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 2,
+              "best": -0.02,
+              "upper_error": 0.32,
+              "lower_error": -0.17,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 1200,
+              "upper_error": 900,
+              "lower_error": -500,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.24,
+              "upper_error": 0.13,
+              "lower_error": -0.11,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW191117_023843",
+      "gps": 1257993541.8,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 0.56,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 1,
+              "best": 1.9,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 1,
+              "best": 8.4,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 2,
+              "best": 7.98,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 45,
+              "upper_error": 15,
+              "lower_error": -9,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 85,
+              "upper_error": 17,
+              "lower_error": -14,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 62,
+              "upper_error": 26,
+              "lower_error": -15,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 44,
+              "upper_error": 17,
+              "lower_error": -15,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 110,
+              "upper_error": 30,
+              "lower_error": -30,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.4,
+              "upper_error": 0.6,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 6000,
+              "upper_error": 4000,
+              "lower_error": -3000,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.9,
+              "upper_error": 0.5,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 45,
+              "upper_error": 16,
+              "lower_error": -9,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 88,
+              "upper_error": 14,
+              "lower_error": -15,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 64,
+              "upper_error": 27,
+              "lower_error": -16,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 43,
+              "upper_error": 19,
+              "lower_error": -14,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 110,
+              "upper_error": 30,
+              "lower_error": -20,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.1,
+              "upper_error": 0.3,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 6000,
+              "upper_error": 5000,
+              "lower_error": -3000,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.9,
+              "upper_error": 0.5,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW191129_134029",
+      "gps": 1259070047.0,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 0.69,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 2,
+              "best": 0.46,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 1,
+              "best": 3.3,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 2,
+              "best": 8.92,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 1,
+              "best": 7.3,
+              "upper_error": 0.6,
+              "lower_error": -0.6,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 1,
+              "best": 8.5,
+              "upper_error": 0.7,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 12,
+              "upper_error": 13,
+              "lower_error": -3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 6,
+              "upper_error": 2,
+              "lower_error": -3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 1,
+              "best": 18.2,
+              "upper_error": 10.1,
+              "lower_error": -1.9,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": 0.1,
+              "upper_error": 0.6,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 800,
+              "upper_error": 600,
+              "lower_error": -300,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.17,
+              "upper_error": 0.1,
+              "lower_error": -0.07,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 1,
+              "best": 7.3,
+              "upper_error": 0.5,
+              "lower_error": -0.6,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 1,
+              "best": 8.5,
+              "upper_error": 0.4,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 12,
+              "upper_error": 8,
+              "lower_error": -3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 6,
+              "upper_error": 2,
+              "lower_error": -2,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 1,
+              "best": 18.0,
+              "upper_error": 5.7,
+              "lower_error": -1.7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": 0.1,
+              "upper_error": 0.2,
+              "lower_error": -0.2,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 800,
+              "upper_error": 500,
+              "lower_error": -400,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.16,
+              "upper_error": 0.09,
+              "lower_error": -0.07,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW191204_110529",
+      "gps": 1259492747.5,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 0.68,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 2,
+              "best": 0.93,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 1,
+              "best": 3.7,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 2,
+              "best": 8.4,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 25,
+              "upper_error": 11,
+              "lower_error": -8,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 45,
+              "upper_error": 19,
+              "lower_error": -22,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 100,
+              "upper_error": 50,
+              "lower_error": -80,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 12,
+              "upper_error": 13,
+              "lower_error": -4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 110,
+              "upper_error": 60,
+              "lower_error": -70,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": 0.8,
+              "upper_error": 0.2,
+              "lower_error": -1.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 4000,
+              "upper_error": 4000,
+              "lower_error": -3000,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.6,
+              "upper_error": 0.5,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 20,
+              "upper_error": 14,
+              "lower_error": -4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 27,
+              "upper_error": 32,
+              "lower_error": -4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 28,
+              "upper_error": 69,
+              "lower_error": -7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 19,
+              "upper_error": 7,
+              "lower_error": -10,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 48,
+              "upper_error": 67,
+              "lower_error": -9,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": 0.1,
+              "upper_error": 0.3,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 2200,
+              "upper_error": 2900,
+              "lower_error": -1300,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.4,
+              "upper_error": 0.4,
+              "lower_error": -0.2,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW191204_171526",
+      "gps": 1259514944.0,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 1.0,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 1,
+              "best": 16.5,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 1,
+              "best": 8.7,
+              "upper_error": 0.5,
+              "lower_error": -0.7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 1,
+              "best": 9.7,
+              "upper_error": 0.3,
+              "lower_error": -0.6,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 13,
+              "upper_error": 14,
+              "lower_error": -3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 1,
+              "best": 8.0,
+              "upper_error": 1.6,
+              "lower_error": -4.1,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 1,
+              "best": 20.9,
+              "upper_error": 10.5,
+              "lower_error": -1.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": 0.1,
+              "upper_error": 0.4,
+              "lower_error": -0.2,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 500,
+              "upper_error": 400,
+              "lower_error": -200,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.11,
+              "upper_error": 0.06,
+              "lower_error": -0.05,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 1,
+              "best": 8.7,
+              "upper_error": 0.4,
+              "lower_error": -0.6,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 2,
+              "best": 9.7,
+              "upper_error": 0.15,
+              "lower_error": -0.55,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 12,
+              "upper_error": 8,
+              "lower_error": -2,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 1,
+              "best": 8.2,
+              "upper_error": 1.6,
+              "lower_error": -3.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 1,
+              "best": 20.7,
+              "upper_error": 4.7,
+              "lower_error": -1.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 2,
+              "best": 0.13,
+              "upper_error": 0.16,
+              "lower_error": -0.2,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 500,
+              "upper_error": 300,
+              "lower_error": -200,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.11,
+              "upper_error": 0.06,
+              "lower_error": -0.05,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW191215_223052",
+      "gps": 1260484270.3,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 1.0,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 1,
+              "best": 10.8,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 18,
+              "upper_error": 10,
+              "lower_error": -2,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 25,
+              "upper_error": 20,
+              "lower_error": -5,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 26,
+              "upper_error": 38,
+              "lower_error": -5,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 17,
+              "upper_error": 6,
+              "lower_error": -7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 43,
+              "upper_error": 38,
+              "lower_error": -5,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.1,
+              "upper_error": 0.6,
+              "lower_error": -0.5,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 2000,
+              "upper_error": 2300,
+              "lower_error": -900,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.36,
+              "upper_error": 0.32,
+              "lower_error": -0.14,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 18,
+              "upper_error": 9,
+              "lower_error": -2,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 25,
+              "upper_error": 18,
+              "lower_error": -3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 26,
+              "upper_error": 35,
+              "lower_error": -5,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 18,
+              "upper_error": 5,
+              "lower_error": -8,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 44,
+              "upper_error": 35,
+              "lower_error": -5,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.1,
+              "upper_error": 0.4,
+              "lower_error": -0.2,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 2000,
+              "upper_error": 1800,
+              "lower_error": -900,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.36,
+              "upper_error": 0.27,
+              "lower_error": -0.15,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW191222_033537",
+      "gps": 1261020955.1,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 1.0,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 1,
+              "best": 11.8,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 33,
+              "upper_error": 24,
+              "lower_error": -7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 51,
+              "upper_error": 53,
+              "lower_error": -15,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 45,
+              "upper_error": 100,
+              "lower_error": -9,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 32,
+              "upper_error": 14,
+              "lower_error": -16,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 77,
+              "upper_error": 102,
+              "lower_error": -12,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.1,
+              "upper_error": 0.6,
+              "lower_error": -0.7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 3200,
+              "upper_error": 2600,
+              "lower_error": -1900,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.5,
+              "upper_error": 0.4,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 33,
+              "upper_error": 26,
+              "lower_error": -6,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 51,
+              "upper_error": 50,
+              "lower_error": -14,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 46,
+              "upper_error": 104,
+              "lower_error": -10,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 32,
+              "upper_error": 15,
+              "lower_error": -16,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 78,
+              "upper_error": 108,
+              "lower_error": -12,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.1,
+              "upper_error": 0.3,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 3300,
+              "upper_error": 2100,
+              "lower_error": -2000,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.5,
+              "upper_error": 0.3,
+              "lower_error": -0.2,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW191228_085854",
+      "gps": 1261558752.1,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 0.67,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 2,
+              "best": 0.57,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 1,
+              "best": 4.0,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 2,
+              "best": 8.99,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 1,
+              "best": 6.3,
+              "upper_error": 0.3,
+              "lower_error": -0.2,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 2,
+              "best": 7.22,
+              "upper_error": 0.07,
+              "lower_error": -0.06,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 1,
+              "best": 9.7,
+              "upper_error": 4.2,
+              "lower_error": -1.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 1,
+              "best": 5.5,
+              "upper_error": 0.9,
+              "lower_error": -1.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 1,
+              "best": 15.3,
+              "upper_error": 2.7,
+              "lower_error": -0.9,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 2,
+              "best": -0.89,
+              "upper_error": 0.42,
+              "lower_error": -0.1,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 700,
+              "upper_error": 200,
+              "lower_error": -200,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.14,
+              "upper_error": 0.05,
+              "lower_error": -0.04,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 2,
+              "best": 6.39,
+              "upper_error": 0.2,
+              "lower_error": -0.23,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 2,
+              "best": 7.35,
+              "upper_error": 0.05,
+              "lower_error": -0.06,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 21,
+              "upper_error": 3,
+              "lower_error": -4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 1,
+              "best": 3.0,
+              "upper_error": 0.5,
+              "lower_error": -0.2,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 24,
+              "upper_error": 2,
+              "lower_error": -3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 2,
+              "best": -0.02,
+              "upper_error": 0.11,
+              "lower_error": -0.22,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 730,
+              "upper_error": 240,
+              "lower_error": -180,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.15,
+              "upper_error": 0.04,
+              "lower_error": -0.04,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW191230_180458",
+      "gps": 1261764316.4,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 1.0,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 2,
+              "best": 9.94,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 36,
+              "upper_error": 26,
+              "lower_error": -8,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 60,
+              "upper_error": 60,
+              "lower_error": -20,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 50,
+              "upper_error": 106,
+              "lower_error": -11,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 36,
+              "upper_error": 14,
+              "lower_error": -19,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 86,
+              "upper_error": 103,
+              "lower_error": -15,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.1,
+              "upper_error": 0.6,
+              "lower_error": -0.7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 4000,
+              "upper_error": 4000,
+              "lower_error": -2000,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.7,
+              "upper_error": 0.4,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 36,
+              "upper_error": 27,
+              "lower_error": -7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 63,
+              "upper_error": 54,
+              "lower_error": -19,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 49,
+              "upper_error": 111,
+              "lower_error": -10,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 36,
+              "upper_error": 15,
+              "lower_error": -18,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 85,
+              "upper_error": 110,
+              "lower_error": -13,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.0,
+              "upper_error": 0.3,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 5000,
+              "upper_error": 2000,
+              "lower_error": -3000,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.7,
+              "upper_error": 0.4,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW200109_195634",
+      "gps": 1262635012.9,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 0.81,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 2,
+              "best": 0.23,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 1,
+              "best": 1.1,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 2,
+              "best": 8.01,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 49,
+              "upper_error": 18,
+              "lower_error": -12,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 104,
+              "upper_error": 15,
+              "lower_error": -25,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 69,
+              "upper_error": 24,
+              "lower_error": -18,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 48,
+              "upper_error": 22,
+              "lower_error": -17,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 120,
+              "upper_error": 40,
+              "lower_error": -30,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": 0.5,
+              "upper_error": 0.3,
+              "lower_error": -0.8,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 7000,
+              "upper_error": 6000,
+              "lower_error": -3000,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 1.0,
+              "upper_error": 0.7,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 45,
+              "upper_error": 14,
+              "lower_error": -9,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 92,
+              "upper_error": 13,
+              "lower_error": -17,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 62,
+              "upper_error": 22,
+              "lower_error": -13,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 44,
+              "upper_error": 18,
+              "lower_error": -15,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 106,
+              "upper_error": 33,
+              "lower_error": -19,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": 0.1,
+              "upper_error": 0.4,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 7000,
+              "upper_error": 4000,
+              "lower_error": -3000,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 1.0,
+              "upper_error": 0.5,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW200128_022011",
+      "gps": 1264213229.9,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 1.0,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 2,
+              "best": 9.94,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 32,
+              "upper_error": 31,
+              "lower_error": -7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 50,
+              "upper_error": 74,
+              "lower_error": -14,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 43,
+              "upper_error": 105,
+              "lower_error": -9,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 32,
+              "upper_error": 15,
+              "lower_error": -16,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 75,
+              "upper_error": 113,
+              "lower_error": -14,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": 0.1,
+              "upper_error": 0.5,
+              "lower_error": -0.7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 3500,
+              "upper_error": 3800,
+              "lower_error": -2000,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.6,
+              "upper_error": 0.5,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 32,
+              "upper_error": 33,
+              "lower_error": -7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 50,
+              "upper_error": 67,
+              "lower_error": -12,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 43,
+              "upper_error": 106,
+              "lower_error": -10,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 32,
+              "upper_error": 15,
+              "lower_error": -15,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 75,
+              "upper_error": 115,
+              "lower_error": -14,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": 0.1,
+              "upper_error": 0.2,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 3000,
+              "upper_error": 4000,
+              "lower_error": -2000,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.6,
+              "upper_error": 0.4,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW200208_130117",
+      "gps": 1265202095.9,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 1.0,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 2,
+              "best": 9.84,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 27,
+              "upper_error": 22,
+              "lower_error": -5,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 38,
+              "upper_error": 57,
+              "lower_error": -9,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 38,
+              "upper_error": 92,
+              "lower_error": -7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 26,
+              "upper_error": 12,
+              "lower_error": -12,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 64,
+              "upper_error": 95,
+              "lower_error": -9,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.1,
+              "upper_error": 0.7,
+              "lower_error": -0.7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 2300,
+              "upper_error": 4400,
+              "lower_error": -1100,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.42,
+              "upper_error": 0.56,
+              "lower_error": -0.18,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 27,
+              "upper_error": 24,
+              "lower_error": -4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 39,
+              "upper_error": 56,
+              "lower_error": -7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 39,
+              "upper_error": 92,
+              "lower_error": -8,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 27,
+              "upper_error": 11,
+              "lower_error": -13,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 66,
+              "upper_error": 98,
+              "lower_error": -8,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.1,
+              "upper_error": 0.4,
+              "lower_error": -0.2,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 2400,
+              "upper_error": 3700,
+              "lower_error": -1100,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.43,
+              "upper_error": 0.49,
+              "lower_error": -0.18,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW200209_085452",
+      "gps": 1265273710.2,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 0.95,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 3,
+              "best": 0.023,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 3,
+              "best": 0.068,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 2,
+              "best": 9.35,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 25,
+              "upper_error": 25,
+              "lower_error": -5,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 41,
+              "upper_error": 63,
+              "lower_error": -12,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 35,
+              "upper_error": 86,
+              "lower_error": -8,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 25,
+              "upper_error": 14,
+              "lower_error": -11,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 59,
+              "upper_error": 95,
+              "lower_error": -10,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.2,
+              "upper_error": 0.7,
+              "lower_error": -0.7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 4000,
+              "upper_error": 4000,
+              "lower_error": -2000,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.6,
+              "upper_error": 0.5,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 26,
+              "upper_error": 25,
+              "lower_error": -5,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 42,
+              "upper_error": 60,
+              "lower_error": -9,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 34,
+              "upper_error": 85,
+              "lower_error": -7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 26,
+              "upper_error": 13,
+              "lower_error": -11,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 60,
+              "upper_error": 95,
+              "lower_error": -9,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.1,
+              "upper_error": 0.4,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 4000,
+              "upper_error": 3000,
+              "lower_error": -2000,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.6,
+              "upper_error": 0.5,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW200210_100022",
+      "gps": 1265364040.8,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 0.52,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 1,
+              "best": 2.2,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 0,
+              "best": 10.0,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 2,
+              "best": 7.84,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 29,
+              "upper_error": 19,
+              "lower_error": -4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 69,
+              "upper_error": 67,
+              "lower_error": -14,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 74,
+              "upper_error": 15,
+              "lower_error": -17,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 17,
+              "upper_error": 29,
+              "lower_error": -4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 92,
+              "upper_error": 26,
+              "lower_error": -14,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 2,
+              "best": 0.92,
+              "upper_error": 0.07,
+              "lower_error": -0.42,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 10000,
+              "upper_error": 6000,
+              "lower_error": -4000,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 1.3,
+              "upper_error": 0.7,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 33,
+              "upper_error": 18,
+              "lower_error": -10,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 70,
+              "upper_error": 40,
+              "lower_error": -30,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 80,
+              "upper_error": 20,
+              "lower_error": -30,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 23,
+              "upper_error": 25,
+              "lower_error": -13,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 98,
+              "upper_error": 29,
+              "lower_error": -18,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": 0.4,
+              "upper_error": 0.4,
+              "lower_error": -0.6,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 7000,
+              "upper_error": 7000,
+              "lower_error": -3000,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 1.1,
+              "upper_error": 0.7,
+              "lower_error": -0.5,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW200216_220804",
+      "gps": 1265926102.9,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 0.62,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 2,
+              "best": 0.83,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 1,
+              "best": 5.4,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 2,
+              "best": 8.52,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 34,
+              "upper_error": 14,
+              "lower_error": -9,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 60,
+              "upper_error": 20,
+              "lower_error": -20,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 49,
+              "upper_error": 75,
+              "lower_error": -12,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 33,
+              "upper_error": 12,
+              "lower_error": -20,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 83,
+              "upper_error": 65,
+              "lower_error": -16,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": 0.1,
+              "upper_error": 0.5,
+              "lower_error": -0.8,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 5000,
+              "upper_error": 3000,
+              "lower_error": -3000,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.7,
+              "upper_error": 0.4,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 34,
+              "upper_error": 13,
+              "lower_error": -10,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 60,
+              "upper_error": 20,
+              "lower_error": -30,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 48,
+              "upper_error": 71,
+              "lower_error": -11,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 33,
+              "upper_error": 11,
+              "lower_error": -20,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 81,
+              "upper_error": 63,
+              "lower_error": -14,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": 0.1,
+              "upper_error": 0.3,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 5000,
+              "upper_error": 3000,
+              "lower_error": -3000,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.7,
+              "upper_error": 0.4,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW200219_094415",
+      "gps": 1266140673.2,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 1.0,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 1,
+              "best": 10.2,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 28,
+              "upper_error": 20,
+              "lower_error": -5,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 44,
+              "upper_error": 48,
+              "lower_error": -12,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 38,
+              "upper_error": 75,
+              "lower_error": -8,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 28,
+              "upper_error": 11,
+              "lower_error": -14,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 67,
+              "upper_error": 75,
+              "lower_error": -12,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.1,
+              "upper_error": 0.6,
+              "lower_error": -0.7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 3300,
+              "upper_error": 3400,
+              "lower_error": -1800,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.6,
+              "upper_error": 0.4,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 28,
+              "upper_error": 21,
+              "lower_error": -5,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 44,
+              "upper_error": 48,
+              "lower_error": -10,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 38,
+              "upper_error": 84,
+              "lower_error": -8,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 28,
+              "upper_error": 11,
+              "lower_error": -14,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 66,
+              "upper_error": 86,
+              "lower_error": -10,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.1,
+              "upper_error": 0.3,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 3500,
+              "upper_error": 2700,
+              "lower_error": -1900,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.6,
+              "upper_error": 0.3,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW200220_124850",
+      "gps": 1266238148.1,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 0.98,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 4,
+              "best": 0.0038,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 3,
+              "best": 0.019,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 2,
+              "best": 8.15,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 28,
+              "upper_error": 20,
+              "lower_error": -8,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 49,
+              "upper_error": 56,
+              "lower_error": -18,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 39,
+              "upper_error": 83,
+              "lower_error": -10,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 27,
+              "upper_error": 12,
+              "lower_error": -15,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 67,
+              "upper_error": 83,
+              "lower_error": -14,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.0,
+              "upper_error": 0.6,
+              "lower_error": -0.8,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 5000,
+              "upper_error": 5000,
+              "lower_error": -3000,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.7,
+              "upper_error": 0.7,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 28,
+              "upper_error": 20,
+              "lower_error": -7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 49,
+              "upper_error": 55,
+              "lower_error": -17,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 39,
+              "upper_error": 83,
+              "lower_error": -10,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 28,
+              "upper_error": 12,
+              "lower_error": -15,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 67,
+              "upper_error": 84,
+              "lower_error": -14,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.0,
+              "upper_error": 0.3,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 5000,
+              "upper_error": 4000,
+              "lower_error": -3000,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.7,
+              "upper_error": 0.6,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW200224_222234",
+      "gps": 1266618172.4,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 1.0,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 1,
+              "best": 18.1,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 32,
+              "upper_error": 22,
+              "lower_error": -7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 42,
+              "upper_error": 38,
+              "lower_error": -12,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 44,
+              "upper_error": 76,
+              "lower_error": -8,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 32,
+              "upper_error": 10,
+              "lower_error": -15,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 76,
+              "upper_error": 85,
+              "lower_error": -11,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": 0.1,
+              "upper_error": 0.4,
+              "lower_error": -0.7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 1500,
+              "upper_error": 1100,
+              "lower_error": -700,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.28,
+              "upper_error": 0.17,
+              "lower_error": -0.13,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 32,
+              "upper_error": 25,
+              "lower_error": -5,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 41,
+              "upper_error": 42,
+              "lower_error": -9,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 43,
+              "upper_error": 86,
+              "lower_error": -7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 32,
+              "upper_error": 10,
+              "lower_error": -15,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 75,
+              "upper_error": 96,
+              "lower_error": -8,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 2,
+              "best": 0.11,
+              "upper_error": 0.18,
+              "lower_error": -0.35,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 1500,
+              "upper_error": 900,
+              "lower_error": -800,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.29,
+              "upper_error": 0.13,
+              "lower_error": -0.14,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW200225_060421",
+      "gps": 1266645879.4,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 1.0,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 1,
+              "best": 12.3,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 15,
+              "upper_error": 2,
+              "lower_error": -2,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 18,
+              "upper_error": 4,
+              "lower_error": -3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 20,
+              "upper_error": 26,
+              "lower_error": -3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 14,
+              "upper_error": 3,
+              "lower_error": -7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 35,
+              "upper_error": 20,
+              "lower_error": -4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.2,
+              "upper_error": 0.7,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 1000,
+              "upper_error": 800,
+              "lower_error": -400,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.2,
+              "upper_error": 0.13,
+              "lower_error": -0.08,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 1,
+              "best": 14.6,
+              "upper_error": 2.2,
+              "lower_error": -1.5,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 1,
+              "best": 17.8,
+              "upper_error": 3.0,
+              "lower_error": -1.9,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 20,
+              "upper_error": 20,
+              "lower_error": -3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 14,
+              "upper_error": 3,
+              "lower_error": -6,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 34,
+              "upper_error": 15,
+              "lower_error": -3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 2,
+              "best": -0.11,
+              "upper_error": 0.34,
+              "lower_error": -0.2,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 1100,
+              "upper_error": 700,
+              "lower_error": -500,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.22,
+              "upper_error": 0.1,
+              "lower_error": -0.1,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW200225_075134",
+      "gps": 1266652312.6,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 0.6,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 1,
+              "best": 1.1,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 1,
+              "best": 6.5,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 2,
+              "best": 8.33,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 38,
+              "upper_error": 10,
+              "lower_error": -7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 61,
+              "upper_error": 17,
+              "lower_error": -11,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 51,
+              "upper_error": 17,
+              "lower_error": -10,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 37,
+              "upper_error": 13,
+              "lower_error": -11,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 88,
+              "upper_error": 24,
+              "lower_error": -15,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.5,
+              "upper_error": 0.9,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 3800,
+              "upper_error": 3000,
+              "lower_error": -1900,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.6,
+              "upper_error": 0.4,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 38,
+              "upper_error": 10,
+              "lower_error": -7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 66,
+              "upper_error": 9,
+              "lower_error": -12,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 52,
+              "upper_error": 15,
+              "lower_error": -11,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 38,
+              "upper_error": 12,
+              "lower_error": -12,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 89,
+              "upper_error": 22,
+              "lower_error": -15,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.1,
+              "upper_error": 0.3,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 4000,
+              "upper_error": 3000,
+              "lower_error": -2000,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 1,
+              "best": 0.7,
+              "upper_error": 0.3,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW200311_115853",
+      "gps": 1267963151.4,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 1.0,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 3,
+              "best": 0.001,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": true,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 1,
+              "best": 16.1,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 26,
+              "upper_error": 24,
+              "lower_error": -4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 33,
+              "upper_error": 37,
+              "lower_error": -8,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 37,
+              "upper_error": 69,
+              "lower_error": -7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 26,
+              "upper_error": 13,
+              "lower_error": -11,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 62,
+              "upper_error": 80,
+              "lower_error": -7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.1,
+              "upper_error": 0.6,
+              "lower_error": -0.6,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 1200,
+              "upper_error": 1100,
+              "lower_error": -600,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.24,
+              "upper_error": 0.16,
+              "lower_error": -0.11,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 0,
+              "best": 27,
+              "upper_error": 22,
+              "lower_error": -3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 0,
+              "best": 33,
+              "upper_error": 36,
+              "lower_error": -5,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 36,
+              "upper_error": 72,
+              "lower_error": -5,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 0,
+              "best": 27,
+              "upper_error": 11,
+              "lower_error": -12,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 62,
+              "upper_error": 82,
+              "lower_error": -4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": -0.0,
+              "upper_error": 0.3,
+              "lower_error": -0.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 1200,
+              "upper_error": 800,
+              "lower_error": -600,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.24,
+              "upper_error": 0.12,
+              "lower_error": -0.11,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW200316_215756",
+      "gps": 1268431094.1,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 0.92,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 3,
+              "best": 0.034,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 2,
+              "best": 0.19,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 2,
+              "best": 9.79,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 1,
+              "best": 8.8,
+              "upper_error": 0.6,
+              "lower_error": -1.2,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 1,
+              "best": 10.9,
+              "upper_error": 0.8,
+              "lower_error": -0.6,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 25,
+              "upper_error": 26,
+              "lower_error": -14,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 1,
+              "best": 4.5,
+              "upper_error": 4.8,
+              "lower_error": -1.7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 30,
+              "upper_error": 24,
+              "lower_error": -11,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": 0.5,
+              "upper_error": 0.3,
+              "lower_error": -0.6,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 1200,
+              "upper_error": 1500,
+              "lower_error": -400,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.23,
+              "upper_error": 0.24,
+              "lower_error": -0.07,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 1,
+              "best": 8.7,
+              "upper_error": 0.6,
+              "lower_error": -1.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 1,
+              "best": 10.8,
+              "upper_error": 0.4,
+              "lower_error": -0.5,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 0,
+              "best": 20,
+              "upper_error": 11,
+              "lower_error": -9,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 1,
+              "best": 5.2,
+              "upper_error": 4.1,
+              "lower_error": -1.6,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 0,
+              "best": 26,
+              "upper_error": 9,
+              "lower_error": -7,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 1,
+              "best": 0.3,
+              "upper_error": 0.2,
+              "lower_error": -0.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 1200,
+              "upper_error": 1600,
+              "lower_error": -500,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.23,
+              "upper_error": 0.25,
+              "lower_error": -0.08,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    },
+    {
+      "event_name": "GW200316_235947",
+      "gps": 1268438405.9,
+      "search": [
+        {
+          "pipeline_name": "IAS",
+          "parameters": [
+            {
+              "parameter_name": "pastro",
+              "decimal_places": 2,
+              "best": 0.52,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "far",
+              "decimal_places": 1,
+              "best": 1.7,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "far_global",
+              "decimal_places": 0,
+              "best": 11.0,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "1/year"
+            },
+            {
+              "parameter_name": "snr",
+              "decimal_places": 2,
+              "best": 8.33,
+              "upper_error": null,
+              "lower_error": null,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ]
+        }
+      ],
+      "gracedb_id": null,
+      "pe_sets": [
+        {
+          "pe_set_name": "IAS prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 2,
+              "best": 4.15,
+              "upper_error": 0.2,
+              "lower_error": -0.18,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 2,
+              "best": 4.85,
+              "upper_error": 0.04,
+              "lower_error": -0.02,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 1,
+              "best": 6.4,
+              "upper_error": 4.9,
+              "lower_error": -1.4,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 1,
+              "best": 3.6,
+              "upper_error": 1.0,
+              "lower_error": -1.3,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 1,
+              "best": 10.1,
+              "upper_error": 3.5,
+              "lower_error": -0.8,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 2,
+              "best": -0.11,
+              "upper_error": 0.34,
+              "lower_error": -0.12,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 800,
+              "upper_error": 300,
+              "lower_error": -200,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.17,
+              "upper_error": 0.05,
+              "lower_error": -0.05,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": true,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        },
+        {
+          "pe_set_name": "LVK prior",
+          "waveform_family": "IMRPhenomXPHM",
+          "parameters": [
+            {
+              "parameter_name": "chirp_mass_source",
+              "decimal_places": 2,
+              "best": 4.17,
+              "upper_error": 0.23,
+              "lower_error": -0.19,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chirp_mass",
+              "decimal_places": 2,
+              "best": 4.86,
+              "upper_error": 0.02,
+              "lower_error": -0.02,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_1_source",
+              "decimal_places": 1,
+              "best": 7.1,
+              "upper_error": 2.0,
+              "lower_error": -1.9,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "mass_2_source",
+              "decimal_places": 1,
+              "best": 3.3,
+              "upper_error": 1.1,
+              "lower_error": -0.6,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "total_mass_source",
+              "decimal_places": 1,
+              "best": 10.5,
+              "upper_error": 1.4,
+              "lower_error": -1.0,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Msun"
+            },
+            {
+              "parameter_name": "chi_eff",
+              "decimal_places": 2,
+              "best": -0.05,
+              "upper_error": 0.16,
+              "lower_error": -0.14,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            },
+            {
+              "parameter_name": "luminosity_distance",
+              "decimal_places": 0,
+              "best": 800,
+              "upper_error": 300,
+              "lower_error": -300,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": "Mpc"
+            },
+            {
+              "parameter_name": "redshift",
+              "decimal_places": 2,
+              "best": 0.16,
+              "upper_error": 0.06,
+              "lower_error": -0.06,
+              "is_upper_bound": false,
+              "is_lower_bound": false,
+              "unit": null
+            }
+          ],
+          "data_url": "https://zenodo.org/records/15540558",
+          "is_preferred": false,
+          "links": [
+            {
+              "url": "https://zenodo.org/records/15540558",
+              "content_type": "posterior_samples",
+              "description": "Zenodo release with posterior samples for the IAS O3b catalog."
+            }
+          ]
+        }
+      ],
+      "detectors": null,
+      "event_description": "False-alarm rates are computed within each template bank; the search used 6 independent template banks. However, we also report global false-alarm rates which are combined over all the template banks. The reported SNR is that recovered by the search pipeline, which includes the LIGO Hanford and Livingston detectors only. See Mehta et al. (2025) for details."
+    }
+  ],
+  "schema_version": "0.1.0a3"
+}

@@ -1,0 +1,37 @@
+{
+  "dataset": "O3b_4KHZ_R1",
+  "gps_start": 1256655618,
+  "gps_end_exclusive": 1269363618,
+  "window_seconds": 4,
+  "quality_flags_intersected": [
+    "H1_DATA",
+    "H1_CBC_CAT1",
+    "H1_CBC_CAT2",
+    "H1_CBC_CAT3",
+    "H1_NO_CBC_HW_INJ",
+    "L1_DATA",
+    "L1_CBC_CAT1",
+    "L1_CBC_CAT2",
+    "L1_CBC_CAT3",
+    "L1_NO_CBC_HW_INJ"
+  ],
+  "gate_mask_csv": "data\\o3b\\exclusions\\exclusion_intervals.csv",
+  "event_catalog": "data\\o3b\\events\\GWTC-3-confident.json",
+  "events_in_o3b": 35,
+  "event_margin_seconds": 2.0,
+  "gate_policy": "exclude H1/L1 gate intervals including taper, as listed in the local mask CSV",
+  "candidate_windows_available": 2069600,
+  "target_windows": {
+    "train": 6495,
+    "validation": 645,
+    "test": 1305
+  },
+  "assigned_windows": {
+    "train": 6495,
+    "validation": 645,
+    "test": 1305
+  },
+  "targets_met": true,
+  "split_policy": "chronological and disjoint; no strain files downloaded",
+  "status": "candidate, requires review of catalog/veto methodology before final use"
+}
