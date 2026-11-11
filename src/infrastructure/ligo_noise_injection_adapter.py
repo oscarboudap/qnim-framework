@@ -281,7 +281,7 @@ class LIGONoiseInjectionAdapter:
         n_pca = min(self.n_pca_fit, len(X_train_raw) - 1, X_train_raw.shape[1])
         if n_pca < self.n_components:
             raise ValueError("El conjunto de entrenamiento no permite ajustar n_pca_fit componentes")
-        pca = PCA(n_components=n_pca, svd_solver="full", random_state=seed)
+        pca = PCA(n_components=n_pca, svd_solver="randomized", random_state=seed)
         pca.fit(X_train_raw)
         X_train_pca = pca.transform(X_train_raw)[:, :self.n_components]
         X_val_pca = pca.transform(X_val_raw)[:, :self.n_components]

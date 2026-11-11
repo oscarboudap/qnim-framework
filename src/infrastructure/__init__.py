@@ -30,95 +30,39 @@ Exception Framework:
     - ReportingException
 """
 
-# ============================================================================
-# STORAGE ADAPTERS
-# ============================================================================
+from importlib import import_module
 
-from src.infrastructure.storage.hdf5_exporter import (
-    HDF5Exporter as StorageHDF5Exporter,
-)
 
-from src.infrastructure.storage.quantum_dataloader import (
-    QuantumDatasetLoader,
-)
+_EXPORTS = {
+    "InfrastructureException": (".exceptions", "InfrastructureException"),
+    "DataLoaderException": (".exceptions", "DataLoaderException"),
+    "StorageException": (".exceptions", "StorageException"),
+    "QuantumComputeException": (".exceptions", "QuantumComputeException"),
+    "TrainingException": (".exceptions", "TrainingException"),
+    "PreprocessingException": (".exceptions", "PreprocessingException"),
+    "ReportingException": (".exceptions", "ReportingException"),
+    "StorageHDF5Exporter": (".storage.hdf5_exporter", "HDF5Exporter"),
+    "QuantumDatasetLoader": (".storage.quantum_dataloader", "QuantumDatasetLoader"),
+    "MassiveDatasetLoader": (".storage.massive_loader", "MassiveDatasetLoader"),
+    "NealSimulatedAnnealerAdapter": (".neal_annealer_adapter", "NealSimulatedAnnealerAdapter"),
+    "IBMQuantumAdapter": (".ibm_quantum_adapter", "IBMQuantumAdapter"),
+    "QiskitVQCTrainer": (".qiskit_vqc_trainer", "QiskitVQCTrainer"),
+    "SklearnPreprocessor": (".sklearn_preprocessing_adapter", "SklearnPreprocessor"),
+    "MatplotlibMetricsReporter": (".matplotlib_metrics_reporter", "MatplotlibMetricsReporter"),
+    "SSTGAdapter": (".sstg_adapter", "SSTGAdapter"),
+}
 
-from src.infrastructure.storage.massive_loader import (
-    MassiveDatasetLoader,
-)
+__all__ = list(_EXPORTS)
 
-# ============================================================================
-# QUANTUM COMPUTING ADAPTERS
-# ============================================================================
 
-from src.infrastructure.neal_annealer_adapter import (
-    NealSimulatedAnnealerAdapter,
-)
+def __getattr__(name: str):
+    try:
+        module_name, attribute_name = _EXPORTS[name]
+    except KeyError as exc:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from exc
 
-from src.infrastructure.ibm_quantum_adapter import (
-    IBMQuantumAdapter,
-)
-
-# ============================================================================
-# APPLICATION PORT IMPLEMENTATIONS (NEW ADAPTERS)
-# ============================================================================
-
-from src.infrastructure.qiskit_vqc_trainer import (
-    QiskitVQCTrainer,
-)
-
-from src.infrastructure.sklearn_preprocessing_adapter import (
-    SklearnPreprocessor,
-)
-
-from src.infrastructure.matplotlib_metrics_reporter import (
-    MatplotlibMetricsReporter,
-)
-
-from src.infrastructure.sstg_adapter import (
-    SSTGAdapter,
-)
-
-# ============================================================================
-# EXCEPTION FRAMEWORK
-# ============================================================================
-
-from src.infrastructure.exceptions import (
-    InfrastructureException,
-    DataLoaderException,
-    StorageException,
-    QuantumComputeException,
-    TrainingException,
-    PreprocessingException,
-    ReportingException,
-)
-
-# ============================================================================
-# EXPORTS: All public API
-# ============================================================================
-
-__all__ = [
-    # Exceptions
-    "InfrastructureException",
-    "DataLoaderException",
-    "StorageException",
-    "QuantumComputeException",
-    "TrainingException",
-    "PreprocessingException",
-    "ReportingException",
-    
-    # Storage Adapters (IStoragePort, IDataLoaderPort)
-    "StorageHDF5Exporter",
-    "QuantumDatasetLoader",
-    "MassiveDatasetLoader",
-    
-    # Quantum Computing Adapters (IQuantumOptimizerPort, IGateBasedQuantumComputer)
-    "NealSimulatedAnnealerAdapter",
-    "IBMQuantumAdapter",
-    
-    # Application Port Implementations
-    "QiskitVQCTrainer",              # Implements IQuantumMLTrainerPort
-    "SklearnPreprocessor",           # Implements IPreprocessingPort
-    "MatplotlibMetricsReporter",     # Implements IMetricsReporterPort
-    "SSTGAdapter",                   # Implements ISyntheticDataGeneratorPort
-]
+    module = import_module(module_name, __name__)
+    value = getattr(module, attribute_name)
+    globals()[name] = value
+    return value
 

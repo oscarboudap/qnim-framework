@@ -541,15 +541,22 @@ def _predict_via_circuit(
     from qiskit.primitives import StatevectorSampler
 
     if sampler is None:
-        try:
-            from qiskit_aer.primitives import SamplerV2 as AerSamplerV2
-            from qiskit_aer import AerSimulator
-            if n_qubits >= 20:
-                noisy_backend = AerSimulator(method="statevector")
-                sampler = AerSamplerV2.from_backend(noisy_backend)
-            else:
-                sampler = StatevectorSampler()
-        except Exception:
+        if n_qubits >= 20:
+            try:
+                from qiskit import transpile
+                from qiskit_aer.primitives import SamplerV2 as AerSamplerV2
+                from qiskit_aer import AerSimulator
+            except Exception as exc:
+                raise RuntimeError(
+                    "Qiskit Aer es necesario para simular circuitos de 20 o más qubits"
+                ) from exc
+
+            noisy_backend = AerSimulator(method="matrix_product_state")
+            combined_run = transpile(
+                combined_run, backend=noisy_backend, optimization_level=1
+            )
+            sampler = AerSamplerV2.from_backend(noisy_backend)
+        else:
             sampler = StatevectorSampler()
     y_pred = np.zeros(len(X_cheb), dtype=int)
 
@@ -745,17 +752,27 @@ def _make_vqc_loss_fn(
 
         if backend_sampler is not None:
             sampler = backend_sampler
-        elif AerSamplerV2 is not None and AerSimulator is not None and n_qubits >= 20:
+        elif n_qubits >= 20:
+            if AerSamplerV2 is None or AerSimulator is None:
+                raise RuntimeError(
+                    "Qiskit Aer es necesario para simular circuitos de 20 o más qubits"
+                )
             try:
-                noisy_backend = AerSimulator(method="statevector")
+                noisy_backend = AerSimulator(method="matrix_product_state")
                 sampler = AerSamplerV2.from_backend(noisy_backend)
+                combined_run = _transpile(
+                    combined_with_meas,
+                    backend=noisy_backend,
+                    optimization_level=1,
+                )
                 logger.info(
-                    f"Usando sampler AerV2 con backend statevector para {n_qubits} qubits "
-                    f"(ruta de bajo consumo de memoria)."
+                    f"Usando sampler AerV2 con backend matrix_product_state para "
+                    f"{n_qubits} qubits."
                 )
             except Exception as exc:
-                logger.warning(f"No se pudo construir sampler AerV2 ({exc}); usando StatevectorSampler")
-                sampler = StatevectorSampler()
+                raise RuntimeError(
+                    f"No se pudo preparar el sampler MPS de Aer: {exc}"
+                ) from exc
         else:
             sampler = StatevectorSampler()
 
