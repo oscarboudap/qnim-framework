@@ -1,5 +1,7 @@
 .env
 venv/
+.venv312
+.venv-linux
 __pycache__/
 __pycache__/
 venv/

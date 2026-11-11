@@ -163,32 +163,32 @@ class MatplotlibResultsReporter(IResultsReporterPort):
 
     def _fig1_convergence(self, result: FullExperimentResultDTO, path: str):
         vqc = result.vqc_training or VQCTrainingResultDTO()
-        loss = vqc.loss_history or [0.891 * np.exp(-0.07 * i) + 0.18 for i in range(34)]
-        acc = vqc.accuracy_val_history or [0.45 + 0.46 * (1 - np.exp(-0.12 * e))
-                                            for e in range(1, len(loss) + 1)]
+        loss = vqc.loss_history
+        acc = vqc.accuracy_val_history
         epochs = range(1, len(loss) + 1)
 
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
 
-        ax1.semilogy(epochs, loss, color=_C["accent"], linewidth=2,
-                     label="QNSPSA-EML-Feynman", zorder=3)
-        spsa_loss = [loss[0] * np.exp(-0.004 * e) + 0.05 for e in range(1, 301)]
-        ax1.semilogy(range(1, 301), spsa_loss, color=_C["red"], linewidth=1.5,
-                     linestyle="--", alpha=0.7, label="SPSA estándar", zorder=2)
-        ax1.axvline(len(loss), color=_C["gold"], linestyle=":", linewidth=1.5, alpha=0.8)
+        if loss:
+            ax1.semilogy(epochs, loss, color=_C["accent"], linewidth=2,
+                         label="QNSPSA-EML-Feynman", zorder=3)
+            ax1.axvline(len(loss), color=_C["gold"], linestyle=":", linewidth=1.5, alpha=0.8)
+            ax1.legend(), ax1.set_xlim(left=1)
+        else:
+            ax1.text(0.5, 0.5, "Sin pérdidas medidas", ha="center", va="center",
+                     transform=ax1.transAxes)
         ax1.set_xlabel("Época"), ax1.set_ylabel("Pérdida (log)")
-        ax1.set_title("(a) Convergencia de la función de coste EML")
-        ax1.legend(), ax1.set_xlim(left=1)
+        ax1.set_title("(a) Convergencia medida")
 
-        ax2.plot(epochs, [a * 100 for a in acc], color=_C["green"],
-                 linewidth=2, label="Validación", zorder=3)
-        ax2.axhline(91, color=_C["gold"], linestyle=":", linewidth=1.2,
-                    alpha=0.7, label="Acc final 91%")
-        ax2.axhline(78, color=_C["red"], linestyle=":", linewidth=1.2,
-                    alpha=0.7, label="ResNet-18 78%")
+        if acc and len(acc) == len(loss):
+            ax2.plot(epochs, [a * 100 for a in acc], color=_C["green"],
+                     linewidth=2, label="Validación", zorder=3)
+            ax2.set_ylim(0, 100), ax2.legend()
+        else:
+            ax2.text(0.5, 0.5, "Sin accuracy por época medida", ha="center", va="center",
+                     transform=ax2.transAxes)
         ax2.set_xlabel("Época"), ax2.set_ylabel("Accuracy (%)")
-        ax2.set_title("(b) Accuracy de clasificación (10 teorías)")
-        ax2.legend(loc="lower right"), ax2.set_ylim(40, 100), ax2.set_xlim(left=1)
+        ax2.set_title("(b) Accuracy de validación medida")
 
         plt.suptitle("QNIM VQC — Dinámica de Entrenamiento", fontsize=13,
                      fontweight="bold", y=1.02)

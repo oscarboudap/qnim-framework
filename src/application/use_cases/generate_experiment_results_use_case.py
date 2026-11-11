@@ -3,43 +3,57 @@ generate_experiment_results_use_case.py  (v6 — añade use_ligo_pca)
 """
 
 from __future__ import annotations
-import os
 from dataclasses import dataclass, field
 from typing import Optional
+
+from src.ibm_credentials import get_ibm_quantum_token
 
 
 @dataclass
 class ExperimentConfig:
     mode: str = "sim"
-    max_iterations: int   = 60
-    batch_size: int       = 64
-    patience: int         = 20
-    learning_rate: float  = 0.03
+    max_iterations: int = 60
+    batch_size: int = 64
+    patience: int = 20
+    learning_rate: float = 0.03
     n_qubits: int = 12
+    pca_components: int = 12
+    n_pca_fit: int = 64
     feature_map_reps: int = 2
-    ansatz_reps: int      = 2
+    ansatz_reps: int = 2
     entanglement: str = "linear"
-    shots: int            = 1024
-    reference_shots: int  = 4096
-    readout_hidden_size: int  = 16
-    readout_refit_every: int  = 10
+    shots: int = 1024
+    reference_shots: int = 4096
+    readout_hidden_size: int = 16
+    readout_refit_every: int = 10
     max_classes: Optional[int] = None
-    # Generadores
     use_physics_generator: bool = False
-    use_ligo_pca: bool          = False   # [v6] pipeline exacto del paper
-    physics_approximant: str    = "IMRPhenomD"
-    n_per_class: int            = 80
-    n_val_per_class: int        = 20
+    use_ligo_pca: bool = False
+    physics_approximant: str = "IMRPhenomD"
+    n_per_class: int = 80
+    n_val_per_class: int = 20
+    n_test_per_class: int = 100
     n_feynman_params: int = 4
-    use_zne: bool         = False
+    use_zne: bool = False
+    train_on_hardware: bool = False
+    backend_name: str = "ibm_fez"
+    hardware_shots: int = 128
+    hardware_batch_size: int = 4
+    hardware_finetune_steps: int = 20
+    n_hw_validation: int = 1300
+    shots_validation: int = 2048
 
     def __post_init__(self):
         if self.mode not in ("sim", "ibm"):
-            raise ValueError(f"mode debe ser 'sim' o 'ibm'")
+            raise ValueError("mode debe ser 'sim' o 'ibm'")
         if self.readout_hidden_size < 4:
             raise ValueError("readout_hidden_size debe ser >= 4")
-        if not 2 <= self.n_qubits <= 27:
-            raise ValueError("n_qubits debe estar entre 2 y 27 para el flujo de hardware/TFM")
+        if not 2 <= self.n_qubits <= 32:
+            raise ValueError("n_qubits debe estar entre 2 y 32")
+        if not 1 <= self.pca_components <= self.n_qubits:
+            raise ValueError("pca_components debe estar entre 1 y n_qubits")
+        if self.n_pca_fit < self.pca_components:
+            raise ValueError("n_pca_fit debe ser >= pca_components")
         if self.feature_map_reps < 1 or self.feature_map_reps > 3:
             raise ValueError("feature_map_reps debe estar entre 1 y 3")
         if self.ansatz_reps < 1 or self.ansatz_reps > 4:
@@ -48,6 +62,10 @@ class ExperimentConfig:
             raise ValueError("entanglement debe ser 'linear', 'circular' o 'full'")
         if self.use_ligo_pca and self.use_physics_generator:
             raise ValueError("--ligo-pca y --physics-generator son mutuamente excluyentes")
+        if self.train_on_hardware and self.mode != "ibm":
+            raise ValueError("El entrenamiento remoto requiere mode='ibm'")
+        if self.train_on_hardware and self.hardware_finetune_steps < 1:
+            raise ValueError("hardware_finetune_steps debe ser positivo")
 
 
 @dataclass
@@ -72,12 +90,15 @@ class GenerateExperimentResultsUseCase:
         if cfg.use_ligo_pca:
             from src.infrastructure.ligo_pca_adapter import LIGOPCAAdapter
             adapter = LIGOPCAAdapter(
+                n_components=cfg.pca_components,
+                n_pca_fit=cfg.n_pca_fit,
                 approximant=cfg.physics_approximant,
                 max_classes=cfg.max_classes,
             )
             return adapter.generate_balanced_dataset(
                 n_per_class=cfg.n_per_class,
                 n_val_per_class=cfg.n_val_per_class,
+                n_test_per_class=cfg.n_test_per_class,
                 seed=42,
             )
 
@@ -105,10 +126,23 @@ class GenerateExperimentResultsUseCase:
             )
 
     def _build_vqc_trainer(self):
-        from src.infrastructure.qiskit_vqc_trainer import QiskitVQCTrainer
         cfg = self.config
+        token = get_ibm_quantum_token()
+        if cfg.mode == "ibm" and not token:
+            raise RuntimeError("IBM_QUANTUM_TOKEN no está configurado")
+
+        from src.infrastructure.qiskit_vqc_trainer import QiskitVQCTrainer
+
         return QiskitVQCTrainer(
             mode=cfg.mode,
+            token=token,
+            backend_name=cfg.backend_name,
+            train_on_hardware=cfg.train_on_hardware,
+            hardware_shots=cfg.hardware_shots,
+            hardware_batch_size=cfg.hardware_batch_size,
+            hardware_finetune_steps=cfg.hardware_finetune_steps,
+            n_hw_validation=cfg.n_hw_validation,
+            shots_validation=cfg.shots_validation,
             feature_map_reps=cfg.feature_map_reps,
             ansatz_reps=cfg.ansatz_reps,
             entanglement=cfg.entanglement,
@@ -120,35 +154,27 @@ class GenerateExperimentResultsUseCase:
 
     def execute(self) -> ExperimentResult:
         cfg     = self.config
-        dataset = self._build_dataset()
         trainer = self._build_vqc_trainer()
+        dataset = self._build_dataset()
         result  = trainer.train_and_evaluate(
             dataset, n_qubits=cfg.n_qubits, shots=cfg.shots,
+            n_features=cfg.pca_components,
             max_iterations=cfg.max_iterations,
+            use_real_hardware=cfg.mode == "ibm",
+            hardware_finetune_steps=(
+                cfg.hardware_finetune_steps if cfg.train_on_hardware else None
+            ),
             use_zne=cfg.use_zne,
             n_feynman_params=cfg.n_feynman_params,
         )
 
         accuracy_ibm = None
         if cfg.mode == "ibm":
-            token = os.environ.get("IBM_QUANTUM_TOKEN", "")
-            if token:
-                try:
-                    final_w = getattr(result, 'final_weights', None)
-                    if final_w is not None:
-                        _, accuracy_ibm = trainer._validate_on_ibm(
-                            weights=final_w,
-                            dataset=dataset,
-                            n_qubits=cfg.n_qubits,
-                            use_zne=cfg.use_zne,
-                        )
-                    else:
-                        print('  ⚠️  Sin pesos finales para validar en IBM.')
-                except Exception as exc:
-                    print(f"  ⚠️  Validación IBM falló: {exc}")
-            else:
-                print("  ⚠️  IBM_QUANTUM_TOKEN no exportado.")
-                print("       Ejecuta: export IBM_QUANTUM_TOKEN='tu_token'")
+            accuracy_ibm = (
+                result.accuracy_real_zne
+                if cfg.use_zne
+                else result.accuracy_real_no_zne
+            )
 
         return ExperimentResult(
             accuracy_sim=result.accuracy_sim,
@@ -160,6 +186,9 @@ class GenerateExperimentResultsUseCase:
             metadata={"use_ligo_pca": cfg.use_ligo_pca,
                       "approximant": cfg.physics_approximant,
                       "n_qubits": cfg.n_qubits,
+                      "pca_components": cfg.pca_components,
+                      "ibm_validation": getattr(trainer, "last_ibm_validation", None),
+                      "hardware_spsa": getattr(trainer, "last_hardware_spsa", None),
                       "feature_map_reps": cfg.feature_map_reps,
                       "ansatz_reps": cfg.ansatz_reps,
                       "entanglement": cfg.entanglement},

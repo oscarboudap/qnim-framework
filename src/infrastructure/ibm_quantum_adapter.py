@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from dotenv import load_dotenv
+from src.ibm_credentials import get_ibm_quantum_token
 
 # Qiskit Core & Runtime
 from qiskit import transpile
@@ -15,9 +15,8 @@ from src.domain.quantum.entities import VQCTopology
 
 class IBMQuantumAdapter(IGateBasedQuantumComputer):
     def __init__(self, weights_path: str):
-        load_dotenv()
         self.use_real_hardware = os.getenv("USE_REAL_HARDWARE", "False") == "True"
-        self.token = os.getenv("IBM_QUANTUM_TOKEN")
+        self.token = get_ibm_quantum_token()
         self.backend_name = os.getenv("IBM_BACKEND_NAME", "ibm_kingston")
         
         self.weights_path = weights_path

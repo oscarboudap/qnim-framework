@@ -137,7 +137,7 @@ class InferenceResult:
 class TrainingMetrics:
     """Métricas de entrenamiento del modelo cuántico."""
     final_training_loss: float
-    final_validation_accuracy: float
+    final_validation_accuracy: Optional[float]
     num_iterations_completed: int
     estimated_time_seconds: float
     model_checkpoint_path: str

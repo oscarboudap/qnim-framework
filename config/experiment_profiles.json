@@ -12,5 +12,68 @@
     "feature_map_reps": 1,
     "ansatz_reps": 2,
     "entanglement": "linear"
+  },
+  "qnim_12": {
+    "description": "Referencia: 12 qubits y 12 componentes PCA",
+    "n_qubits": 12,
+    "pca_components": 12,
+    "n_pca_fit": 32,
+    "feature_map_reps": 2,
+    "ansatz_reps": 2,
+    "entanglement": "linear"
+  },
+  "qnim_16": {
+    "description": "Escalado conjunto: 16 qubits y 16 componentes PCA",
+    "n_qubits": 16,
+    "pca_components": 16,
+    "n_pca_fit": 32,
+    "feature_map_reps": 2,
+    "ansatz_reps": 2,
+    "entanglement": "linear"
+  },
+  "qnim_20": {
+    "description": "Escalado conjunto: 20 qubits y 20 componentes PCA",
+    "n_qubits": 20,
+    "pca_components": 20,
+    "n_pca_fit": 32,
+    "feature_map_reps": 2,
+    "ansatz_reps": 2,
+    "entanglement": "linear"
+  },
+  "qnim_32": {
+    "description": "Escalado conjunto: 32 qubits y 32 componentes PCA",
+    "n_qubits": 32,
+    "pca_components": 32,
+    "n_pca_fit": 32,
+    "feature_map_reps": 2,
+    "ansatz_reps": 2,
+    "entanglement": "linear"
+  },
+  "qnim_16_control": {
+    "description": "Control de qubits: 16 qubits con 12 componentes PCA",
+    "n_qubits": 16,
+    "pca_components": 12,
+    "n_pca_fit": 32,
+    "feature_map_reps": 2,
+    "ansatz_reps": 2,
+    "entanglement": "linear"
+  },
+  "qnim_20_control": {
+    "description": "Control de qubits: 20 qubits con 12 componentes PCA",
+    "n_qubits": 20,
+    "pca_components": 12,
+    "n_pca_fit": 32,
+    "feature_map_reps": 2,
+    "ansatz_reps": 2,
+    "entanglement": "linear"
+  },
+  "qnim_32_control": {
+    "description": "Control de qubits: 32 qubits con 12 componentes PCA",
+    "n_qubits": 32,
+    "pca_components": 12,
+    "n_pca_fit": 32,
+    "feature_map_reps": 2,
+    "ansatz_reps": 2,
+    "entanglement": "linear"
   }
 }

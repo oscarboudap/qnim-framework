@@ -138,9 +138,9 @@ class VQCTrainingResult:
     loss_history: list[float] = field(default_factory=list)
     accuracy_val_history: list[float] = field(default_factory=list)
 
-    accuracy_sim: float = 0.0           # Aer statevector — MEDIDA REAL
-    accuracy_real_no_zne: float = 0.0   # IBM hardware sin ZNE
-    accuracy_real_zne: float = 0.0      # IBM hardware con ZNE
+    accuracy_sim: float = 0.0
+    accuracy_real_no_zne: Optional[float] = None
+    accuracy_real_zne: Optional[float] = None
 
     n_epochs: int = 0
     converged_early: bool = False
@@ -156,6 +156,7 @@ class VQCTrainingResult:
     qnspsa_converged: bool = False
 
     accuracy_vs_snr: dict = field(default_factory=dict)
+    hardware_spsa: Optional[dict] = None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -201,39 +202,21 @@ def chebyshev_preprocess(X: np.ndarray, stats: Optional[tuple] = None) -> np.nda
 # ─────────────────────────────────────────────────────────────────────────────
 def _build_feature_map_and_ansatz(
     n_qubits: int,
+    n_features: Optional[int] = None,
     feature_map_reps: int = 2,
     ansatz_reps: int = 1,
     entanglement: str = "linear",
 ):
-    """
-    ZZFeatureMap nativo de Qiskit + EfficientSU2 en cadena.
+    """Construye feature map y ansatz separando qubits del número de features."""
+    if n_features is None:
+        n_features = n_qubits
+    if not 1 <= n_features <= n_qubits:
+        raise ValueError(
+            f"Se requieren 1 <= n_features <= n_qubits; recibidos n_features={n_features}, n_qubits={n_qubits}"
+        )
 
-    FIX v10 (16 jul 2026) -- dos correcciones medidas con
-    analyze_depth_reduction_options.py:
-
-      1) `reps` ahora SÍ controla los reps del feature map. Antes
-         estaba fijo a reps=2 sin mirar el argumento -- cualquier
-         llamada con self.ansatz_reps distinto de 2 no tenía ningún
-         efecto real hasta este fix.
-
-      2) El ansatz cambia de entanglement='circular' a 'linear',
-         igual que el feature map. 'circular' cierra un enlace extra
-         qubit_(n-1)--qubit_0 que heavy-hex no tiene de forma nativa
-         (no es un anillo), obligando al compilador a rodear con SWAPs
-         para conectar los dos extremos. Con 'linear', ambas capas
-         piden solo conectividad en cadena, que existe siempre en
-         cualquier grafo conexo (heavy-hex lo es), para cualquier
-         n_qubits -- overhead de rutina ~0% de forma sistemática, no
-         por suerte de layout.
-
-      Efecto medido (ver results/depth_reduction_*.csv): profundidad
-      -26% a -60% y fidelidad estimada por error de puerta +7% a +305%
-      según n_qubits, comparado con la versión v9 (circular, reps=2
-      fijo). Contrapartida: menos interacciones ZZ en el feature map
-      cuando reps=1 -- pendiente de confirmar en simulador que esto no
-      perjudica el accuracy antes de darlo por bueno para el TFM.
-    """
     import warnings
+    from qiskit import QuantumCircuit
     from qiskit.circuit.library import EfficientSU2
 
     with warnings.catch_warnings():
@@ -241,44 +224,91 @@ def _build_feature_map_and_ansatz(
         try:
             from qiskit.circuit.library import zz_feature_map
             feature_map = zz_feature_map(
-                feature_dimension=n_qubits, reps=feature_map_reps, entanglement=entanglement,
+                feature_dimension=n_features,
+                reps=feature_map_reps,
+                entanglement=entanglement,
             )
         except ImportError:
             from qiskit.circuit.library import ZZFeatureMap
             feature_map = ZZFeatureMap(
-                feature_dimension=n_qubits, reps=feature_map_reps, entanglement=entanglement,
+                feature_dimension=n_features,
+                reps=feature_map_reps,
+                entanglement=entanglement,
             )
 
-    x_params = feature_map.parameters  # ParameterView, indexable
+    x_params = list(feature_map.parameters)
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", DeprecationWarning)
         ansatz = EfficientSU2(
-            num_qubits=n_qubits, reps=ansatz_reps, entanglement=entanglement,
+            num_qubits=n_qubits,
+            reps=ansatz_reps,
+            entanglement=entanglement,
         )
 
-    combined      = feature_map.compose(ansatz)
+    combined = QuantumCircuit(n_qubits)
+    combined.compose(
+        feature_map,
+        qubits=list(range(n_features)),
+        inplace=True,
+    )
+    combined.compose(
+        ansatz,
+        qubits=list(range(n_qubits)),
+        inplace=True,
+    )
     ansatz_params = list(ansatz.parameters)
     return combined, x_params, ansatz_params
+
+
 def _prepare_feature_vector(xi: np.ndarray, n_features: int) -> np.ndarray:
-    """Ajusta el vector clásico al número de features requerido por el circuito."""
+    """Valida que el vector tenga exactamente las features esperadas."""
     xi = np.asarray(xi, dtype=float).reshape(-1)
-    if len(xi) >= n_features:
-        return xi[:n_features]
-    return np.pad(xi, (0, n_features - len(xi)))
+    if xi.size != n_features:
+        raise ValueError(
+            f"Dimensionalidad incorrecta: se esperaban {n_features} features; se recibieron {xi.size}."
+        )
+    if not np.isfinite(xi).all():
+        raise ValueError("X contiene NaN o valores infinitos")
+    return xi
 
 
 def _prepare_feature_matrix(X: np.ndarray, n_features: int) -> np.ndarray:
-    """Ajusta una matriz de features al número de features requerido por el circuito."""
+    """Valida la matriz de features sin rellenar artificialmente con ceros."""
     X = np.asarray(X, dtype=float)
     if X.ndim != 2:
         raise ValueError("X debe ser una matriz 2D")
-    if X.shape[1] == n_features:
-        return X
-    if X.shape[1] > n_features:
-        return X[:, :n_features]
-    pad_width = ((0, 0), (0, n_features - X.shape[1]))
-    return np.pad(X, pad_width, mode="constant")
+    if X.shape[1] != n_features:
+        raise ValueError(
+            f"Dimensionalidad incorrecta: X tiene {X.shape[1]} features, pero el circuito espera {n_features}"
+        )
+    if not np.isfinite(X).all():
+        raise ValueError("X contiene NaN o valores infinitos")
+    return X
+
+
+def _stratified_indices(y: np.ndarray, max_samples: int, seed: int = 123) -> np.ndarray:
+    y = np.asarray(y)
+    if y.ndim != 1 or y.size == 0:
+        raise ValueError("y debe ser un vector 1D no vacío")
+    if max_samples < 1:
+        raise ValueError("max_samples debe ser positivo")
+
+    classes, counts = np.unique(y, return_counts=True)
+    if len(np.unique(counts)) != 1:
+        raise ValueError("El conjunto de test debe tener el mismo número de eventos por clase")
+    if max_samples >= len(y):
+        return np.arange(len(y))
+
+    per_class = max_samples // len(classes)
+    if per_class < 1:
+        raise ValueError("max_samples debe permitir al menos una muestra por clase")
+
+    rng = np.random.default_rng(seed)
+    return np.concatenate([
+        rng.choice(np.flatnonzero(y == label), size=per_class, replace=False)
+        for label in classes
+    ])
 
 
 def _bind_sample(combined_run, x_params, ansatz_params, xi: np.ndarray, theta_fit: np.ndarray):
@@ -629,17 +659,21 @@ def _make_vqc_loss_fn(
     X_train: np.ndarray,
     y_train: np.ndarray,
     n_qubits: int,
-    shots: int,
-    mode: str,
+    n_features: Optional[int] = None,
+    shots: int = 512,
+    mode: str = "sim",
     backend_sampler=None,
     ibm_backend=None,
     remote_hardware: bool = False,
     batch_size_local: int = 64,
+    hardware_shots: int = 128,
+    hardware_batch_size: int = 4,
     feature_map_reps: int = 2,
     ansatz_reps: int = 2,
     entanglement: str = "linear",
     reference_shots: Optional[int] = None,
     readout_hidden_size: int = 16,
+    random_seed: int = 42,
 ) -> Callable[[np.ndarray], float]:
     """
     Crea la función de coste para el VQC según el modo.
@@ -670,6 +704,8 @@ def _make_vqc_loss_fn(
         return make_synthetic_loss_fn(n_classes=n_classes, n_params=64, seed=42)
 
     try:
+        if n_features is None:
+            n_features = n_qubits
         from qiskit.primitives import StatevectorSampler
         from qiskit import transpile as _transpile
         try:
@@ -681,6 +717,7 @@ def _make_vqc_loss_fn(
 
         combined, x_params, ansatz_params = _build_feature_map_and_ansatz(
             n_qubits,
+            n_features=n_features,
             feature_map_reps=feature_map_reps,
             ansatz_reps=ansatz_reps,
             entanglement=entanglement,
@@ -700,7 +737,7 @@ def _make_vqc_loss_fn(
         n_ansatz_params = len(ansatz_params)
         hidden_size = readout_hidden_size
 
-        X_train_proc = _prepare_feature_matrix(X_train, n_qubits)
+        X_train_proc = _prepare_feature_matrix(X_train, n_features)
         train_stats = compute_chebyshev_stats(X_train_proc)
         X_cheb = chebyshev_preprocess(X_train_proc, stats=train_stats)
         y_onehot = np.zeros((len(y_train), n_classes))
@@ -725,24 +762,61 @@ def _make_vqc_loss_fn(
         # Batch fijo por iteración: se resamplea UNA VEZ por iteración
         # externa (refresh_batch), no en cada llamada a loss_fn.
         _batch_state: dict = {}
+        _batch_rng = np.random.default_rng(random_seed)
 
         def _draw_batch_size() -> int:
-            return min(4, len(X_cheb)) if remote_hardware else min(batch_size_local, len(X_cheb))
+            batch = hardware_batch_size if remote_hardware else batch_size_local
+            return min(batch, len(X_cheb))
 
         def _refresh_batch() -> None:
-            _batch_state["idx"] = np.random.choice(len(X_cheb), _draw_batch_size(), replace=False)
+            _batch_state["idx"] = _batch_rng.choice(
+                len(X_cheb), _draw_batch_size(), replace=False
+            )
 
         _refresh_batch()
 
-        def vqc_loss(theta: np.ndarray) -> float:
-            """Cross-entropy media sobre el batch FIJO de la iteración actual."""
-            _shots = 128 if remote_hardware else shots
-            idx = _batch_state["idx"]
+        _execution_state: dict = {}
+
+        def _execution_metadata(job, n_pubs: int, n_shots: int) -> dict:
+            try:
+                job_id = job.job_id()
+            except Exception:
+                job_id = None
+            qpu_seconds = None
+            try:
+                metrics = job.metrics()
+                usage = metrics.get("usage", {}) if isinstance(metrics, dict) else {}
+                raw_seconds = usage.get("quantum_seconds", metrics.get("quantum_seconds"))
+                if raw_seconds is not None:
+                    qpu_seconds = float(raw_seconds)
+            except Exception:
+                pass
+            return {
+                "job_ids": [str(job_id)] if job_id is not None else [],
+                "shots": n_pubs * n_shots,
+                "pubs": n_pubs,
+                "qpu_seconds": qpu_seconds,
+            }
+
+        def evaluate_batch(
+            theta: np.ndarray,
+            indices: np.ndarray,
+            shots_override: Optional[int] = None,
+        ) -> float:
+            """Evaluate one caller-selected batch without resampling it."""
+            idx = np.asarray(indices, dtype=int)
+            if idx.ndim != 1 or idx.size == 0:
+                raise ValueError("indices debe ser un vector 1D no vacío")
+            if np.any(idx < 0) or np.any(idx >= len(X_cheb)):
+                raise ValueError("indices contiene posiciones fuera del dataset")
             X_batch = X_cheb[idx]
             y_batch = y_onehot[idx]
             batch_size = len(idx)
+            _shots = shots_override or (hardware_shots if remote_hardware else shots)
 
             W1, b1, W2, b2 = _split_readout_mlp(theta, n_ansatz_params, n_qubits, n_classes, hidden_size)
+            job = None
+            execution = {"job_ids": [], "shots": 0, "pubs": 0, "qpu_seconds": None}
 
             try:
                 pubs = [
@@ -750,6 +824,8 @@ def _make_vqc_loss_fn(
                     for xi in X_batch
                 ]
                 job = sampler.run(pubs, shots=_shots)
+                execution = _execution_metadata(job, len(pubs), _shots)
+                _execution_state["last"] = execution
                 batch_result = job.result()
 
                 total_loss = 0.0
@@ -761,20 +837,29 @@ def _make_vqc_loss_fn(
                         class_probs = np.clip(class_probs, 1e-10, 1.0)
                         total_loss -= float(np.dot(yi, np.log(class_probs)))
                     except Exception as e_inner:
-                        logger.debug(f"Result {i} failed: {e_inner}, usando peor-caso neutro")
-                        total_loss -= float(np.log(1.0 / n_classes))
+                        raise RuntimeError(
+                            f"Fallo al procesar el resultado del circuito {i}: {e_inner}"
+                        ) from e_inner
 
+                execution = _execution_metadata(job, len(pubs), _shots)
+                _execution_state["last"] = execution
                 return total_loss / max(batch_size, 1)
 
             except Exception as e:
-                logger.debug(f"Batched circuit eval failed: {e}, usando proxy clasico de emergencia")
-                x_mean = X_batch.mean(axis=0)
-                x_mean = _prepare_feature_vector(x_mean, n_qubits)
-                p = np.clip(_readout_mlp_probs(x_mean, W1, b1, W2, b2), 1e-10, 1.0)
-                return float(-np.mean([np.dot(yi, np.log(p)) for yi in y_batch]))
+                logger.exception("Falló la evaluación del batch de circuitos.")
+                if job is not None:
+                    execution = _execution_metadata(job, len(pubs), _shots)
+                    _execution_state["last"] = execution
+                error = RuntimeError(f"Fallo de ejecución del circuito: {e}")
+                error.hardware_execution = execution
+                raise error from e
+
+        def vqc_loss(theta: np.ndarray) -> float:
+            """Cross-entropy media sobre el batch fijo de la iteración actual."""
+            return evaluate_batch(theta, _batch_state["idx"])
 
         _reference_size = min(max(128, 10 * n_classes), len(X_cheb))
-        _reference_idx = np.random.default_rng(2024).choice(
+        _reference_idx = np.random.default_rng(random_seed + 2024).choice(
             len(X_cheb), _reference_size, replace=False
         )
 
@@ -783,26 +868,7 @@ def _make_vqc_loss_fn(
         )
 
         def _evaluate_reference(theta_eval: np.ndarray) -> float:
-            X_ref = X_cheb[_reference_idx]
-            y_ref = y_onehot[_reference_idx]
-            W1, b1, W2, b2 = _split_readout_mlp(theta_eval, n_ansatz_params, n_qubits, n_classes, hidden_size)
-            try:
-                pubs = [
-                    (_bind_sample(combined_run, x_params, ansatz_params, xi, theta_eval), [])
-                    for xi in X_ref
-                ]
-                job = sampler.run(pubs, shots=_ref_shots)
-                batch_result = job.result()
-                total_loss = 0.0
-                for i, yi in enumerate(y_ref):
-                    counts = batch_result[i].data.meas.get_counts()
-                    qubit_probs = _qubit_marginal_probs(counts, n_qubits)
-                    class_probs = np.clip(_readout_mlp_probs(qubit_probs, W1, b1, W2, b2), 1e-10, 1.0)
-                    total_loss -= float(np.dot(yi, np.log(class_probs)))
-                return total_loss / len(y_ref)
-            except Exception as e:
-                logger.debug(f"Reference eval failed: {e}, devolviendo ln(n_classes)")
-                return float(np.log(n_classes))
+            return evaluate_batch(theta_eval, _reference_idx, _ref_shots)
 
         def warm_start_readout(
             ansatz_weights: np.ndarray, max_samples: int = 200
@@ -821,7 +887,9 @@ def _make_vqc_loss_fn(
                 (W1, b1, W2, b2)
             """
             n_warm = min(max_samples, len(X_cheb))
-            warm_idx = np.random.default_rng(7).choice(len(X_cheb), n_warm, replace=False)
+            warm_idx = np.random.default_rng(random_seed + 7).choice(
+                len(X_cheb), n_warm, replace=False
+            )
             X_warm = X_cheb[warm_idx]
             y_warm = y_train[warm_idx]
 
@@ -843,14 +911,15 @@ def _make_vqc_loss_fn(
 
         vqc_loss.refresh_batch = _refresh_batch
         vqc_loss.evaluate_reference = _evaluate_reference
+        vqc_loss.evaluate_batch = evaluate_batch
+        vqc_loss.last_execution = _execution_state
         vqc_loss.warm_start_readout = warm_start_readout
         vqc_loss.n_ansatz_params = n_ansatz_params
         vqc_loss.hidden_size = hidden_size
         return vqc_loss
 
     except ImportError as e:
-        logger.warning(f"Qiskit no disponible ({e}), usando función sintética")
-        return make_synthetic_loss_fn(n_classes=n_classes, n_params=64, seed=42)
+        raise RuntimeError(f"Qiskit no está disponible para construir el VQC: {e}") from e
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -873,6 +942,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         self,
         temp_dir: Optional[str] = None,
         use_real_hardware: bool = False,
+        train_on_hardware: bool = False,
         backend_name: str = "ibm_fez",
         token: str = "",
         mode: str = "fallback",
@@ -880,6 +950,10 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         shots_validation: int = 512,
         noise_aware_training: bool = False,
         training_batch_size: int = 64,
+        hardware_shots: int = 128,
+        hardware_batch_size: int = 4,
+        hardware_finetune_steps: int = 20,
+        random_seed: int = 42,
         patience: int = 20,
         feature_map_reps: int = 2,
         ansatz_reps: int = 2,
@@ -891,33 +965,149 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
     ):
         self.temp_dir = Path(temp_dir or tempfile.gettempdir()) / "qnim_qiskit"
         self.temp_dir.mkdir(parents=True, exist_ok=True)
-        self.use_real_hardware = use_real_hardware
+        from src.ibm_credentials import get_ibm_quantum_token
+
+        self.use_real_hardware = bool(use_real_hardware)
+        self.train_on_hardware = bool(train_on_hardware)
         self.backend_name = backend_name
-        self.token = token
+        self.token = get_ibm_quantum_token(token)
         self.mode = mode
         self.n_hw_validation = n_hw_validation
         self.shots_validation = shots_validation
         self.noise_aware_training = noise_aware_training
         self.training_batch_size = training_batch_size
+        self.hardware_shots = hardware_shots
+        self.hardware_batch_size = hardware_batch_size
+        self.hardware_finetune_steps = hardware_finetune_steps
+        self.random_seed = random_seed
         self.patience = patience
         self.feature_map_reps = feature_map_reps
         self.ansatz_reps = ansatz_reps
         self.entanglement = entanglement
         self.learning_rate = learning_rate
         self.reference_shots = reference_shots
-        # Cada cuántas iteraciones se reajusta clásicamente la capa de
-        # lectura durante el entrenamiento conjunto (además del
-        # warm-start inicial, que siempre se hace una vez). 0 o None
-        # desactiva el reajuste periódico.
         self.readout_refit_every = readout_refit_every
-        # NUEVO v8: neuronas de la capa oculta del MLP de lectura.
         self.readout_hidden_size = readout_hidden_size
+        self.last_ibm_validation = None
+        self.last_hardware_spsa = None
+
+    def fine_tune_on_hardware(
+        self,
+        initial_weights: np.ndarray,
+        X_train: np.ndarray,
+        y_train: np.ndarray,
+        n_qubits: int,
+        n_features: int,
+        steps: int = 20,
+        batch_size: Optional[int] = None,
+        shots: Optional[int] = None,
+        reference_every: int = 5,
+        reference_indices: Optional[np.ndarray] = None,
+        seed: int = 42,
+    ):
+        """Adapt simulator-trained weights with a bounded real-QPU SPSA budget."""
+        if self.mode != "ibm":
+            raise RuntimeError("El fine-tuning en hardware requiere mode='ibm'")
+        if not self.token:
+            raise RuntimeError("IBM_QUANTUM_TOKEN no está configurado")
+        X_train = _prepare_feature_matrix(X_train, n_features)
+        y_train = np.asarray(y_train, dtype=int)
+        if y_train.ndim != 1 or len(y_train) != len(X_train):
+            raise ValueError("y_train debe estar alineado con X_train")
+
+        initial_weights = np.asarray(initial_weights, dtype=float)
+        if initial_weights.ndim != 1 or not np.isfinite(initial_weights).all():
+            raise ValueError("initial_weights debe ser un vector finito")
+
+        batch_size = min(batch_size or self.hardware_batch_size, len(X_train))
+        shots = shots or self.hardware_shots
+        from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2
+
+        from src.infrastructure.hardware_spsa_optimizer import (
+            HardwareEvaluation,
+            HardwareSPSAConfig,
+            HardwareSPSAOptimizer,
+        )
+
+        try:
+            service = QiskitRuntimeService(
+                channel="ibm_quantum_platform", token=self.token
+            )
+            backend = service.backend(self.backend_name)
+            if backend.num_qubits < n_qubits:
+                raise ValueError(
+                    f"Backend {self.backend_name} ofrece {backend.num_qubits} qubits; "
+                    f"el circuito requiere {n_qubits}"
+                )
+            sampler = SamplerV2(mode=backend)
+            loss_fn = _make_vqc_loss_fn(
+                X_train=X_train,
+                y_train=y_train,
+                n_qubits=n_qubits,
+                n_features=n_features,
+                shots=shots,
+                mode="sim",
+                backend_sampler=sampler,
+                ibm_backend=backend,
+                remote_hardware=True,
+                batch_size_local=batch_size,
+                hardware_shots=shots,
+                hardware_batch_size=batch_size,
+                feature_map_reps=self.feature_map_reps,
+                ansatz_reps=self.ansatz_reps,
+                entanglement=self.entanglement,
+                reference_shots=self.reference_shots,
+                readout_hidden_size=self.readout_hidden_size,
+            )
+            if not hasattr(loss_fn, "evaluate_batch"):
+                raise RuntimeError("La pérdida no admite evaluación de minibatch explícito")
+
+            def evaluate(parameters, indices, evaluation_shots):
+                loss = loss_fn.evaluate_batch(parameters, indices, evaluation_shots)
+                usage = loss_fn.last_execution.get("last", {})
+                return HardwareEvaluation(
+                    loss=float(loss),
+                    job_ids=tuple(usage.get("job_ids", ())),
+                    shots=int(usage.get("shots", len(indices) * evaluation_shots)),
+                    pubs=int(usage.get("pubs", len(indices))),
+                    qpu_seconds=usage.get("qpu_seconds"),
+                )
+
+            if reference_indices is None:
+                reference_count = min(max(batch_size * 4, 16), len(X_train))
+                reference_indices = np.random.default_rng(seed + 1).choice(
+                    len(X_train), reference_count, replace=False
+                )
+
+            optimizer = HardwareSPSAOptimizer(
+                HardwareSPSAConfig(
+                    steps=steps,
+                    learning_rate=self.learning_rate,
+                    perturbation=0.05,
+                    seed=seed,
+                    reference_every=reference_every,
+                    reference_shots=self.reference_shots or shots,
+                )
+            )
+            self.last_hardware_spsa = optimizer.optimize(
+                initial_parameters=initial_weights,
+                n_samples=len(X_train),
+                batch_size=batch_size,
+                shots=shots,
+                evaluator=evaluate,
+                reference_evaluator=evaluate if reference_every else None,
+                reference_indices=reference_indices if reference_every else None,
+            )
+            return self.last_hardware_spsa
+        except Exception as exc:
+            raise TrainingException(f"Fine-tuning SPSA en IBM falló: {exc}") from exc
 
     def train_vqc(
         self,
         X_train: np.ndarray,
         y_train: np.ndarray,
         num_qubits: int,
+        n_features: Optional[int] = None,
         max_iterations: int = 100,
         optimizer_name: str = "QNSPSA-EML-Feynman",
         shots: int = 512,
@@ -936,6 +1126,10 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         """
         try:
             t0 = time.time()
+            if self.mode == "ibm" and not self.token:
+                raise RuntimeError("IBM_QUANTUM_TOKEN no está configurado")
+            if self.train_on_hardware and self.mode != "ibm":
+                raise RuntimeError("El entrenamiento remoto requiere mode='ibm'")
             if max_iterations < 10:
                 logger.warning(
                     f"max_iterations={max_iterations} es muy bajo: el VQC "
@@ -943,8 +1137,10 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 )
 
             n_classes = int(np.max(y_train)) + 1
+            if n_features is None:
+                n_features = num_qubits
 
-            if self.mode == "ibm" and self.token:
+            if self.mode == "ibm" and self.token and self.noise_aware_training:
                 try:
                     from qiskit_ibm_runtime import QiskitRuntimeService
                     _service = QiskitRuntimeService(channel="ibm_quantum_platform", token=self.token)
@@ -954,36 +1150,45 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                         f"backend={self.backend_name}, qubits={_ibm_backend.num_qubits}"
                     )
                 except Exception as _e:
+                    if self.train_on_hardware:
+                        raise RuntimeError(
+                            f"No se pudo conectar al backend IBM {self.backend_name}"
+                        ) from _e
                     logger.warning(f"Conexión IBM fallida ({_e}).")
                     _ibm_backend = None
             else:
                 _ibm_backend = None
 
-            _noisy_sampler = None
+            backend_sampler = None
             _transpile_target = None
+            remote_hardware = False
             if self.noise_aware_training and _ibm_backend is not None:
-                _noisy_sampler = _build_noise_aware_sampler(_ibm_backend)
-                if _noisy_sampler is not None:
+                backend_sampler = _build_noise_aware_sampler(_ibm_backend)
+                if backend_sampler is not None:
                     _transpile_target = _ibm_backend
 
             loss_fn = _make_vqc_loss_fn(
                 X_train=X_train,
                 y_train=y_train,
                 n_qubits=num_qubits,
+                n_features=n_features,
                 shots=shots,
                 mode="sim",
-                backend_sampler=_noisy_sampler,
+                backend_sampler=backend_sampler,
                 ibm_backend=_transpile_target,
-                remote_hardware=False,  # el entrenamiento NUNCA envía jobs reales
+                remote_hardware=remote_hardware,
                 batch_size_local=self.training_batch_size,
+                hardware_shots=self.hardware_shots,
+                hardware_batch_size=self.hardware_batch_size,
                 feature_map_reps=self.feature_map_reps,
                 ansatz_reps=self.ansatz_reps,
                 entanglement=self.entanglement,
                 reference_shots=self.reference_shots,
                 readout_hidden_size=self.readout_hidden_size,
+                random_seed=self.random_seed,
             )
 
-            rng = np.random.default_rng(42)
+            rng = np.random.default_rng(self.random_seed)
 
             # n_ansatz_params queda en None si el loss_fn no soporta la
             # arquitectura ansatz+lectura (modo fallback / Qiskit no
@@ -1028,7 +1233,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                     n_feynman_params if n_feynman_params is not None
                     else min(4, num_qubits)
                 ),
-                seed=42,
+                seed=self.random_seed,
             )
 
             optimizer = QNSPSAEMLFeynman(config=cfg_opt)
@@ -1072,7 +1277,8 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 f"ansatz_reps={self.ansatz_reps}, lr={self.learning_rate}, "
                 f"readout_refit_every={self.readout_refit_every}, "
                 f"readout_hidden_size={self.readout_hidden_size}, "
-                f"noise_aware={'sí' if _noisy_sampler is not None else 'no'}"
+                f"noise_aware={'sí' if self.noise_aware_training and backend_sampler is not None else 'no'}, "
+                f"remote_hardware=no (preentrenamiento local; SPSA acotado se aplica después)"
             )
 
             result: QNSPSAResult = optimizer.minimize(loss_fn, x0, callback=callback)
@@ -1080,11 +1286,12 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             elapsed = time.time() - t0
 
             acc_estimate = min(0.99, max(0.1, np.exp(-result.final_loss / n_classes) * 0.95 + 0.05))
+            validation_accuracy = acc_estimate if self.mode == "fallback" else None
 
             logger.info(
                 f"Entrenamiento completado: "
                 f"loss={result.final_loss:.4f} (ln(n_classes)={np.log(n_classes):.4f}), "
-                f"acc_heuristica={acc_estimate:.3f}, "
+                f"estimated_acc={acc_estimate:.3f}, "
                 f"speedup={result.speedup_vs_spsa:.1f}×, "
                 f"tiempo={elapsed:.1f}s"
             )
@@ -1092,7 +1299,8 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             return {
                 "weights": result.optimal_params,
                 "training_loss": result.final_loss,
-                "validation_accuracy": acc_estimate,
+                "validation_accuracy": validation_accuracy,
+                "estimated_accuracy": acc_estimate,
                 "iterations": result.n_iter,
                 "execution_time_seconds": elapsed,
                 "n_circuit_evaluations": result.n_evals,
@@ -1112,10 +1320,11 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         X_val: np.ndarray,
         y_val: np.ndarray,
         n_qubits: int,
+        n_features: int,
         n_classes: int,
         shots: int = 512,
         batch_size: int = 32,
-    ) -> tuple[Optional[float], Optional[list]]:
+    ) -> tuple[float, list, np.ndarray]:
         """
         Ejecuta feature_map(xi) + ansatz(weights) en el simulador ideal
         local, decodifica con la capa de lectura MLP entrenada (W1,b1,
@@ -1124,12 +1333,12 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         pasada).
 
         Returns:
-            (accuracy, confusion_matrix_normalizada_como_lista), o
-            (None, None) si falla.
+            Accuracy medida, matriz de confusión normalizada y predicciones.
         """
         try:
             combined, x_params, ansatz_params = _build_feature_map_and_ansatz(
                 n_qubits,
+                n_features=n_features,
                 feature_map_reps=self.feature_map_reps,
                 ansatz_reps=self.ansatz_reps,
                 entanglement=self.entanglement,
@@ -1142,8 +1351,8 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 weights, n_ansatz_params, n_qubits, n_classes, self.readout_hidden_size
             )
 
-            X_train_proc = _prepare_feature_matrix(X_train, n_qubits)
-            X_val_proc = _prepare_feature_matrix(X_val, n_qubits)
+            X_train_proc = _prepare_feature_matrix(X_train, n_features)
+            X_val_proc = _prepare_feature_matrix(X_val, n_features)
             train_stats = compute_chebyshev_stats(X_train_proc)
             X_cheb = chebyshev_preprocess(X_val_proc, stats=train_stats)
 
@@ -1160,33 +1369,35 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             row_sums = cm.sum(axis=1, keepdims=True)
             cm_norm = np.where(row_sums > 0, cm / row_sums, 0.0)
 
-            return accuracy, cm_norm.tolist()
+            return accuracy, cm_norm.tolist(), y_pred
 
         except Exception as e:
-            logger.warning(
-                f"Evaluación real de accuracy/confusion matrix falló ({e}); "
-                f"se usará la heurística del loss y una matriz diagonal "
-                f"como fallback (MENOS fiable)."
-            )
-            return None, None
+            logger.exception("Falló la evaluación real de accuracy y matriz de confusión.")
+            raise RuntimeError(f"Fallo de evaluación del circuito: {e}") from e
 
     def train_and_evaluate(
         self,
         dataset,
         n_qubits: int,
+        n_features: Optional[int] = None,
         shots: int = 512,
         max_iterations: int = 100,
         use_real_hardware: bool = False,
         backend_name: str = "ibm_fez",
         use_zne: bool = False,
         n_feynman_params: Optional[int] = None,
+        hardware_finetune_steps: Optional[int] = None,
     ) -> VQCTrainingResult:
         """Entrena y evalúa el VQC. Retorna VQCTrainingResult completo."""
         try:
+            if n_features is None:
+                n_features = min(dataset.X_train.shape[1], n_qubits)
+
             train_result = self.train_vqc(
                 X_train=dataset.X_train,
                 y_train=dataset.y_train,
                 num_qubits=n_qubits,
+                n_features=n_features,
                 max_iterations=max_iterations,
                 shots=shots,
                 n_feynman_params=n_feynman_params,
@@ -1198,45 +1409,83 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             speedup = train_result["speedup_vs_spsa"]
             n_evals = train_result["n_circuit_evaluations"]
             total_time = train_result["execution_time_seconds"]
+            hardware_spsa = None
 
-            acc_real_measured, cm_real = self._evaluate_real_predictions(
-                weights=final_weights,
-                X_train=dataset.X_train,
-                X_val=dataset.X_val,
-                y_val=dataset.y_val,
-                n_qubits=n_qubits,
-                n_classes=dataset.n_classes,
-                shots=shots,
-            )
-            if acc_real_measured is not None:
-                acc_sim = acc_real_measured
-                cm = cm_real
+            if self.train_on_hardware:
+                finetune_steps = (
+                    self.hardware_finetune_steps
+                    if hardware_finetune_steps is None
+                    else hardware_finetune_steps
+                )
+                if finetune_steps < 1:
+                    raise ValueError("hardware_finetune_steps debe ser positivo")
+                hardware_start = time.time()
+                hardware_result = self.fine_tune_on_hardware(
+                    initial_weights=final_weights,
+                    X_train=dataset.X_train,
+                    y_train=dataset.y_train,
+                    n_qubits=n_qubits,
+                    n_features=n_features,
+                    steps=finetune_steps,
+                    batch_size=self.hardware_batch_size,
+                    shots=self.hardware_shots,
+                )
+                total_time += time.time() - hardware_start
+                final_weights = hardware_result.parameters
+                loss_hist = list(loss_hist) + hardware_result.loss_history
+                n_epochs += hardware_result.steps_completed
+                n_evals += hardware_result.pubs
+                hardware_spsa = {
+                    "steps_completed": hardware_result.steps_completed,
+                    "jobs": hardware_result.jobs,
+                    "pubs": hardware_result.pubs,
+                    "shots": hardware_result.shots,
+                    "qpu_seconds": hardware_result.qpu_seconds,
+                    "job_ids": hardware_result.job_ids,
+                    "reference_history": hardware_result.reference_history,
+                }
+
+            if self.mode == "fallback":
+                acc_sim = train_result["validation_accuracy"]
+                cm = None
                 logger.info(
-                    f"Accuracy REAL medida en validación (simulador ideal, "
-                    f"capa de lectura MLP entrenada): {acc_sim:.3f} "
-                    f"(sustituye a la heurística del loss)"
+                    "Modo fallback sintético: validation_accuracy es una estimación "
+                    "del loss y no una medición de circuito."
                 )
             else:
-                acc_sim = train_result["validation_accuracy"]
-                logger.warning(f"Usando heurística acc_sim={acc_sim:.3f} (medida real falló)")
-                cm_fallback = np.eye(dataset.n_classes) * 0.91
-                cm = (cm_fallback / cm_fallback.sum(axis=1, keepdims=True)).tolist()
+                acc_sim, cm, _ = self._evaluate_real_predictions(
+                    weights=final_weights,
+                    X_train=dataset.X_train,
+                    X_val=dataset.X_val,
+                    y_val=dataset.y_val,
+                    n_qubits=n_qubits,
+                    n_features=n_features,
+                    n_classes=dataset.n_classes,
+                    shots=shots,
+                )
+                logger.info(
+                    f"Accuracy REAL medida en validación (simulador ideal, "
+                    f"capa de lectura MLP entrenada): {acc_sim:.3f}"
+                )
 
-            acc_real_no_zne = 0.0
-            acc_real_zne = 0.0
+            acc_real_no_zne = None
+            acc_real_zne = None
 
             if use_real_hardware and self.token:
                 try:
                     acc_real_no_zne, acc_real_zne = self._validate_on_ibm(
-                        final_weights, dataset, n_qubits, use_zne
+                        final_weights,
+                        dataset,
+                        n_qubits,
+                        n_features,
+                        use_zne,
                     )
                 except Exception as e:
-                    logger.warning(f"Validación IBM falló: {e}")
-                    acc_real_no_zne = acc_sim * 0.807
-                    acc_real_zne = acc_sim * 0.932
+                    logger.exception("Validación IBM falló; se propaga el error en lugar de inventar resultados.")
+                    raise TrainingException(f"Fallo de ejecución IBM: {e}") from e
             else:
-                acc_real_no_zne = acc_sim * 0.807
-                acc_real_zne = acc_sim * 0.932 if use_zne else acc_real_no_zne
+                acc_real_no_zne = None
+                acc_real_zne = None
 
             acc_vs_snr = self.estimate_accuracy_vs_snr(
                 X_val=dataset.X_val,
@@ -1247,18 +1496,14 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 X_train=dataset.X_train,
             )
 
-            n_classes = dataset.n_classes
-            acc_val_history = [
-                float(min(0.99, max(0.1, np.exp(-l / n_classes) * 0.95 + 0.05)))
-                for l in loss_hist
-            ]
+            acc_val_history = []
 
             result = VQCTrainingResult(
                 loss_history=loss_hist,
                 accuracy_val_history=acc_val_history,
                 accuracy_sim=float(acc_sim),
-                accuracy_real_no_zne=float(acc_real_no_zne),
-                accuracy_real_zne=float(acc_real_zne),
+                accuracy_real_no_zne=float(acc_real_no_zne) if acc_real_no_zne is not None else None,
+                accuracy_real_zne=float(acc_real_zne) if acc_real_zne is not None else None,
                 n_epochs=n_epochs,
                 converged_early=train_result.get("converged", False),
                 total_time_s=total_time,
@@ -1270,6 +1515,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 gradient_variance_history=train_result.get("gradient_variance_history", []),
                 qnspsa_converged=train_result.get("converged", False),
                 accuracy_vs_snr=acc_vs_snr,
+                hardware_spsa=hardware_spsa,
             )
 
             return result
@@ -1291,6 +1537,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         weights: np.ndarray,
         dataset,
         n_qubits: int,
+        n_features: int,
         use_zne: bool,
     ) -> tuple[float, float]:
         """
@@ -1302,22 +1549,30 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         try:
             from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2
             from qiskit import transpile
+            from sklearn.metrics import balanced_accuracy_score
+
+            if not hasattr(dataset, "X_test") or not hasattr(dataset, "y_test"):
+                raise ValueError("La validación IBM requiere un test independiente X_test/y_test")
+            if dataset.X_test is None or dataset.y_test is None:
+                raise ValueError("La validación IBM requiere un test independiente X_test/y_test")
+            if len(dataset.X_test) != len(dataset.y_test):
+                raise ValueError("X_test e y_test deben tener la misma longitud")
+            idx = _stratified_indices(dataset.y_test, self.n_hw_validation)
 
             service = QiskitRuntimeService(channel="ibm_quantum_platform", token=self.token)
             backend = service.backend(self.backend_name)
             logger.info(f"Conectado a {self.backend_name}")
 
-            n_hw = min(self.n_hw_validation, len(dataset.X_val))
-            rng = np.random.default_rng(123)
-            idx = rng.choice(len(dataset.X_val), n_hw, replace=False)
-            X_train_proc = _prepare_feature_matrix(dataset.X_train, n_qubits)
-            X_val_proc = _prepare_feature_matrix(dataset.X_val[idx], n_qubits)
+            n_hw = len(idx)
+            X_train_proc = _prepare_feature_matrix(dataset.X_train, n_features)
+            X_test_proc = _prepare_feature_matrix(dataset.X_test[idx], n_features)
             train_stats = compute_chebyshev_stats(X_train_proc)
-            X_hw = chebyshev_preprocess(X_val_proc, stats=train_stats)
-            y_hw = dataset.y_val[idx]
+            X_hw = chebyshev_preprocess(X_test_proc, stats=train_stats)
+            y_hw = dataset.y_test[idx]
 
             combined, x_params, ansatz_params = _build_feature_map_and_ansatz(
                 n_qubits,
+                n_features=n_features,
                 feature_map_reps=self.feature_map_reps,
                 ansatz_reps=self.ansatz_reps,
                 entanglement=self.entanglement,
@@ -1361,7 +1616,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 _readout_mlp_probs(qubit_probs_by_scale[0, i], W1, b1, W2, b2) for i in range(n_hw)
             ])
             preds_no_zne = np.argmax(class_probs_no_zne, axis=1)
-            acc_no_zne = float(np.mean(preds_no_zne == y_hw))
+            acc_no_zne = float(balanced_accuracy_score(y_hw, preds_no_zne))
             logger.info(
                 f"IBM hardware (escala=1, sin mitigar): preds={list(preds_no_zne)}, "
                 f"y_true={list(y_hw)}, acc={acc_no_zne:.3f}"
@@ -1373,7 +1628,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                     _readout_mlp_probs(extrapolated_qubit_probs[i], W1, b1, W2, b2) for i in range(n_hw)
                 ])
                 preds_zne = np.argmax(class_probs_zne, axis=1)
-                acc_zne = float(np.mean(preds_zne == y_hw))
+                acc_zne = float(balanced_accuracy_score(y_hw, preds_zne))
                 logger.info(
                     f"IBM hardware (ZNE real, Richardson sobre escalas "
                     f"{scale_factors}, aplicado a las marginales por qubit "
@@ -1382,21 +1637,31 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 )
             else:
                 acc_zne = acc_no_zne
+                preds_zne = preds_no_zne
                 logger.info(
                     "ZNE no solicitado (falta --use-zne): accuracy_real_zne "
                     "se reporta igual a accuracy_real_no_zne."
                 )
 
+            self.last_ibm_validation = {
+                "y_true": y_hw.astype(int).tolist(),
+                "y_pred": preds_no_zne.astype(int).tolist(),
+                "y_pred_zne": preds_zne.astype(int).tolist(),
+                "n_qubits": n_qubits,
+                "pca_components": n_features,
+                "backend": self.backend_name,
+                "shots": self.shots_validation,
+                "job_ids": [job.job_id()],
+                "balanced_accuracy": acc_no_zne,
+                "balanced_accuracy_zne": acc_zne,
+                "n_validation_events": n_hw,
+            }
+
             return acc_no_zne, acc_zne
 
-        except Exception as e:
-            logger.warning(
-                f"IBM hardware validation failed: {e}. "
-                f"Usando degradación estimada de la literatura "
-                f"(NO es una medida real de hardware)."
-            )
-            base = 0.91
-            return base * 0.807, base * 0.932
+        except Exception as exc:
+            logger.exception("La ejecución real en IBM Quantum ha fallado.")
+            raise TrainingException(f"Fallo de ejecución IBM: {exc}") from exc
 
     # ── Implementación de IQuantumMLTrainerPort ────────────────────────────
 

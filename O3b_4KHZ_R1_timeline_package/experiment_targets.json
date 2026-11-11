@@ -1,0 +1,26 @@
+{
+  "dataset": "O3b_4KHZ_R1",
+  "sample_rate_hz": 4096,
+  "gps_start": 1256655618,
+  "gps_end_exclusive": 1269363618,
+  "window_seconds": 4,
+  "targets": {
+    "train": {
+      "duration": "7 h 13 min",
+      "windows": 6495
+    },
+    "validation": {
+      "duration": "43 min",
+      "windows": 645
+    },
+    "test": {
+      "duration": "1 h 27 min",
+      "windows": 1305
+    },
+    "total": {
+      "duration": "9 h 23 min",
+      "windows": 8445
+    }
+  },
+  "status": "targets_only_not_availability_verified"
+}

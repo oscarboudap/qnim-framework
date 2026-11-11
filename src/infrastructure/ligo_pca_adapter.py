@@ -30,6 +30,7 @@ import numpy as np
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 from sklearn.decomposition import PCA
+from sklearn.feature_selection import f_classif
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 
@@ -110,6 +111,8 @@ class GWDataset:
     y_train: np.ndarray
     X_val:   np.ndarray
     y_val:   np.ndarray
+    X_test:  np.ndarray
+    y_test:  np.ndarray
     n_classes: int
     theory_names: List[str]
     pca: PCA = field(default_factory=PCA)
@@ -198,19 +201,24 @@ class LIGOPCAAdapter:
                  d_range: Tuple[float, float] = (100.0, 1000.0),
                  max_classes: Optional[int] = None):
 
-        self.n_components   = n_components
-        self.n_pca_fit      = n_pca_fit
-        self.duration       = waveform_duration
-        self.sample_rate    = sample_rate
-        self.f_lower        = f_lower
-        self.f_low_white    = f_low_white
-        self.f_high_white   = f_high_white
-        self.approximant    = approximant
-        self.m_range        = m_range
-        self.d_range        = d_range
+        if n_components < 1:
+            raise ValueError("n_components debe ser positivo")
+        if n_pca_fit < n_components:
+            raise ValueError("n_pca_fit debe ser >= n_components")
+
+        self.n_components = n_components
+        self.n_pca_fit = n_pca_fit
+        self.duration = waveform_duration
+        self.sample_rate = sample_rate
+        self.f_lower = f_lower
+        self.f_low_white = f_low_white
+        self.f_high_white = f_high_white
+        self.approximant = approximant
+        self.m_range = m_range
+        self.d_range = d_range
         n_cls = len(self.THEORY_CLASSES)
-        self.n_classes      = min(max_classes, n_cls) if max_classes else n_cls
-        self.theory_names   = self.THEORY_CLASSES[:self.n_classes]
+        self.n_classes = min(max_classes, n_cls) if max_classes else n_cls
+        self.theory_names = self.THEORY_CLASSES[:self.n_classes]
 
     def _generate_one(self, theory_class: int,
                        rng: np.random.Generator) -> np.ndarray:
@@ -289,6 +297,7 @@ class LIGOPCAAdapter:
     def generate_balanced_dataset(self,
                                    n_per_class: int = 80,
                                    n_val_per_class: int = 20,
+                                   n_test_per_class: int = 100,
                                    seed: int = 42,
                                    verbose: bool = True) -> GWDataset:
         """
@@ -310,7 +319,7 @@ class LIGOPCAAdapter:
         verbose : bool          — imprimir progreso.
         """
         rng     = np.random.default_rng(seed)
-        n_total = n_per_class + n_val_per_class
+        n_total = n_per_class + n_val_per_class + n_test_per_class
 
         # -------- 1. Generar strains blanqueados --------
         all_strains_white = []
@@ -331,17 +340,23 @@ class LIGOPCAAdapter:
         # (el PCA se ajusta solo sobre train, para evitar data leakage)
         train_idx = []
         val_idx   = []
+        test_idx  = []
         for cls in range(self.n_classes):
             idx = np.where(all_labels == cls)[0]
             train_idx.extend(idx[:n_per_class].tolist())
             val_idx.extend(idx[n_per_class:n_per_class + n_val_per_class].tolist())
+            test_start = n_per_class + n_val_per_class
+            test_idx.extend(idx[test_start:test_start + n_test_per_class].tolist())
         train_idx = np.array(train_idx)
         val_idx   = np.array(val_idx)
+        test_idx  = np.array(test_idx)
 
         X_train_raw = all_strains_white[train_idx]
         X_val_raw   = all_strains_white[val_idx]
+        X_test_raw  = all_strains_white[test_idx]
         y_train     = all_labels[train_idx]
         y_val       = all_labels[val_idx]
+        y_test      = all_labels[test_idx]
 
         # -------- 3. PCA: ajustar sobre train --------
         n_pca = min(self.n_pca_fit, X_train_raw.shape[0] - 1,
@@ -350,11 +365,23 @@ class LIGOPCAAdapter:
         pca.fit(X_train_raw)
 
         # -------- 4. Proyectar --------
-        X_train_pca = pca.transform(X_train_raw)[:, :self.n_components]
+        X_train_pca_full = pca.transform(X_train_raw)
+        X_train_pca = X_train_pca_full[:, :self.n_components]
         X_val_pca   = pca.transform(X_val_raw)[:, :self.n_components]
+        X_test_pca  = pca.transform(X_test_raw)[:, :self.n_components]
 
-        # Varianza explicada
-        var_exp = pca.explained_variance_ratio_[:self.n_components].cumsum()
+        var_exp = pca.explained_variance_ratio_
+        fisher_scores, fisher_pvalues = f_classif(X_train_pca_full, y_train)
+        pca_analysis = {
+            "explained_variance": var_exp.tolist(),
+            "cumulative_variance": var_exp.cumsum().tolist(),
+            "class_fisher_scores": [
+                float(value) if np.isfinite(value) else None for value in fisher_scores
+            ],
+            "class_fisher_pvalues": [
+                float(value) if np.isfinite(value) else None for value in fisher_pvalues
+            ],
+        }
 
         # -------- 5. Escalar a [-1, 1] --------
         # IMPORTANTE: chebyshev_preprocess aplica arccos(clip(x,-1,1)).
@@ -363,9 +390,13 @@ class LIGOPCAAdapter:
         scaler = MinMaxScaler(feature_range=(-1.0, 1.0))
         X_train = np.clip(scaler.fit_transform(X_train_pca), -1.0, 1.0)
         X_val   = np.clip(scaler.transform(X_val_pca),       -1.0, 1.0)
+        X_test  = np.clip(scaler.transform(X_test_pca),      -1.0, 1.0)
 
         if verbose:
-            print(f"  ✅ Dataset generado: {len(X_train)} train / {len(X_val)} val")
+            print(
+                f"  Dataset generado: {len(X_train)} train / {len(X_val)} val / "
+                f"{len(X_test)} test"
+            )
             print(f"     Features: {self.n_components} PCA (blanqueado PSD O3)")
             print(f"     Varianza explicada (PC1-{self.n_components}): "
                   f"{var_exp[-1]*100:.1f}%")
@@ -374,6 +405,7 @@ class LIGOPCAAdapter:
         return GWDataset(
             X_train=X_train, y_train=y_train,
             X_val=X_val,     y_val=y_val,
+            X_test=X_test,   y_test=y_test,
             n_classes=self.n_classes,
             theory_names=self.theory_names,
             pca=pca,
@@ -381,9 +413,11 @@ class LIGOPCAAdapter:
             metadata={
                 "n_per_class": n_per_class,
                 "n_val_per_class": n_val_per_class,
+                "n_test_per_class": n_test_per_class,
                 "seed": seed,
                 "approximant": self.approximant,
-                "var_explained": float(var_exp[-1]),
+                "var_explained": float(var_exp[:self.n_components].sum()),
+                "pca_analysis": pca_analysis,
             },
         )
         

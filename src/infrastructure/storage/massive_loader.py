@@ -8,7 +8,10 @@ from sklearn.decomposition import PCA
 
 # Asegurar que el path del proyecto sea visible
 current_file = Path(__file__).resolve()
-project_root = next(p for p in current_file.parents if p.name == 'qnim')
+project_root = next(
+    (p for p in current_file.parents if (p / "src").is_dir() and (p / "config").is_dir()),
+    current_file.parents[3],
+)
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 

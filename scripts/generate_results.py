@@ -35,12 +35,21 @@ def parse_args():
     p.add_argument("--learning-rate",       type=float, default=0.03)
     p.add_argument("--n-qubits",            type=int,   default=12,
                    help="Número de qubits del VQC; usar 27 para el perfil propuesto.")
+    p.add_argument("--pca-components",      type=int,   default=12,
+                   help="Número de componentes PCA que codifica el feature map.")
+    p.add_argument("--n-pca-fit",           type=int,   default=64,
+                   help="Número de componentes usadas para ajustar la PCA de origen.")
     p.add_argument("--feature-map-reps",    type=int,   default=2,
                    help="Repeticiones del feature map; usar 1 para el perfil 27q propuesto.")
     p.add_argument("--ansatz-reps",         type=int,   default=2)
     p.add_argument("--entanglement",        type=str,   default="linear",
                    choices=["linear", "circular", "full"])
     p.add_argument("--shots",               type=int,   default=1024)
+    p.add_argument("--train-on-hardware",   action="store_true")
+    p.add_argument("--hardware-shots",      type=int,   default=128)
+    p.add_argument("--hardware-batch-size", type=int,   default=4)
+    p.add_argument("--hardware-finetune-steps", type=int, default=20)
+    p.add_argument("--backend",             type=str,   default="ibm_fez")
     p.add_argument("--reference-shots",     type=int,   default=4096)
     p.add_argument("--readout-hidden-size", type=int,   default=32)
     p.add_argument("--readout-refit-every", type=int,   default=10)
@@ -59,6 +68,7 @@ def parse_args():
     p.add_argument("--n-per-class",        type=int,   default=4200,
                    help="Eventos train/clase. 4200 -> 54600 total (como el paper).")
     p.add_argument("--n-val-per-class",    type=int,   default=600)
+    p.add_argument("--n-test-per-class",   type=int,   default=100)
     p.add_argument("--max-classes",        type=int,   default=None)
 
     # Dataset pregenerado en disco
@@ -89,6 +99,8 @@ def main():
             if args.profile in profiles:
                 profile_config = profiles[args.profile]
                 args.n_qubits = profile_config.get("n_qubits", args.n_qubits)
+                args.pca_components = profile_config.get("pca_components", args.pca_components)
+                args.n_pca_fit = profile_config.get("n_pca_fit", args.n_pca_fit)
                 args.feature_map_reps = profile_config.get("feature_map_reps", args.feature_map_reps)
                 args.ansatz_reps = profile_config.get("ansatz_reps", args.ansatz_reps)
                 args.entanglement = profile_config.get("entanglement", args.entanglement)
@@ -139,6 +151,8 @@ def main():
             y_val:   np.ndarray
             n_classes: int
             theory_names: List[str]
+            X_test: object = None
+            y_test: object = None
 
         data_dir = Path(args.data_dir)
         print(f"Cargando dataset desde {data_dir}...")
@@ -146,20 +160,40 @@ def main():
         y_train = np.load(data_dir / "y_train.npy")
         X_val   = np.load(data_dir / "X_val.npy")
         y_val   = np.load(data_dir / "y_val.npy")
+        test_x_path = data_dir / "X_test.npy"
+        test_y_path = data_dir / "y_test.npy"
+        if test_x_path.exists() != test_y_path.exists():
+            raise ValueError("El dataset debe incluir ambos archivos X_test.npy e y_test.npy")
+        X_test = np.load(test_x_path) if test_x_path.exists() else None
+        y_test = np.load(test_y_path) if test_y_path.exists() else None
+        feature_arrays = [X_train, X_val] + ([X_test] if X_test is not None else [])
+        if any(X.shape[1] < args.pca_components for X in feature_arrays):
+            raise ValueError(
+                f"El dataset debe tener al menos {args.pca_components} features"
+            )
+        X_train = X_train[:, :args.pca_components]
+        X_val = X_val[:, :args.pca_components]
+        if X_test is not None:
+            X_test = X_test[:, :args.pca_components]
         n_classes = len(np.unique(y_train))
         if args.max_classes:
             mask_tr = y_train < args.max_classes
             mask_va = y_val   < args.max_classes
             X_train, y_train = X_train[mask_tr], y_train[mask_tr]
             X_val,   y_val   = X_val[mask_va],   y_val[mask_va]
+            if X_test is not None:
+                mask_test = y_test < args.max_classes
+                X_test, y_test = X_test[mask_test], y_test[mask_test]
             n_classes = args.max_classes
         THEORY_CLASSES = [
             "GR","standard-siren","qnm-21","qnm-33","pn-deformation",
             "extra-dimensions","scalar-tensor","graviton-mass","chern-simons",
             "liv-alpha2","liv-alpha4","loop-quantum-gravity","gup",
         ]
-        dataset = DiskDataset(X_train, y_train, X_val, y_val,
-                              n_classes, THEORY_CLASSES[:n_classes])
+        dataset = DiskDataset(
+            X_train, y_train, X_val, y_val, n_classes, THEORY_CLASSES[:n_classes],
+            X_test=X_test, y_test=y_test,
+        )
         print(f"  X_train: {X_train.shape}  X_val: {X_val.shape}  n_classes: {n_classes}")
 
         # Baseline clasico rapido
@@ -170,8 +204,19 @@ def main():
 
         # Entrenar VQC directamente
         from src.infrastructure.qiskit_vqc_trainer import QiskitVQCTrainer
+        from src.ibm_credentials import get_ibm_quantum_token
+
+        token = get_ibm_quantum_token()
+        if args.mode == "ibm" and not token:
+            raise RuntimeError("IBM_QUANTUM_TOKEN no está configurado")
         trainer = QiskitVQCTrainer(
             mode=args.mode,
+            token=token,
+            backend_name=args.backend,
+            train_on_hardware=args.train_on_hardware,
+            hardware_shots=args.hardware_shots,
+            hardware_batch_size=args.hardware_batch_size,
+            hardware_finetune_steps=args.hardware_finetune_steps,
             feature_map_reps=args.feature_map_reps,
             ansatz_reps=args.ansatz_reps,
             entanglement=args.entanglement,
@@ -184,7 +229,12 @@ def main():
         t0 = time.perf_counter()
         result = trainer.train_and_evaluate(
             dataset, n_qubits=args.n_qubits, shots=args.shots,
+            n_features=args.pca_components,
             max_iterations=args.max_iter,
+            use_real_hardware=args.mode == "ibm",
+            hardware_finetune_steps=(
+                args.hardware_finetune_steps if args.train_on_hardware else None
+            ),
             use_zne=args.use_zne,
             n_feynman_params=args.n_feynman_params,
         )
@@ -195,27 +245,13 @@ def main():
         loss = lh[-1] if lh else float('nan')
         ep   = getattr(result, 'n_epochs', '?')
 
-        # IBM si procede
         acc_ibm = None
         if args.mode == "ibm":
-            token = os.environ.get("IBM_QUANTUM_TOKEN", "")
-            if token:
-                try:
-                    final_w = getattr(result, 'final_weights', None)
-                    if final_w is not None:
-                        _, acc_ibm = trainer._validate_on_ibm(
-                            weights=final_w,
-                            dataset=dataset,
-                            n_qubits=args.n_qubits,
-                            use_zne=args.use_zne,
-                        )
-                    else:
-                        print("  ⚠️  No hay pesos finales disponibles para validar en IBM.")
-                except Exception as e:
-                    print(f"  ⚠️  IBM falló: {e}")
-            else:
-                print("  ⚠️  IBM_QUANTUM_TOKEN no exportado.")
-                print("       Ejecuta: export IBM_QUANTUM_TOKEN='tu_token'")
+            acc_ibm = (
+                result.accuracy_real_zne
+                if args.use_zne
+                else result.accuracy_real_no_zne
+            )
 
         print("\n" + "=" * 70)
         print("  RESULTADOS")
@@ -238,6 +274,8 @@ def main():
             patience=args.patience,
             learning_rate=args.learning_rate,
             n_qubits=args.n_qubits,
+            pca_components=args.pca_components,
+            n_pca_fit=args.n_pca_fit,
             feature_map_reps=args.feature_map_reps,
             ansatz_reps=args.ansatz_reps,
             entanglement=args.entanglement,
@@ -248,11 +286,17 @@ def main():
             max_classes=args.max_classes,
             n_feynman_params=args.n_feynman_params,
             use_zne=args.use_zne,
+            train_on_hardware=args.train_on_hardware,
+            backend_name=args.backend,
+            hardware_shots=args.hardware_shots,
+            hardware_batch_size=args.hardware_batch_size,
+            hardware_finetune_steps=args.hardware_finetune_steps,
             use_physics_generator=args.physics_generator,
             use_ligo_pca=args.ligo_pca,
             physics_approximant=args.approximant,
             n_per_class=args.n_per_class,
             n_val_per_class=args.n_val_per_class,
+            n_test_per_class=args.n_test_per_class,
         )
 
         t0     = time.perf_counter()

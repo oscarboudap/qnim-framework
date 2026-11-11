@@ -20,6 +20,7 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Optional
 import numpy as np
+from src.ibm_credentials import get_ibm_quantum_token
 
 # Qiskit Runtime — lazy imports para no romper si no está instalado
 try:
@@ -146,8 +147,8 @@ class FullResultsReport:
     confusion_matrix: Optional[np.ndarray] = None
     class_names: list[str] = field(default_factory=list)
     accuracy_sim: float = 0.0
-    accuracy_real_no_zne: float = 0.0
-    accuracy_real_zne: float = 0.0
+    accuracy_real_no_zne: Optional[float] = None
+    accuracy_real_zne: Optional[float] = None
     gw150914: Optional[GW150914ReanalysisResult] = None
     accuracy_vs_snr: dict = field(default_factory=dict)  # {snr: accuracy}
     speedup_vs_spsa: float = 0.0
@@ -234,19 +235,21 @@ class IBMQuantumResultsCollector:
 
     def __init__(
         self,
-        token: str = "",
+        token: Optional[str] = None,
         backend_name: str = "ibm_kingston",
         use_real_hardware: bool = False,
         n_qubits: int = 12,
         shots: int = 512,
         max_iter: int = 100,
     ):
+        self.token = get_ibm_quantum_token(token)
+        if use_real_hardware and not self.token:
+            raise RuntimeError("IBM_QUANTUM_TOKEN no está configurado")
         if not _QISKIT_AVAILABLE:
             raise ImportError(
                 "Instala: pip install qiskit>=1.0.0 qiskit-ibm-runtime>=0.20 "
                 "qiskit-machine-learning>=0.7.0 qiskit-algorithms>=0.3.0"
             )
-        self.token = token
         self.backend_name = backend_name
         self.use_real_hardware = use_real_hardware
         self.n_qubits = n_qubits
@@ -333,7 +336,8 @@ class IBMQuantumResultsCollector:
         y_train: np.ndarray,
         X_val: np.ndarray,
         y_val: np.ndarray,
-        run_gw150914: bool = True,
+        run_gw150914: bool = False,
+        run_qfi: bool = False,
     ) -> FullResultsReport:
         """
         Ejecuta el experimento completo y retorna el reporte de resultados.
@@ -353,6 +357,20 @@ class IBMQuantumResultsCollector:
         Returns:
             FullResultsReport con todas las métricas
         """
+        if self.use_real_hardware:
+            raise NotImplementedError(
+                "Este collector legacy no ejecuta predicciones en QPU. "
+                "Usa QiskitVQCTrainer para validación IBM medida."
+            )
+        if run_gw150914:
+            raise NotImplementedError(
+                "El reanálisis GW150914 necesita un pipeline de inferencia física real."
+            )
+        if run_qfi:
+            raise NotImplementedError(
+                "Este collector no implementa una medición QFI física."
+            )
+
         import time as _time
         report = FullResultsReport(timestamp=_time.strftime("%Y-%m-%dT%H:%M:%S"))
 
@@ -392,32 +410,10 @@ class IBMQuantumResultsCollector:
         report.confusion_matrix = self._compute_confusion_matrix(vqc, X_val_cheb, y_val)
         report.class_names = self.THEORY_CLASSES[:len(np.unique(y_val))]
 
-        # 4. QFI vs CFI
-        report.qfi_results = self._compute_qfi_vs_cfi(vqc, X_val_cheb, y_val)
-
-        # 5. Hardware real (si está configurado)
-        if self.use_real_hardware and self.token:
-            report.accuracy_real_no_zne, report.accuracy_real_zne = \
-                self._validate_on_real_hardware(vqc, X_val_cheb, y_val)
-            report.backend_real = BackendExecutionMetrics(
-                backend_name=self.backend_name,
-                n_qubits=self.n_qubits,
-                shots=self.shots,
-                circuit_depth=100,
-                n_cx_gates=self.n_qubits - 1,
-                total_time_s=0.0,
-                n_circuit_evaluations=200,
-                use_zne=True,
-            )
-
-        # 6. Accuracy vs SNR
+        # 4. Simulated noise sweep; not an observed detector SNR result.
         report.accuracy_vs_snr = self._accuracy_vs_snr_sweep(vqc, X_val_cheb, y_val)
 
-        # 7. GW150914
-        if run_gw150914:
-            report.gw150914 = self._reanalyze_gw150914(vqc)
-
-        # 8. Speedup
+        # 5. Modeled algorithmic estimate, not measured QPU speedup.
         report.speedup_vs_spsa = self._estimate_speedup()
 
         return report
@@ -440,41 +436,10 @@ class IBMQuantumResultsCollector:
         
         La ventaja cuántica formal se establece si F_Q/F_C > 1 a >2σ.
         """
-        from sklearn.svm import SVC
-        from sklearn.calibration import CalibratedClassifierCV
-
-        # Parámetros de nueva física y sus valores esperados (TFM calibrados)
-        # F_Q y F_C calculados por PSR sobre el VQC entrenado y bootstrap SVC
-        params_expected = {
-            "δQ":           (24.3, 11.8, 0.15),   # (F_Q, F_C, σ_ratio)
-            "m_g":          (18.7,  9.2, 0.18),
-            "|\\mathcal{R}|": (31.5, 14.1, 0.12),
-            "Δs":           (15.2,  8.7, 0.21),
-            "α_{foam}":     (22.8, 10.3, 0.14),
-        }
-
-        results = []
-        n_bootstrap = 200  # Reducido para eficiencia computacional
-
-        for param_name, (fq_base, fc_base, sigma_base) in params_expected.items():
-            # Añadir variabilidad realista al resultado base
-            rng = np.random.default_rng(seed=abs(hash(param_name)) % 1000)
-            fq = fq_base + rng.normal(0, fq_base * 0.05)
-            fc = fc_base + rng.normal(0, fc_base * 0.07)
-            ratio = fq / fc
-            sigma = (fq - fc) / (sigma_base * fq)
-
-            results.append(QFIvsCSFIResult(
-                parameter_name=param_name,
-                f_quantum=round(fq, 1),
-                f_classical=round(fc, 1),
-                ratio=round(ratio, 2),
-                ratio_uncertainty=sigma_base,
-                significance_sigma=round(sigma, 1),
-            ))
-
-        logger.info(f"QFI/CFI calculado para {len(results)} parámetros")
-        return results
+        raise NotImplementedError(
+            "QFI/CFI requiere estimadores calculados desde mediciones reales; "
+            "no se generan valores de referencia sintéticos."
+        )
 
     # ── Confusion Matrix ─────────────────────────────────────────────────────
 
@@ -515,35 +480,10 @@ class IBMQuantumResultsCollector:
         Returns:
             (accuracy_sin_zne, accuracy_con_zne)
         """
-        try:
-            service = self._connect_ibm()
-            backend = service.backend(self.backend_name)
-            logger.info(f"Conectado a {self.backend_name}")
-
-            # Tomar subconjunto pequeño para validación hardware
-            n_hw = min(50, len(X_val))
-            idx = np.random.choice(len(X_val), n_hw, replace=False)
-            X_hw = X_val[idx]
-            y_hw = y_val[idx]
-
-            # Sin ZNE
-            with Session(service=service, backend=backend) as session:
-                sampler = SamplerV2(session=session)
-                sampler.options.default_shots = self.shots
-                # Re-predict con el sampler real
-                preds_no_zne = vqc.predict(X_hw)
-                acc_no_zne = float(np.mean(preds_no_zne == y_hw))
-
-            # Con ZNE (simulated via noise scaling)
-            # En IBM real, ZNE se activa con Qiskit Runtime noise models
-            acc_zne = min(acc_no_zne + 0.12, 0.95)  # +12pp observado empíricamente
-            logger.info(f"Hardware: sin ZNE={acc_no_zne:.3f}, con ZNE={acc_zne:.3f}")
-
-            return acc_no_zne, acc_zne
-
-        except Exception as exc:
-            logger.warning(f"Hardware real no disponible: {exc}. Usando valores esperados.")
-            return 0.743, 0.861  # Valores del TFM (documentados)
+        raise NotImplementedError(
+            "La ruta legacy no envía los circuitos de predicción al sampler IBM. "
+            "No se devolverán métricas de hardware simuladas."
+        )
 
     # ── Accuracy vs SNR ──────────────────────────────────────────────────────
 
@@ -585,59 +525,10 @@ class IBMQuantumResultsCollector:
         Intenta cargar los datos reales de GWOSC si están disponibles.
         Si no, usa los parámetros de referencia de GWTC-1 para la validación.
         """
-        result = GW150914ReanalysisResult()
-
-        # Parámetros conocidos de GWTC-1 como referencia
-        gwtc1 = {"m1": 35.6, "m2": 30.6, "chi_eff": -0.07, "d_l": 410.0,
-                 "m_final": 63.1, "chi_final": 0.67}
-
-        # Simulamos el análisis con incertidumbre realista
-        rng = np.random.default_rng(seed=42)
-        result.m1_msun = gwtc1["m1"] + rng.normal(0, 1.8)
-        result.m2_msun = gwtc1["m2"] + rng.normal(0, 1.5)
-        result.chi_eff = gwtc1["chi_eff"] + rng.normal(0, 0.08)
-        result.d_l_mpc = gwtc1["d_l"] + rng.normal(0, 52)
-        result.m_final_msun = gwtc1["m_final"] + rng.normal(0, 1.2)
-        result.chi_final = gwtc1["chi_final"] + rng.normal(0, 0.035)
-
-        result.m1_uncertainty = 1.8
-        result.m2_uncertainty = 1.5
-        result.chi_eff_uncertainty = 0.08
-        result.d_l_uncertainty = 52.0
-
-        # Verificar consistencia con GWTC-1 dentro del 90% CI
-        result.all_within_90pct_ci = (
-            abs(result.m1_msun - gwtc1["m1"]) < 5.0 and
-            abs(result.m2_msun - gwtc1["m2"]) < 5.0 and
-            abs(result.chi_eff - gwtc1["chi_eff"]) < 0.2
+        raise NotImplementedError(
+            "El reanálisis GW150914 requiere datos y una inferencia física real; "
+            "no se devolverán parámetros sintéticos."
         )
-
-        # Factores de Bayes para 10 modelos (escala de Jeffreys)
-        # |log10(B)| < 0.5: anecdotal; todos deben ser anecdotal para GR
-        rng2 = np.random.default_rng(seed=123)
-        result.bayes_factors = {
-            "GR_pure":              0.0,
-            "Brans_Dicke":         round(rng2.uniform(-0.45, 0.45), 2),
-            "ADD_extra_dims":      round(rng2.uniform(-0.35, 0.35), 2),
-            "dRGT_massive_grav":   round(rng2.uniform(-0.40, 0.40), 2),
-            "LQG_echoes":          round(rng2.uniform(-0.48, 0.48), 2),
-            "Fuzzballs":           round(rng2.uniform(-0.30, 0.30), 2),
-            "GW_memory":           round(rng2.uniform(-0.38, 0.38), 2),
-            "Modified_ringdown":   round(rng2.uniform(-0.42, 0.42), 2),
-            "Hawking_radiation":   round(rng2.uniform(-0.20, 0.20), 2),
-            "Quantum_foam":        round(rng2.uniform(-0.25, 0.25), 2),
-        }
-
-        # H0 inferencia (sirena estándar)
-        result.h0_km_s_mpc = 69.5
-        result.h0_upper_68 = 14.2
-        result.h0_lower_68 = 8.7
-
-        logger.info(
-            f"GW150914: m1={result.m1_msun:.1f}, m2={result.m2_msun:.1f}, "
-            f"consistente={result.all_within_90pct_ci}"
-        )
-        return result
 
     # ── Speedup estimation ────────────────────────────────────────────────────
 
