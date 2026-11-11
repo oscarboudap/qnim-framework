@@ -162,7 +162,9 @@ class LIGONoiseInjectionAdapter:
                 raise ValueError(f"GWOSC no devolvió un segmento completo para {split}")
         return result
 
-    def _make_waveform(self, theory_class: int, rng: np.random.Generator) -> tuple[np.ndarray, dict]:
+    def _make_waveform(
+        self, theory_class: int, rng: np.random.Generator
+    ) -> tuple[np.ndarray, dict, np.ndarray]:
         if self.waveform_generator is not None:
             waveform, metadata = self.waveform_generator(theory_class, rng)
         else:
@@ -186,13 +188,20 @@ class LIGONoiseInjectionAdapter:
         waveform = np.asarray(waveform, dtype=float)
         if waveform.shape != (self.n_samples,) or not np.isfinite(waveform).all():
             raise ValueError("El waveform debe ser finito y tener la longitud configurada")
-        return waveform, dict(metadata)
+        metadata = dict(metadata)
+        reference_waveform = np.asarray(
+            metadata.pop("_normalization_reference_waveform", waveform), dtype=float
+        )
+        if reference_waveform.shape != waveform.shape or not np.isfinite(reference_waveform).all():
+            raise ValueError("El waveform GR de referencia debe ser finito y tener la longitud configurada")
+        return waveform, metadata, reference_waveform
 
     def _inject_and_whiten(
         self,
         waveform: np.ndarray,
         segment: NoiseSegment,
         target_snr: float,
+        reference_waveform: Optional[np.ndarray] = None,
     ) -> tuple[np.ndarray, float]:
         noise = np.asarray(segment.data[:self.n_samples], dtype=float)
         frequencies, psd = welch(
@@ -209,20 +218,28 @@ class LIGONoiseInjectionAdapter:
             raise ValueError(f"El segmento {segment.segment_id} no tiene bins PSD utilizables")
 
         waveform_fft = np.fft.rfft(waveform)
+        reference_fft = np.fft.rfft(
+            waveform if reference_waveform is None else reference_waveform
+        )
         delta_f = self.sample_rate / self.n_samples
-        optimal_snr = np.sqrt(
+        reference_snr = np.sqrt(
+            4.0 * delta_f * np.sum(np.abs(reference_fft[usable]) ** 2 / psd_bins[usable])
+        )
+        modified_snr = np.sqrt(
             4.0 * delta_f * np.sum(np.abs(waveform_fft[usable]) ** 2 / psd_bins[usable])
         )
-        if not np.isfinite(optimal_snr) or optimal_snr <= 0:
+        if not np.isfinite(reference_snr) or reference_snr <= 0:
             raise ValueError("No se pudo calcular un SNR válido para la señal")
 
-        scaled_waveform = waveform * (target_snr / optimal_snr)
+        scale = target_snr / reference_snr
+        scaled_waveform = waveform * scale
+        observed_snr = float(modified_snr * scale)
         injected = noise + scaled_waveform
         injected_fft = np.fft.rfft(injected)
         whitened_fft = np.zeros_like(injected_fft)
         whitened_fft[usable] = injected_fft[usable] / np.sqrt(psd_bins[usable] * delta_f)
         whitened = np.fft.irfft(whitened_fft, n=self.n_samples)
-        return whitened, target_snr
+        return whitened, observed_snr
 
     def generate_balanced_dataset(
         self,
@@ -240,35 +257,45 @@ class LIGONoiseInjectionAdapter:
         snr_by_split = {"train": [], "val": [], "test": []}
         event_metadata = {"train": [], "val": [], "test": []}
         counts = {"train": n_per_class, "val": n_val_per_class, "test": n_test_per_class}
+        split_ids = {"train": 0, "val": 1, "test": 2}
+        used_segments = {"train": [], "val": [], "test": []}
 
         for split, count in counts.items():
             segments = self.noise_segments[split]
-            required_segments = count * self.n_classes
+            required_segments = count
             if len(segments) < required_segments:
                 raise ValueError(
-                    f"El split {split} requiere {required_segments} segmentos GPS únicos; "
+                    f"El split {split} requiere {required_segments} segmentos GPS únicos para pares; "
                     f"solo hay {len(segments)}"
                 )
             segment_indices = rng.choice(
                 len(segments), size=required_segments, replace=False
             )
-            segment_cursor = 0
-            for theory_class in range(self.n_classes):
-                for _ in range(count):
-                    waveform, metadata = self._make_waveform(theory_class, rng)
-                    segment = segments[int(segment_indices[segment_cursor])]
-                    segment_cursor += 1
-                    target_snr = float(rng.uniform(*self.target_snr_range))
-                    injected, actual_snr = self._inject_and_whiten(waveform, segment, target_snr)
+            for event_index in range(count):
+                segment = segments[int(segment_indices[event_index])]
+                used_segments[split].append(segment.segment_id)
+                target_snr = float(rng.uniform(*self.target_snr_range))
+                pair_id = f"{split}-{event_index:06d}"
+                pair_seed = np.random.SeedSequence([seed, split_ids[split], event_index])
+                for theory_class in range(self.n_classes):
+                    waveform_rng = np.random.default_rng(pair_seed)
+                    waveform, metadata, reference_waveform = self._make_waveform(
+                        theory_class, waveform_rng
+                    )
+                    injected, actual_snr = self._inject_and_whiten(
+                        waveform, segment, target_snr, reference_waveform
+                    )
                     raw_by_split[split].append(injected)
                     labels_by_split[split].append(theory_class)
                     snr_by_split[split].append(actual_snr)
                     event_metadata[split].append({
                         **metadata,
+                        "pair_id": pair_id,
                         "noise_segment_id": segment.segment_id,
                         "detector": segment.detector,
                         "gps_start": segment.gps_start,
-                        "target_snr": actual_snr,
+                        "base_target_snr": target_snr,
+                        "observed_snr": actual_snr,
                     })
 
         X_train_raw = np.stack(raw_by_split["train"])
@@ -304,8 +331,14 @@ class LIGONoiseInjectionAdapter:
             "n_test_per_class": n_test_per_class,
             "approximant": self.approximant,
             "noise_segments": {
-                split: [segment.segment_id for segment in segments]
-                for split, segments in self.noise_segments.items()
+                split: used_segments[split]
+                for split in used_segments
+            },
+            "paired_injections": {
+                "shared_source_parameters": True,
+                "shared_noise_within_pair": True,
+                "shared_base_target_snr": True,
+                "normalization_reference": "unmodified_GR_waveform",
             },
             "pca_analysis": {
                 "explained_variance": variance.tolist(),

@@ -28,6 +28,10 @@ SCALING_MATRIX = (
     {"id": "n20_d20", "n_qubits": 20, "pca_components": 20},
     {"id": "n32_d12", "n_qubits": 32, "pca_components": 12},
     {"id": "n32_d32", "n_qubits": 32, "pca_components": 32},
+    {"id": "n48_d48", "n_qubits": 48, "pca_components": 48},
+    {"id": "n64_d64", "n_qubits": 64, "pca_components": 64},
+    {"id": "n96_d96", "n_qubits": 96, "pca_components": 96},
+    {"id": "n128_d128", "n_qubits": 128, "pca_components": 128},
 )
 
 
@@ -151,7 +155,7 @@ class RunScalingStudyUseCase:
         for experiment in self.experiments:
             n_qubits = experiment["n_qubits"]
             n_features = experiment["pca_components"]
-            if not 1 <= n_features <= n_qubits <= 32:
+            if not 1 <= n_features <= n_qubits <= 128:
                 raise ValueError(f"Dimensiones inválidas en experimento {experiment['id']}")
 
             current_dataset = SimpleNamespace(

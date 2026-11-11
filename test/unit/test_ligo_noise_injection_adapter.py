@@ -79,6 +79,38 @@ def test_noise_injection_dataset_has_disjoint_balanced_splits(monkeypatch):
     )) == 0
     assert np.all((dataset.snr_train >= 8.0) & (dataset.snr_train <= 12.0))
     assert len(dataset.metadata["event_metadata"]["test"]) == 9
+    for split in ("train", "val", "test"):
+        records = dataset.metadata["event_metadata"][split]
+        for start in range(0, len(records), 3):
+            pair = records[start:start + 3]
+            assert len({record["pair_id"] for record in pair}) == 1
+            assert len({record["noise_segment_id"] for record in pair}) == 1
+            assert len({record["base_target_snr"] for record in pair}) == 1
+    assert dataset.metadata["paired_injections"]["normalization_reference"] == "unmodified_GR_waveform"
+
+
+def test_snr_normalization_preserves_modified_amplitude(monkeypatch):
+    module = _load_adapter(monkeypatch)
+    adapter = module.LIGONoiseInjectionAdapter(
+        noise_segments=_noise_segments(module),
+        sample_rate=128,
+        duration=1.0,
+        n_components=4,
+        n_pca_fit=6,
+        target_snr_range=(8.0, 12.0),
+        max_classes=3,
+        waveform_generator=_waveform_generator(),
+        f_low=2.0,
+        f_high=60.0,
+    )
+    segment = adapter.noise_segments["test"][0]
+    reference = np.sin(2.0 * np.pi * 8.0 * np.arange(128) / 128)
+
+    _, observed_snr = adapter._inject_and_whiten(
+        reference * 1.2, segment, 10.0, reference_waveform=reference
+    )
+
+    assert observed_snr == pytest.approx(12.0)
 
 
 def test_noise_injection_rejects_reused_segment_ids_between_splits(monkeypatch):

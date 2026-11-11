@@ -526,6 +526,7 @@ def _predict_via_circuit(
     shots: int = 512,
     batch_size: int = 32,
     sampler=None,
+    simulator_seed: Optional[int] = None,
 ) -> np.ndarray:
     """
     Ejecuta el circuito combinado (feature_map + ansatz) sobre X_cheb
@@ -551,13 +552,16 @@ def _predict_via_circuit(
                     "Qiskit Aer es necesario para simular circuitos de 20 o más qubits"
                 ) from exc
 
-            noisy_backend = AerSimulator(method="matrix_product_state")
+            noisy_backend = AerSimulator(
+                method="matrix_product_state",
+                seed_simulator=simulator_seed,
+            )
             combined_run = transpile(
                 combined_run, backend=noisy_backend, optimization_level=1
             )
             sampler = AerSamplerV2.from_backend(noisy_backend)
         else:
-            sampler = StatevectorSampler()
+            sampler = StatevectorSampler(seed=simulator_seed)
     y_pred = np.zeros(len(X_cheb), dtype=int)
 
     for start in range(0, len(X_cheb), batch_size):
@@ -758,7 +762,10 @@ def _make_vqc_loss_fn(
                     "Qiskit Aer es necesario para simular circuitos de 20 o más qubits"
                 )
             try:
-                noisy_backend = AerSimulator(method="matrix_product_state")
+                noisy_backend = AerSimulator(
+                    method="matrix_product_state",
+                    seed_simulator=random_seed,
+                )
                 sampler = AerSamplerV2.from_backend(noisy_backend)
                 combined_run = _transpile(
                     combined_with_meas,
@@ -774,7 +781,7 @@ def _make_vqc_loss_fn(
                     f"No se pudo preparar el sampler MPS de Aer: {exc}"
                 ) from exc
         else:
-            sampler = StatevectorSampler()
+            sampler = StatevectorSampler(seed=random_seed)
 
         # Batch fijo por iteración: se resamplea UNA VEZ por iteración
         # externa (refresh_batch), no en cada llamada a loss_fn.
@@ -1376,6 +1383,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             y_pred = _predict_via_circuit(
                 combined_run, x_params, ansatz_params, weights, W1, b1, W2, b2,
                 X_cheb, n_qubits, shots=shots, batch_size=batch_size,
+                simulator_seed=self.random_seed,
             )
 
             accuracy = float(np.mean(y_pred == y_val))
@@ -1744,7 +1752,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             )
 
             from qiskit.primitives import StatevectorSampler
-            sampler = StatevectorSampler()
+            sampler = StatevectorSampler(seed=self.random_seed)
 
             for snr in snr_levels:
                 noise_scale = 20.0 / snr

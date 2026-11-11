@@ -108,36 +108,73 @@ class PhysicsSSTGAdapter:
             m1, m2, d, self.duration, self.sample_rate,
             self.f_lower, self.approximant,
         )
+        reference_strain = strain.copy()
         htilde = np.fft.rfft(strain)
         freqs  = np.fft.rfftfreq(len(strain), d=dt)
+        injection_parameters = {}
 
         if theory_class == 0:
             pass
         elif theory_class == 1:
-            htilde = _inject_standard_siren(htilde, freqs, H0_true=float(rng.uniform(60,80)))
+            h0_true = float(rng.uniform(60, 80))
+            injection_parameters = {"H0_true_km_s_mpc": h0_true}
+            htilde = _inject_standard_siren(htilde, freqs, H0_true=h0_true)
         elif theory_class == 2:
             htilde = _inject_qnm_subdominant(htilde, freqs, mode="21", rng=rng)
+            injection_parameters = {"qnm_mode": "21"}
         elif theory_class == 3:
             htilde = _inject_qnm_subdominant(htilde, freqs, mode="33", rng=rng)
+            injection_parameters = {"qnm_mode": "33"}
         elif theory_class == 4:
-            htilde = _inject_pn_deformation(htilde, freqs, M, delta_phi_hat=float(rng.uniform(0.03,0.10)))
+            delta_phi_hat = float(rng.uniform(0.03, 0.10))
+            injection_parameters = {"delta_phi_hat": delta_phi_hat}
+            htilde = _inject_pn_deformation(htilde, freqs, M, delta_phi_hat=delta_phi_hat)
         elif theory_class == 5:
-            htilde = _inject_liv(htilde, freqs, d, alpha=3.0, A_alpha_m=float(rng.uniform(1e8,1e9)))
+            from src.domain.astrophysics.sstg.injectors.layer5_beyond_gr_complete import (
+                Layer5BeyondGRInjector,
+            )
+
+            h_plus, h_cross = Layer5BeyondGRInjector.inject_extra_dimensions_leakage(
+                strain, np.zeros_like(strain), n_extra_dims=1,
+                distance_mpc=d, fs=self.sample_rate,
+            )
+            injection_parameters = {"n_extra_dims": 1}
+            htilde = np.fft.rfft(h_plus)
         elif theory_class == 6:
-            htilde = _inject_scalar_tensor(htilde, freqs, M, omega_BD_eff=float(rng.uniform(40,80)))
+            omega_bd_eff = float(rng.uniform(40, 80))
+            injection_parameters = {"omega_BD_eff": omega_bd_eff}
+            htilde = _inject_scalar_tensor(htilde, freqs, M, omega_BD_eff=omega_bd_eff)
         elif theory_class == 7:
-            htilde = _inject_graviton_mass(htilde, freqs, d, mg_eV=1.27e-23*7e21)
+            mg_eV = 1.27e-23 * 7e21
+            injection_parameters = {"graviton_mass_eV": mg_eV}
+            htilde = _inject_graviton_mass(htilde, freqs, d, mg_eV=mg_eV)
         elif theory_class == 8:
-            htilde = _inject_chern_simons(htilde, freqs, d, kappa_gpc=float(rng.uniform(0.5,1.2)))
+            kappa_gpc = float(rng.uniform(0.5, 1.2))
+            injection_parameters = {"kappa_gpc": kappa_gpc}
+            htilde = _inject_chern_simons(htilde, freqs, d, kappa_gpc=kappa_gpc)
         elif theory_class == 9:
-            htilde = _inject_liv(htilde, freqs, d, alpha=1.5, A_alpha_m=float(rng.uniform(5e9,2e10)))
+            a_alpha_m = float(rng.uniform(5e9, 2e10))
+            injection_parameters = {"alpha": 1.5, "A_alpha_m": a_alpha_m}
+            htilde = _inject_liv(htilde, freqs, d, alpha=1.5, A_alpha_m=a_alpha_m)
         elif theory_class == 10:
-            htilde = _inject_liv(htilde, freqs, d, alpha=4.0, A_alpha_m=float(rng.uniform(5e9,2e10)))
+            a_alpha_m = float(rng.uniform(5e9, 2e10))
+            injection_parameters = {"alpha": 4.0, "A_alpha_m": a_alpha_m}
+            htilde = _inject_liv(htilde, freqs, d, alpha=4.0, A_alpha_m=a_alpha_m)
         elif theory_class == 11:
-            htilde = _inject_qnm_subdominant(htilde, freqs, mode="33", rng=rng)
-            htilde *= 1.3
+            from src.domain.astrophysics.sstg.injectors.layer6_horizon_topology_complete import (
+                Layer6HorizonTopologyInjector,
+            )
+
+            h_plus, h_cross = Layer6HorizonTopologyInjector.inject_lqg_discrete_spectrum(
+                strain, np.zeros_like(strain), area_quantum=0.1,
+                fs=self.sample_rate, mass=M,
+            )
+            injection_parameters = {"area_quantum": 0.1}
+            htilde = np.fft.rfft(h_plus)
         elif theory_class == 12:
-            htilde = _inject_gup(htilde, freqs, beta_gup=float(rng.uniform(5e-3,2e-2)))
+            beta_gup = float(rng.uniform(5e-3, 2e-2))
+            injection_parameters = {"beta_gup": beta_gup}
+            htilde = _inject_gup(htilde, freqs, beta_gup=beta_gup)
 
         strain_mod = np.fft.irfft(htilde, n=len(strain))
         snr_approx = float(np.clip(
@@ -147,7 +184,9 @@ class PhysicsSSTGAdapter:
         ))
         meta = {"m1": m1, "m2": m2, "Mc": Mc, "distance_mpc": d,
                 "theory_class": theory_class,
-                "theory_name": self.THEORY_CLASSES[theory_class]}
+            "theory_name": self.THEORY_CLASSES[theory_class],
+                "injection_parameters": injection_parameters,
+            "_normalization_reference_waveform": reference_strain}
         return strain_mod, snr_approx, Mc, meta
 
     def generate_balanced_dataset(self, n_per_class=80, n_val_per_class=20,
