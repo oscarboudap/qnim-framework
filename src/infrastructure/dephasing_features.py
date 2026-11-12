@@ -174,3 +174,77 @@ class DephasingFeatureExtractor:
                       f"Im_b{k}_{lo:.0f}-{hi:.0f}Hz",
                       f"dIm_b{k}_{lo:.0f}-{hi:.0f}Hz"]
         return names
+
+
+class MatchedFilterFeatureExtractor:
+    """Extract complex band overlaps against GR templates fitted on train only."""
+
+    def __init__(self, n_bands: int = 16, f_low: float = 20.0, f_high: float = 1024.0):
+        if n_bands < 1 or not 0 < f_low < f_high:
+            raise ValueError("Se requieren bandas y límites de frecuencia válidos")
+        self.n_bands = n_bands
+        self.f_low = f_low
+        self.f_high = f_high
+        self._template: Optional[np.ndarray] = None
+        self._band_edges: Optional[np.ndarray] = None
+
+    def fit(self, gr_references: np.ndarray, dt: float = 1.0 / 4096.0):
+        references = np.asarray(gr_references, dtype=float)
+        if references.ndim != 2 or references.shape[0] == 0:
+            raise ValueError("gr_references debe ser una matriz 2D no vacía")
+        if not np.isfinite(references).all():
+            raise ValueError("gr_references contiene NaN o infinitos")
+        spectra = np.fft.rfft(references, axis=1)
+        self._template = spectra.mean(axis=0)
+        frequencies = np.fft.rfftfreq(references.shape[1], d=dt)
+        upper = min(self.f_high, frequencies[-1])
+        if upper <= self.f_low:
+            raise ValueError("La señal no cubre el rango de frecuencias configurado")
+        self._band_edges = np.geomspace(self.f_low, upper, self.n_bands + 1)
+        return self
+
+    def transform(
+        self,
+        strains: np.ndarray,
+        dt: float = 1.0 / 4096.0,
+        templates: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
+        if self._template is None or self._band_edges is None:
+            raise RuntimeError("Llama a fit() antes de transform().")
+        values = np.asarray(strains, dtype=float)
+        squeeze = values.ndim == 1
+        if squeeze:
+            values = values[np.newaxis, :]
+        if values.ndim != 2 or values.shape[1] != (len(self._template) - 1) * 2:
+            raise ValueError("strains tiene una longitud incompatible con la plantilla")
+        if templates is None:
+            template_spectra = np.broadcast_to(self._template, (len(values), len(self._template)))
+        else:
+            reference_values = np.asarray(templates, dtype=float)
+            if reference_values.ndim == 1:
+                reference_values = np.broadcast_to(reference_values, values.shape)
+            if reference_values.shape != values.shape or not np.isfinite(reference_values).all():
+                raise ValueError("templates debe coincidir con strains y contener valores finitos")
+            template_spectra = np.fft.rfft(reference_values, axis=1)
+        frequencies = np.fft.rfftfreq(values.shape[1], d=dt)
+        spectra = np.fft.rfft(values, axis=1)
+        features = np.zeros((len(values), self.n_bands * 2), dtype=float)
+        for band_index, (low, high) in enumerate(zip(self._band_edges[:-1], self._band_edges[1:])):
+            mask = (frequencies >= low) & (frequencies < high)
+            template = template_spectra[:, mask]
+            denominator = np.sum(np.abs(template) ** 2, axis=1)
+            usable = denominator > np.finfo(float).tiny
+            if not np.any(usable):
+                continue
+            numerator = np.sum(spectra[:, mask] * np.conj(template), axis=1)
+            overlap = np.zeros(len(values), dtype=complex)
+            overlap[usable] = numerator[usable] / denominator[usable]
+            features[:, 2 * band_index] = overlap.real
+            features[:, 2 * band_index + 1] = overlap.imag
+        return features[0] if squeeze else features
+
+    def get_feature_names(self) -> List[str]:
+        names = []
+        for index in range(self.n_bands):
+            names.extend([f"matched_re_band_{index}", f"matched_im_band_{index}"])
+        return names

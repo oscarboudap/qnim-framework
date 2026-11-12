@@ -144,12 +144,11 @@ class Layer6HorizonTopologyInjector:
         # Parámetro de Planck adimensional
         l_planck_adimenional = area_quantum
         
-        # Frecuencias cuasinormal para Kerr (baseline, Schwarzschild simplificado)
-        # f_QNM ~ M_BH^{-1} * (Q ± sqrt(Q² - 4))/(2π)
-        # Para spin neutro: f_QNM ~ 0.36 M_BH^{-1}, Q ~ 9
+        # Fundamental Schwarzschild QNM: Re(omega) M ~= 0.374, with
+        # f = Re(omega)/(2 pi M). Approximate the remnant mass as 95% of M.
         
         mass_seconds = mass * M_SUN * G_CONST / (C_LIGHT ** 3)  # M en segundos
-        f_qnm_base = 0.36 / mass_seconds  # Frecuencia cuasinormal GR
+        f_qnm_base = 0.374 / (2.0 * np.pi * 0.95 * mass_seconds)
         
         # En LQG, los QNM se modifican por el espectro discreto
         # Aproximación: Shift en Q por cuantización
@@ -161,21 +160,16 @@ class Layer6HorizonTopologyInjector:
         h_cross_fft = fft(h_cross)
         freqs = fftfreq(n_samples, 1.0 / fs)
         
-        # Aplicar filtro que enfatiza modos discretos LQG
-        # Crear peine de frecuencias (discrete levels)
-        lqg_mode_spacing = 0.5 / mass_seconds  # Spacing entre modos
+        # Apply symmetric spectral peaks around harmonics of the fundamental QNM.
+        lqg_mode_spacing = f_qnm_base
         
-        # Construcción de filtro paso-banda centrado en modos LQG
+        # Build a symmetric response so real inputs remain real after filtering.
         filter_response = np.ones(len(freqs))
+        abs_freqs = np.abs(freqs)
         for n in range(1, 5):  # Primeros 5 modos LQG
             mode_freq = n * lqg_mode_spacing
-            # Ancho de banda: Δf = f_QNM / (2π Q)
             bandwidth = mode_freq / (2 * np.pi * q_factor_lqg)
-            # Gaussiano centrado en modo
-            filter_response += 0.5 * np.exp(-(freqs - mode_freq)**2 / (bandwidth**2))
-        
-        # Normalizar
-        filter_response = filter_response / np.max(filter_response)
+            filter_response += 0.5 * np.exp(-((abs_freqs - mode_freq) / bandwidth) ** 2)
         
         # Aplicar filtro
         h_plus_fft_filtered = h_plus_fft * filter_response

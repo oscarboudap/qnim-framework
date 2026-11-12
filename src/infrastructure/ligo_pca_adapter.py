@@ -120,6 +120,9 @@ class GWDataset:
     snr_train: np.ndarray = field(default_factory=lambda: np.array([]))
     snr_val:   np.ndarray = field(default_factory=lambda: np.array([]))
     metadata: dict = field(default_factory=dict)
+    X_physical_train: Optional[np.ndarray] = None
+    X_physical_val: Optional[np.ndarray] = None
+    X_physical_test: Optional[np.ndarray] = None
 
 
 # ---------------------------------------------------------------------------
@@ -258,31 +261,45 @@ class LIGOPCAAdapter:
             htilde = _inject_qnm_subdominant(htilde, freqs, mode="33", rng=rng)
         elif theory_class == 4:
             htilde = _inject_pn_deformation(htilde, freqs, M,
-                                             delta_phi_hat=float(rng.uniform(0.03, 0.10)))
+                                             delta_phi_hat=float(rng.uniform(0.001, 0.01)))
         elif theory_class == 5:
-            htilde = _inject_liv(htilde, freqs, d, alpha=3.0,
-                                  A_alpha_m=float(rng.uniform(1e8, 1e9)))
+            from src.domain.astrophysics.sstg.injectors.layer5_beyond_gr_complete import (
+                Layer5BeyondGRInjector,
+            )
+
+            h_plus, _ = Layer5BeyondGRInjector.inject_extra_dimensions_leakage(
+                strain, np.zeros_like(strain), n_extra_dims=1,
+                distance_mpc=d, fs=self.sample_rate,
+            )
+            htilde = np.fft.rfft(h_plus)
         elif theory_class == 6:
             htilde = _inject_scalar_tensor(htilde, freqs, M,
-                                            omega_BD_eff=float(rng.uniform(40, 80)))
+                                            omega_BD_eff=float(rng.uniform(40000, 80000)))
         elif theory_class == 7:
             htilde = _inject_graviton_mass(htilde, freqs, d,
-                                            mg_eV=1.27e-23 * 7e21)
+                                            mg_eV=1.27e-23)
         elif theory_class == 8:
             htilde = _inject_chern_simons(htilde, freqs, d,
                                            kappa_gpc=float(rng.uniform(0.5, 1.2)))
         elif theory_class == 9:
             htilde = _inject_liv(htilde, freqs, d, alpha=2.0,
-                                  A_alpha_m=float(rng.uniform(5e9, 2e10)))
+                                  phase_ref_rad=float(rng.uniform(0.03, 0.10)))
         elif theory_class == 10:
             htilde = _inject_liv(htilde, freqs, d, alpha=4.0,
-                                  A_alpha_m=float(rng.uniform(5e9, 2e10)))
+                                  phase_ref_rad=float(rng.uniform(0.03, 0.10)))
         elif theory_class == 11:
-            htilde = _inject_qnm_subdominant(htilde, freqs, mode="33", rng=rng)
-            htilde *= 1.3
+            from src.domain.astrophysics.sstg.injectors.layer6_horizon_topology_complete import (
+                Layer6HorizonTopologyInjector,
+            )
+
+            h_plus, _ = Layer6HorizonTopologyInjector.inject_lqg_discrete_spectrum(
+                strain, np.zeros_like(strain), area_quantum=0.1,
+                fs=self.sample_rate, mass=M,
+            )
+            htilde = np.fft.rfft(h_plus)
         elif theory_class == 12:
             htilde = _inject_gup(htilde, freqs,
-                                   beta_gup=float(rng.uniform(5e-3, 2e-2)))
+                                   beta_gup=float(rng.uniform(0.03, 0.10)))
 
         strain_mod = np.fft.irfft(htilde, n=len(strain))
 

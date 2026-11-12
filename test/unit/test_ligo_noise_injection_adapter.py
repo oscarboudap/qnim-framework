@@ -71,6 +71,9 @@ def test_noise_injection_dataset_has_disjoint_balanced_splits(monkeypatch):
     assert dataset.X_train.shape == (18, 4)
     assert dataset.X_val.shape == (6, 4)
     assert dataset.X_test.shape == (9, 4)
+    assert dataset.X_physical_train.shape == (18, 32)
+    assert dataset.X_physical_val.shape == (6, 32)
+    assert dataset.X_physical_test.shape == (9, 32)
     np.testing.assert_array_equal(np.bincount(dataset.y_train), [6, 6, 6])
     np.testing.assert_array_equal(np.bincount(dataset.y_val), [2, 2, 2])
     np.testing.assert_array_equal(np.bincount(dataset.y_test), [3, 3, 3])
@@ -87,6 +90,7 @@ def test_noise_injection_dataset_has_disjoint_balanced_splits(monkeypatch):
             assert len({record["noise_segment_id"] for record in pair}) == 1
             assert len({record["base_target_snr"] for record in pair}) == 1
     assert dataset.metadata["paired_injections"]["normalization_reference"] == "unmodified_GR_waveform"
+    assert dataset.metadata["paired_injections"]["waveform_generation"] == "custom_generator"
 
 
 def test_snr_normalization_preserves_modified_amplitude(monkeypatch):
@@ -106,11 +110,12 @@ def test_snr_normalization_preserves_modified_amplitude(monkeypatch):
     segment = adapter.noise_segments["test"][0]
     reference = np.sin(2.0 * np.pi * 8.0 * np.arange(128) / 128)
 
-    _, observed_snr = adapter._inject_and_whiten(
+    _, observed_snr, reference_whitened = adapter._inject_and_whiten(
         reference * 1.2, segment, 10.0, reference_waveform=reference
     )
 
     assert observed_snr == pytest.approx(12.0)
+    assert reference_whitened.shape == reference.shape
 
 
 def test_noise_injection_rejects_reused_segment_ids_between_splits(monkeypatch):

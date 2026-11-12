@@ -24,7 +24,7 @@ CLASES Y ESTADO:
     5  extra-dimensions    ✅  ya existente (Layer5/ADD)
     6  scalar-tensor       ✅  Brans-Dicke ppE dipolar -1PN, K=800× (bug de
                                unidades corregido: M en segundos, no metros)
-    7  graviton-mass       ✅  Will 1998 retraso de fase, K≈7e21 (cota LIGO)
+    7  graviton-mass       ✅  Will 1998 dispersive phase at the current LIGO bound
     8  chern-simons        ✅  birrefringencia de amplitud Okounkova+23, K=16.7×
     9  liv-alpha1.5        ⚠️  sustituye α=2 (degenerado; GWTC-1 lo excluye)
                                placeholder f^0.5, calibrado con K documentado
@@ -114,9 +114,8 @@ def _inject_qnm_subdominant(htilde: np.ndarray, freqs: np.ndarray,
         df = freqs[mask] - f_peak
         envelope = amp_ratio * np.exp(-tau_factor * df / (f_peak + 1.0))
         htilde = htilde.copy()
-        htilde[mask] += envelope * np.abs(htilde[mask]) * np.exp(
-            1j * rng.uniform(0, 2 * np.pi, mask.sum())
-        )
+        phase_offset = rng.uniform(0, 2 * np.pi)
+        htilde[mask] += envelope * np.abs(htilde[mask]) * np.exp(1j * phase_offset)
     return htilde
 
 
@@ -125,55 +124,50 @@ def _inject_pn_deformation(htilde: np.ndarray, freqs: np.ndarray,
                             delta_phi_hat: float = 0.05,
                             ppe_b: float = -7.0 / 3.0) -> np.ndarray:
     """
-    Clase 4 — Deformación ppE genérica a -1PN.
-    δΨ = δφ̂ · (π M_total f)^b     con b = -7/3 (-1PN).
-    Calibrado con K≈100× sobre la cota observacional δφ̂ ≤ 0.10 (GWTC).
+    Clase 4 — Deformación ppE fenomenológica a -1PN.
+    delta_phi_hat define la fase en radianes a 100 Hz; la frecuencia sigue
+    una ley de potencia b. No es el coeficiente ppE publicado sin conversión.
     """
-    M_s = _mass_seconds(M_total_msun)
-    f_safe = np.where(freqs > 0, freqs, 1e-6)
-    phase_correction = delta_phi_hat * (np.pi * M_s * f_safe) ** ppe_b
-    # Limitar para evitar enrollamiento absurdo
-    phase_correction = np.clip(phase_correction, -10.0, 10.0)
+    f_safe = np.maximum(freqs, 20.0)
+    phase_correction = delta_phi_hat * (f_safe / 100.0) ** ppe_b
     return htilde * np.exp(1j * phase_correction)
 
 
 def _inject_scalar_tensor(htilde: np.ndarray, freqs: np.ndarray,
                            M_total_msun: float,
-                           omega_BD_eff: float = 50.0) -> np.ndarray:
+                           omega_BD_eff: float = 40000.0) -> np.ndarray:
     """
     Clase 6 — Escalar-tensor / Brans-Dicke.
     FIX de unidades: usa M en segundos (GM/c³), no en metros.
     Amplitud dipolar ppE con exponente -7/3 (Chatziioannou et al. 2012).
-    K=800× sobre ω_BD > 40000 (cota Cassini); omega_BD_eff=50 es el valor
-    de estrés para el dataset de clasificación.
+    omega_BD_eff is kept at or above the order-of-magnitude Cassini bound.
     """
     M_s = _mass_seconds(M_total_msun)
     S_eff = 1.0 / (2.0 + omega_BD_eff)   # parámetro dipolar efectivo
     f_safe = np.where(freqs > 0, freqs, 1e-6)
     # Fase dipolar de Brans-Dicke a -1PN (b = -7/3)
     phase_bd = -(5.0 / 84.0) * S_eff * (np.pi * M_s * f_safe) ** (-7.0 / 3.0)
-    phase_bd = np.clip(phase_bd, -10.0, 10.0)
     return htilde * np.exp(1j * phase_bd)
 
 
 def _inject_graviton_mass(htilde: np.ndarray, freqs: np.ndarray,
                            distance_mpc: float,
-                           mg_eV: float = 1.27e-23 * 7e21) -> np.ndarray:
+                           mg_eV: float = 1.27e-23) -> np.ndarray:
     """
     Clase 7 — Masa del gravitón (Will 1998).
     FIX: ahora usa distance_mpc (no era usada antes).
-    δΨ = π² D_L f / (λ_g² (1+z)) ≈ π² D_L f / λ_g²
-    con λ_g = hbar·c / mg.
-    Cota LIGO: mg ≤ 1.27e-23 eV/c².  K≈7e21 → mg_eV = 8.9e-2 para estrés.
+    δΨ = -π (D/c) / (λ_g² f), with λ_g = h/(m_g c²).
+    The implementation uses seconds for both distance and Compton wavelength.
+    At low redshift D is approximated by D_L. Default: 1.27e-23 eV/c².
+    See Will, Phys. Rev. D 57, 2061 (1998), Eqs. (20c)-(21).
     """
     hbar_eV_s = 6.582e-16   # eV·s
-    lambda_g_m = hbar_eV_s * C_SI / (mg_eV * EV_J / C_SI**2 * C_SI**2)
-    # λ_g en metros (simplificado: hbar*c/mg en unidades naturales)
-    lambda_g_m = hbar_eV_s * C_SI / mg_eV   # m  (mg en eV)
-    D_m = _distance_meters(distance_mpc)
+    if mg_eV <= 0:
+        return htilde.copy()
+    lambda_g_s = 2.0 * np.pi * hbar_eV_s / mg_eV
+    distance_s = _distance_meters(distance_mpc) / C_SI
     f_safe = np.where(freqs > 0, freqs, 1e-6)
-    phase_grav = np.pi**2 * D_m * f_safe / lambda_g_m**2
-    phase_grav = np.clip(phase_grav, -10.0, 10.0)
+    phase_grav = -np.pi * distance_s / (lambda_g_s**2 * f_safe)
     return htilde * np.exp(1j * phase_grav)
 
 
@@ -199,46 +193,29 @@ def _inject_chern_simons(htilde: np.ndarray, freqs: np.ndarray,
 def _inject_liv(htilde: np.ndarray, freqs: np.ndarray,
                 distance_mpc: float,
                 alpha: float = 1.5,
-                A_alpha_m: float = 1e10) -> np.ndarray:
+                phase_ref_rad: float = 0.05) -> np.ndarray:
     """
     Clases 9/10 — LIV (relación de dispersión modificada).
-    PLACEHOLDER funcional: δΨ ∝ D · f^(α-1) con la dependencia en
-    frecuencia correcta de Mirshekari-Yunes-Will 2012, pero usando D_L
-    directo en vez de la integral cosmológica D_α (pendiente de refinar;
-    marcado en el TFM como aproximación).
-    α=1.5 sustituye al α=2 (degenerado; excluido en GWTC-1 porque da
-    modificación de velocidad de grupo independiente de la frecuencia).
-    α=4  corresponde a energías cuartas (ej. teorías de Lorentz cuárticas).
+    Phenomenological surrogate: phase_ref_rad is the phase at 100 Hz and
+    500 Mpc; the frequency exponent follows alpha-1. The cosmological
+    propagation integral is not included, so this is not a parameter bound.
     """
-    D_m = _distance_meters(distance_mpc)
-    f_safe = np.where(freqs > 0, freqs, 1e-6)
-    if abs(alpha - 2.0) < 1e-6:
-        # α=2: modificación de velocidad de grupo constante en frecuencia
-        # (degenerada con redefinición del tiempo de coalescencia, pero
-        # mantenida en la taxonomía del paper — Tabla A.1, clase 9).
-        # Implementamos como fase lineal en f: δΨ = A_alpha_m * D_m * f
-        phase_liv = A_alpha_m * D_m * f_safe * 1e-30  # escala muy pequeña
-        phase_liv = np.clip(phase_liv, -10.0, 10.0)
-        return htilde * np.exp(1j * phase_liv)
-    # Fase LIV (signo según convención A_α > 0 → retardo)
-    phase_liv = (np.pi * D_m / (alpha - 1.0)) * (A_alpha_m ** (2 - alpha)) * \
-                f_safe ** (alpha - 1.0)
-    # Calibración: A_alpha_m elegido para que max(|phase|)≈1 rad en el rango LIGO
-    # (el valor 1e10 ya incorpora K documentado en Tabla A.1)
-    phase_liv = np.clip(phase_liv, -10.0, 10.0)
+    f_safe = np.maximum(freqs, 20.0)
+    distance_scale = distance_mpc / 500.0
+    phase_liv = phase_ref_rad * distance_scale * (f_safe / 100.0) ** (alpha - 1.0)
     return htilde * np.exp(1j * phase_liv)
 
 
 def _inject_gup(htilde: np.ndarray, freqs: np.ndarray,
-                beta_gup: float = 1e-2) -> np.ndarray:
+                beta_gup: float = 0.05) -> np.ndarray:
     """
     Clase 12 — GUP (Generalised Uncertainty Principle).
-    Difusión de fase cuadrática en el momento: δΨ ∝ β · (π M f)³.
-    Referencia: Bosso et al. 2023 (aproximación de campo fuerte).
+    Phenomenological surrogate: beta_gup is the phase in radians at 100 Hz;
+    a cubic frequency law is used as a stress-test signature, not as a
+    calibrated Bosso et al. parameter estimate.
     """
-    f_safe = np.where(freqs > 0, freqs, 1e-6)
-    phase_gup = beta_gup * (np.pi * f_safe) ** 3
-    phase_gup = np.clip(phase_gup, -10.0, 10.0)
+    f_safe = np.maximum(freqs, 20.0)
+    phase_gup = beta_gup * (f_safe / 100.0) ** 3
     return htilde * np.exp(1j * phase_gup)
 
 
@@ -360,7 +337,7 @@ class PhysicsDispatcher:
             htilde = _inject_qnm_subdominant(htilde, freqs, mode="33", rng=rng)
 
         elif theory_class == 4:
-            delta_phi = float(rng.uniform(0.03, 0.10))   # dentro de cota GWTC × K≈10
+            delta_phi = float(rng.uniform(0.001, 0.01))
             htilde = _inject_pn_deformation(htilde, freqs, M_tot, delta_phi_hat=delta_phi)
 
         elif theory_class == 5:
@@ -374,27 +351,24 @@ class PhysicsDispatcher:
             return event_ed   # devolvemos directamente el evento del padre
 
         elif theory_class == 6:
-            omega_bd = float(rng.uniform(40.0, 80.0))   # K≈800× sobre cota Cassini
+            omega_bd = float(rng.uniform(40000.0, 80000.0))
             htilde = _inject_scalar_tensor(htilde, freqs, M_tot, omega_BD_eff=omega_bd)
 
         elif theory_class == 7:
-            # K≈7e21 sobre cota LIGO (mg≤1.27e-23 eV/c²)
-            mg_stress = 1.27e-23 * 7e21   # eV/c²
-            htilde = _inject_graviton_mass(htilde, freqs, d_mpc, mg_eV=mg_stress)
+            mg_eV = 1.27e-23   # eV/c², current order-of-magnitude LIGO bound
+            htilde = _inject_graviton_mass(htilde, freqs, d_mpc, mg_eV=mg_eV)
 
         elif theory_class == 8:
             kappa = float(rng.uniform(0.5, 1.2))   # K≈16.7× sobre cota GWTC-3
             htilde = _inject_chern_simons(htilde, freqs, d_mpc, kappa_gpc=kappa)
 
         elif theory_class == 9:
-            # liv-alpha1.5 (sustituye al α=2 degenerado)
-            A = float(rng.uniform(5e9, 2e10))
-            htilde = _inject_liv(htilde, freqs, d_mpc, alpha=1.5, A_alpha_m=A)
+            phase_ref = float(rng.uniform(0.03, 0.10))
+            htilde = _inject_liv(htilde, freqs, d_mpc, alpha=1.5, phase_ref_rad=phase_ref)
 
         elif theory_class == 10:
-            # liv-alpha4
-            A = float(rng.uniform(5e9, 2e10))
-            htilde = _inject_liv(htilde, freqs, d_mpc, alpha=4.0, A_alpha_m=A)
+            phase_ref = float(rng.uniform(0.03, 0.10))
+            htilde = _inject_liv(htilde, freqs, d_mpc, alpha=4.0, phase_ref_rad=phase_ref)
 
         elif theory_class == 11:
             # loop-quantum-gravity: delegamos al Layer6Injector del padre
@@ -405,7 +379,7 @@ class PhysicsDispatcher:
             return event_lqg
 
         elif theory_class == 12:
-            beta = float(rng.uniform(5e-3, 2e-2))
+            beta = float(rng.uniform(0.03, 0.10))
             htilde = _inject_gup(htilde, freqs, beta_gup=beta)
 
         else:

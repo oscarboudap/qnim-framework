@@ -163,7 +163,10 @@ class LIGONoiseInjectionAdapter:
         return result
 
     def _make_waveform(
-        self, theory_class: int, rng: np.random.Generator
+        self,
+        theory_class: int,
+        rng: np.random.Generator,
+        paired_base_waveform: Optional[np.ndarray] = None,
     ) -> tuple[np.ndarray, dict, np.ndarray]:
         if self.waveform_generator is not None:
             waveform, metadata = self.waveform_generator(theory_class, rng)
@@ -180,7 +183,10 @@ class LIGONoiseInjectionAdapter:
             with warnings.catch_warnings(record=True) as caught:
                 warnings.simplefilter("always")
                 waveform, _, _, metadata = generator._generate_one(
-                    theory_class, rng, self.target_snr_range
+                    theory_class,
+                    rng,
+                    self.target_snr_range,
+                    base_waveform=paired_base_waveform,
                 )
             if any("PyCBC falló" in str(item.message) for item in caught):
                 raise RuntimeError("PyCBC falló; no se permite usar waveform fallback en este adaptador")
@@ -202,7 +208,7 @@ class LIGONoiseInjectionAdapter:
         segment: NoiseSegment,
         target_snr: float,
         reference_waveform: Optional[np.ndarray] = None,
-    ) -> tuple[np.ndarray, float]:
+    ) -> tuple[np.ndarray, float, np.ndarray]:
         noise = np.asarray(segment.data[:self.n_samples], dtype=float)
         frequencies, psd = welch(
             noise,
@@ -239,7 +245,12 @@ class LIGONoiseInjectionAdapter:
         whitened_fft = np.zeros_like(injected_fft)
         whitened_fft[usable] = injected_fft[usable] / np.sqrt(psd_bins[usable] * delta_f)
         whitened = np.fft.irfft(whitened_fft, n=self.n_samples)
-        return whitened, observed_snr
+        reference_white_fft = np.zeros_like(reference_fft)
+        reference_white_fft[usable] = (
+            reference_fft[usable] * scale / np.sqrt(psd_bins[usable] * delta_f)
+        )
+        reference_whitened = np.fft.irfft(reference_white_fft, n=self.n_samples)
+        return whitened, observed_snr, reference_whitened
 
     def generate_balanced_dataset(
         self,
@@ -253,6 +264,7 @@ class LIGONoiseInjectionAdapter:
             raise ValueError("Cada split debe tener al menos una muestra por clase")
         rng = np.random.default_rng(seed)
         raw_by_split = {"train": [], "val": [], "test": []}
+        reference_by_split = {"train": [], "val": [], "test": []}
         labels_by_split = {"train": [], "val": [], "test": []}
         snr_by_split = {"train": [], "val": [], "test": []}
         event_metadata = {"train": [], "val": [], "test": []}
@@ -277,14 +289,18 @@ class LIGONoiseInjectionAdapter:
                 target_snr = float(rng.uniform(*self.target_snr_range))
                 pair_id = f"{split}-{event_index:06d}"
                 pair_seed = np.random.SeedSequence([seed, split_ids[split], event_index])
+                paired_base_waveform = None
                 for theory_class in range(self.n_classes):
                     waveform_rng = np.random.default_rng(pair_seed)
                     waveform, metadata, reference_waveform = self._make_waveform(
-                        theory_class, waveform_rng
+                        theory_class, waveform_rng, paired_base_waveform
                     )
-                    injected, actual_snr = self._inject_and_whiten(
+                    if theory_class == 0:
+                        paired_base_waveform = waveform
+                    injected, actual_snr, reference_whitened = self._inject_and_whiten(
                         waveform, segment, target_snr, reference_waveform
                     )
+                    reference_by_split[split].append(reference_whitened)
                     raw_by_split[split].append(injected)
                     labels_by_split[split].append(theory_class)
                     snr_by_split[split].append(actual_snr)
@@ -318,6 +334,28 @@ class LIGONoiseInjectionAdapter:
         X_val = np.clip(scaler.transform(X_val_pca), -1.0, 1.0)
         X_test = np.clip(scaler.transform(X_test_pca), -1.0, 1.0)
 
+        from src.infrastructure.dephasing_features import MatchedFilterFeatureExtractor
+
+        gr_references = np.stack(reference_by_split["train"])[::self.n_classes]
+        physical_extractor = MatchedFilterFeatureExtractor(
+            n_bands=16, f_low=self.f_low, f_high=self.f_high
+        ).fit(gr_references, dt=1.0 / self.sample_rate)
+        X_physical_train = physical_extractor.transform(
+            X_train_raw,
+            dt=1.0 / self.sample_rate,
+            templates=np.stack(reference_by_split["train"]),
+        )
+        X_physical_val = physical_extractor.transform(
+            X_val_raw,
+            dt=1.0 / self.sample_rate,
+            templates=np.stack(reference_by_split["val"]),
+        )
+        X_physical_test = physical_extractor.transform(
+            X_test_raw,
+            dt=1.0 / self.sample_rate,
+            templates=np.stack(reference_by_split["test"]),
+        )
+
         fisher_scores, fisher_pvalues = f_classif(pca.transform(X_train_raw), y_train)
         variance = pca.explained_variance_ratio_
         metadata = {
@@ -339,6 +377,18 @@ class LIGONoiseInjectionAdapter:
                 "shared_noise_within_pair": True,
                 "shared_base_target_snr": True,
                 "normalization_reference": "unmodified_GR_waveform",
+                "waveform_generation": (
+                    "one_GR_waveform_reused_per_pair"
+                    if self.waveform_generator is None else "custom_generator"
+                ),
+            },
+            "physical_features": {
+                "method": "complex_band_overlap_against_paired_GR_reference",
+                "n_bands": physical_extractor.n_bands,
+                "feature_names": physical_extractor.get_feature_names(),
+                "template_fit_split": "train_GR_only_for_global_fallback",
+                "paired_reference_is_oracle": True,
+                "retains_amplitude_and_phase": True,
             },
             "pca_analysis": {
                 "explained_variance": variance.tolist(),
@@ -368,4 +418,7 @@ class LIGONoiseInjectionAdapter:
             snr_train=np.asarray(snr_by_split["train"]),
             snr_val=np.asarray(snr_by_split["val"]),
             metadata=metadata,
+            X_physical_train=X_physical_train,
+            X_physical_val=X_physical_val,
+            X_physical_test=X_physical_test,
         )

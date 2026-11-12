@@ -65,6 +65,7 @@ def load_o3b_segments(gps_ranges, detector, inventory_path, frame_cache, sample_
     cache_dir = Path(frame_cache)
     cache_dir.mkdir(parents=True, exist_ok=True)
     frame_data = {}
+    frame_handles = []
     segments = {"train": [], "val": [], "test": []}
     samples_per_window = int(round(sample_rate * duration))
 
@@ -111,21 +112,22 @@ def load_o3b_segments(gps_ranges, detector, inventory_path, frame_cache, sample_
 
                 cache_key = str(frame_path)
                 if cache_key not in frame_data:
-                    with h5py.File(frame_path, "r") as hdf:
-                        strain_ds = hdf["strain/Strain"]
-                        frame_gps = float(hdf["meta/GPSstart"][()])
-                        spacing = float(strain_ds.attrs["Xspacing"])
-                        frame_rate = 1.0 / spacing
-                        if not np.isclose(frame_rate, sample_rate):
-                            raise ValueError(f"Tasa inesperada en {frame_path}: {frame_rate}")
-                        frame_data[cache_key] = (strain_ds[:], frame_gps)
+                    hdf = h5py.File(frame_path, "r")
+                    frame_handles.append(hdf)
+                    strain_ds = hdf["strain/Strain"]
+                    frame_gps = float(hdf["meta/GPSstart"][()])
+                    spacing = float(strain_ds.attrs["Xspacing"])
+                    frame_rate = 1.0 / spacing
+                    if not np.isclose(frame_rate, sample_rate):
+                        raise ValueError(f"Tasa inesperada en {frame_path}: {frame_rate}")
+                    frame_data[cache_key] = (strain_ds, frame_gps)
 
-                strain, frame_gps = frame_data[cache_key]
+                strain_ds, frame_gps = frame_data[cache_key]
                 start_index_float = (window_gps - frame_gps) * sample_rate
                 start_index = int(round(start_index_float))
                 if not np.isclose(start_index_float, start_index, atol=1e-6):
                     raise ValueError(f"GPS {window_gps} no cae en una muestra de {sample_rate} Hz")
-                window = strain[start_index:start_index + samples_per_window]
+                window = strain_ds[start_index:start_index + samples_per_window]
                 if len(window) != samples_per_window:
                     raise ValueError(f"Frame incompleto para GPS {window_gps}")
                 segments[target_split].append(O3bNoiseSegment(
@@ -136,6 +138,8 @@ def load_o3b_segments(gps_ranges, detector, inventory_path, frame_cache, sample_
                     gps_start=window_gps,
                 ))
 
+    for hdf in frame_handles:
+        hdf.close()
     return segments
 
 
@@ -176,6 +180,14 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
     for name in ("X_train", "y_train", "X_val", "y_val", "X_test", "y_test"):
         np.save(output_dir / f"{name}.npy", getattr(dataset, name), allow_pickle=False)
+    for split in ("train", "val", "test"):
+        physical_features = getattr(dataset, f"X_physical_{split}")
+        if physical_features is not None:
+            np.save(
+                output_dir / f"X_physical_{split}.npy",
+                physical_features,
+                allow_pickle=False,
+            )
     (output_dir / "labels.json").write_text(
         json.dumps({"theory_names": dataset.theory_names}, indent=2), encoding="utf-8"
     )

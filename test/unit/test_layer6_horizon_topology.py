@@ -153,6 +153,25 @@ class TestLayer6HorizonTopology:
         # Debe haber diferencia (LQG es efecto pequeño)
         diff = np.sum((h_plus_lqg - h_plus)**2)
         assert diff > 1e-72
+
+    def test_lqg_does_not_apply_global_attenuation(self):
+        fs = 4096
+        time = np.arange(fs) / fs
+        low_frequency_signal = np.sin(2 * np.pi * 50 * time)
+        zeros = np.zeros_like(low_frequency_signal)
+
+        filtered, _ = Layer6HorizonTopologyInjector.inject_lqg_discrete_spectrum(
+            low_frequency_signal,
+            zeros,
+            area_quantum=0.3,
+            fs=fs,
+            mass=10.0,
+        )
+
+        assert np.isrealobj(filtered)
+        assert np.linalg.norm(filtered) == pytest.approx(
+            np.linalg.norm(low_frequency_signal), rel=1e-8
+        )
     
     def test_lqg_quantum_parameter_effect(self, mock_signal_with_ringdown):
         """Test que parámetro de cuantización afecta resultado"""

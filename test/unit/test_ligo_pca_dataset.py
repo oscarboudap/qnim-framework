@@ -63,3 +63,49 @@ def test_ligo_dataset_splits_before_train_only_pca(monkeypatch):
     )
     assert dataset.metadata["n_test_per_class"] == n_test
     assert len(dataset.metadata["pca_analysis"]["class_fisher_scores"]) == 6
+
+
+def test_legacy_pca_adapter_dispatches_add_and_lqg_to_physical_injectors(monkeypatch):
+    from src.domain.astrophysics.sstg.injectors.layer5_beyond_gr_complete import (
+        Layer5BeyondGRInjector,
+    )
+    from src.domain.astrophysics.sstg.injectors.layer6_horizon_topology_complete import (
+        Layer6HorizonTopologyInjector,
+    )
+
+    adapter_type = _load_ligo_adapter(monkeypatch)
+    adapter_module = sys.modules["src.infrastructure.ligo_pca_adapter"]
+    calls = []
+
+    def add_injector(h_plus, h_cross, **kwargs):
+        calls.append(("add", kwargs))
+        return h_plus * 0.9, h_cross
+
+    def lqg_injector(h_plus, h_cross, **kwargs):
+        calls.append(("lqg", kwargs))
+        return h_plus * 0.8, h_cross
+
+    monkeypatch.setattr(Layer5BeyondGRInjector, "inject_extra_dimensions_leakage", add_injector)
+    monkeypatch.setattr(Layer6HorizonTopologyInjector, "inject_lqg_discrete_spectrum", lqg_injector)
+    monkeypatch.setattr(
+        adapter_module,
+        "_generate_base_waveform",
+        lambda *args, **kwargs: (
+            np.sin(2 * np.pi * 8 * np.arange(128) / 128),
+            1 / 128,
+        ),
+    )
+    adapter = adapter_type(
+        sample_rate=128,
+        waveform_duration=1.0,
+        f_lower=2.0,
+        f_low_white=2.0,
+        f_high_white=60.0,
+        n_components=4,
+        n_pca_fit=4,
+    )
+
+    adapter._generate_one(5, np.random.default_rng(1))
+    adapter._generate_one(11, np.random.default_rng(1))
+
+    assert [name for name, _ in calls] == ["add", "lqg"]
