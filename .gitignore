@@ -9,3 +9,4 @@ venv/
 *.h5
 .vscode/
 node_modules/
+data/o3b/events/*.hdf5
