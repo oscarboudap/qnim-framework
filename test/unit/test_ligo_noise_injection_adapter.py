@@ -104,6 +104,58 @@ def test_noise_injection_dataset_has_disjoint_balanced_splits(monkeypatch):
     assert dataset.metadata["matched_filter_bank"]["test_evaluated"] is False
 
 
+def test_gr_vs_ppe_dataset_uses_individual_events_and_disjoint_noise(monkeypatch):
+    module = _load_adapter(monkeypatch)
+    adapter = module.LIGONoiseInjectionAdapter(
+        noise_segments=_noise_segments(module),
+        sample_rate=128,
+        duration=1.0,
+        n_components=4,
+        n_pca_fit=6,
+        target_snr_range=(8.0, 12.0),
+        waveform_generator=_waveform_generator(),
+        f_low=2.0,
+        f_high=60.0,
+    )
+
+    dataset = adapter.generate_gr_vs_ppe_dataset(
+        n_train_pairs=8,
+        n_val_pairs=3,
+        n_test_pairs=4,
+        seed=7,
+        verbose=False,
+    )
+
+    assert dataset["X_train"].shape == (16, 4)
+    assert dataset["X_val"].shape == (6, 4)
+    assert dataset["X_test"].shape == (8, 4)
+    for split, pair_count in (("train", 8), ("val", 3), ("test", 4)):
+        np.testing.assert_array_equal(
+            np.bincount(dataset[f"y_{split}"]), [pair_count, pair_count]
+        )
+        assert np.isfinite(dataset[f"X_{split}"]).all()
+        records = dataset["metadata"]["event_metadata"][split]
+        pairs = {}
+        for record in records:
+            pairs.setdefault(record["pair_id"], []).append(record)
+        assert len(pairs) == pair_count
+        for pair in pairs.values():
+            assert {record["label"] for record in pair} == {
+                "GR",
+                "pn-deformation",
+            }
+            assert len({record["noise_segment_id"] for record in pair}) == 1
+
+    used = dataset["metadata"]["noise_segments"]
+    assert not set(used["train"]).intersection(used["val"])
+    assert not set(used["train"]).intersection(used["test"])
+    assert not set(used["val"]).intersection(used["test"])
+    assert dataset["metadata"]["preprocessing_fit_split"] == "train_only"
+    assert dataset["metadata"]["paired_gr_control_used_as_feature"] is False
+    assert dataset["metadata"]["beyond_gr_signature"] == "pn-deformation"
+    assert dataset["metadata"]["test_evaluated"] is False
+
+
 def test_matched_filter_scores_identify_a_strong_centered_template(monkeypatch):
     module = _load_adapter(monkeypatch)
 

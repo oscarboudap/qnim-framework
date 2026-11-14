@@ -217,16 +217,60 @@ y eventos independientes, frente a un baseline clásico equivalente.
 
 ## Qué hace falta para validar una mejora
 
-1. Rediseñar las features para que las firmas físicas sobrevivan al ruido sin
-   usar el control contrafactual exacto de la misma pareja.
-2. Regenerar train/validation/test con rangos de ruido disjuntos y al menos
-   100–300 eventos de test por clase; mantener test cerrado durante el ajuste.
-3. Comparar primero un baseline clásico y el VQC sobre exactamente los mismos
-   eventos, seeds y representación.
-4. Repetir entrenamiento con varios seeds; corregir comparaciones múltiples y
-   hacer bootstrap/permutación por grupos de eventos.
-5. Solo después, probar hardware con backend, shots y mitigación registrados,
-   midiendo primero el ruido de lectura y reservando test nuevo para IBM.
+### Reformulación prioritaria: GR frente a una desviación ppE -1PN
+
+Se mantiene la pregunta física: **¿distingue el strain una predicción GR de
+una desviación de fase compatible con física más allá de GR?** Para hacerla
+contrastable, se reduce la taxonomía de 13 etiquetas a dos hipótesis: GR y una
+única deformación fenomenológica ppE a -1PN (`pn-deformation`, índice 4).
+La tarea tiene azar balanceado del 50 %, pero no pretende clasificar todas las
+teorías ni detectar señal frente a ruido.
+
+El generador produce ambas hipótesis con los mismos parámetros de fuente
+cuando se usa PyCBC, el mismo segmento de ruido y SNR de referencia GR. El
+clasificador recibe cada evento por separado: no se le entregan diferencias
+contra el GR contrafactual, masa chirp verdadera ni plantillas GR emparejadas.
+Los segmentos GPS son disjuntos entre splits y PCA/escalado se ajustan solo
+con train. Código:
+[`generate_gr_vs_ppe_dataset`](../../src/infrastructure/ligo_noise_injection_adapter.py)
+y [`prepare_gr_vs_ppe_dataset.py`](../../scripts/prepare_gr_vs_ppe_dataset.py).
+
+**Límite de interpretación:** ppE es una parametrización de desviaciones,
+no una teoría completa. El inyector usa `delta_phi_hat` entre 0,001 y 0,01 y
+una ley de fase \(f^{-7/3}\); el propio código advierte que no es el
+coeficiente ppE publicado sin conversión. Un resultado positivo sería
+evidencia de que el modelo discrimina esta familia de inyecciones simuladas
+bajo las condiciones ensayadas, no un descubrimiento de nueva física ni
+evidencia contra GR en datos observacionales.
+
+Esta formulación aún no tiene accuracy física de validación. Su prueba
+unitaria usa strain sintético para verificar pares, balance y separación de
+splits; no mide rendimiento científico. Generar los datos (usar únicamente
+rangos off-source y un inventario revisados):
+
+```bash
+python scripts/prepare_gr_vs_ppe_dataset.py \
+  --gps-ranges data/o3b/windows/gps_ranges_global_template.json \
+  --detector H1 \
+  --n-train-pairs 499 \
+  --n-val-pairs 49 \
+  --n-test-pairs 100 \
+  --snr-min 8 --snr-max 30 \
+  --output-dir results/scaling_study/dataset_gr_vs_ppe
+```
+
+Para validar la reformulación:
+
+1. Fijar antes de medir un baseline clásico y compararlo con VQC usando las
+   mismas features, splits y semillas.
+2. Elegir configuración solo con train/validation; reportar balanced
+   accuracy, ROC-AUC, matriz de confusión e IC/permutación agrupados por
+   segmento.
+3. Informar rendimiento por SNR e intensidad ppE; no seleccionar el intervalo
+   de deformación por el resultado del test.
+4. Repetir con varios seeds y datos de strain/segmentos independientes.
+5. Abrir test una sola vez después de congelar pipeline e hipótesis; solo
+   entonces evaluar IBM con backend, shots y mitigación registrados.
 
 No se envió un trabajo remoto a IBM Quantum en esta sesión porque
 `qiskit_ibm_runtime` no está instalado en el entorno activo. El resultado de

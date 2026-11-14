@@ -375,6 +375,149 @@ class LIGONoiseInjectionAdapter:
         reference_whitened = np.fft.irfft(reference_white_fft, n=self.n_samples)
         return whitened, observed_snr, reference_whitened
 
+    def generate_gr_vs_ppe_dataset(
+        self,
+        n_train_pairs: int,
+        n_val_pairs: int,
+        n_test_pairs: int,
+        seed: int = 42,
+        verbose: bool = True,
+    ) -> dict:
+        """Build a binary GR-vs-ppE(-1PN) dataset without oracle features."""
+        counts = {
+            "train": n_train_pairs,
+            "val": n_val_pairs,
+            "test": n_test_pairs,
+        }
+        if min(counts.values()) < 1:
+            raise ValueError("Cada split debe tener al menos una pareja")
+        if self.n_classes <= 4:
+            raise ValueError("La generación requiere la firma pn-deformation (clase 4)")
+
+        rng = np.random.default_rng(seed)
+        split_ids = {"train": 0, "val": 1, "test": 2}
+        raw_by_split = {split: [] for split in counts}
+        labels_by_split = {split: [] for split in counts}
+        event_metadata = {split: [] for split in counts}
+        snr_by_split = {split: [] for split in counts}
+        used_segments = {split: [] for split in counts}
+
+        for split, count in counts.items():
+            segments = self.noise_segments[split]
+            if len(segments) < count:
+                raise ValueError(
+                    f"El split {split} requiere {count} segmentos únicos; solo hay {len(segments)}"
+                )
+            segment_indices = rng.choice(len(segments), size=count, replace=False)
+            for event_index, segment_index in enumerate(segment_indices):
+                segment = segments[int(segment_index)]
+                pair_id = f"{split}-{event_index:06d}"
+                pair_seed = np.random.SeedSequence(
+                    [seed, split_ids[split], event_index]
+                )
+                gr_waveform, gr_metadata, gr_reference = self._make_waveform(
+                    0, np.random.default_rng(pair_seed)
+                )
+                ppe_waveform, ppe_metadata, _ = self._make_waveform(
+                    4,
+                    np.random.default_rng(pair_seed),
+                    paired_base_waveform=gr_waveform,
+                )
+                target_snr = float(rng.uniform(*self.target_snr_range))
+                examples = (
+                    (0, "GR", gr_waveform, gr_metadata),
+                    (1, "pn-deformation", ppe_waveform, ppe_metadata),
+                )
+                common = {
+                    "pair_id": pair_id,
+                    "noise_segment_id": segment.segment_id,
+                    "detector": segment.detector,
+                    "gps_start": segment.gps_start,
+                    "base_target_snr": target_snr,
+                }
+                for label, hypothesis, waveform, waveform_metadata in examples:
+                    whitened, observed_snr, _ = self._inject_and_whiten(
+                        waveform,
+                        segment,
+                        target_snr,
+                        reference_waveform=gr_reference,
+                    )
+                    raw_by_split[split].append(whitened)
+                    labels_by_split[split].append(label)
+                    snr_by_split[split].append(observed_snr)
+                    event_metadata[split].append({
+                        **common,
+                        **waveform_metadata,
+                        "label": hypothesis,
+                        "observed_snr": observed_snr,
+                    })
+                used_segments[split].append(segment.segment_id)
+
+        X_raw = {split: np.stack(raw_by_split[split]) for split in counts}
+        y = {
+            split: np.asarray(labels_by_split[split], dtype=int)
+            for split in counts
+        }
+        n_pca = min(
+            self.n_pca_fit,
+            len(X_raw["train"]) - 1,
+            X_raw["train"].shape[1],
+        )
+        if n_pca < self.n_components:
+            raise ValueError(
+                "El conjunto de entrenamiento no permite ajustar n_pca_fit componentes"
+            )
+        pca = PCA(n_components=n_pca, svd_solver="randomized", random_state=seed)
+        pca.fit(X_raw["train"])
+        pca_features = {
+            split: pca.transform(X_raw[split])[:, :self.n_components]
+            for split in counts
+        }
+        scaler = MinMaxScaler(feature_range=(-1.0, 1.0))
+        X = {
+            "X_train": np.clip(
+                scaler.fit_transform(pca_features["train"]), -1.0, 1.0
+            ),
+            "X_val": np.clip(scaler.transform(pca_features["val"]), -1.0, 1.0),
+            "X_test": np.clip(scaler.transform(pca_features["test"]), -1.0, 1.0),
+        }
+        for split in counts:
+            permutation = rng.permutation(len(y[split]))
+            X[f"X_{split}"] = X[f"X_{split}"][permutation]
+            y[split] = y[split][permutation]
+            event_metadata[split] = [
+                event_metadata[split][index] for index in permutation
+            ]
+
+        metadata = {
+            "task": "GR_vs_phenomenological_ppE_minus_1PN",
+            "labels": {"0": "GR", "1": "pn-deformation"},
+            "beyond_gr_signature": "pn-deformation",
+            "beyond_gr_theory_class": 4,
+            "target_snr_range": list(self.target_snr_range),
+            "n_pairs": counts,
+            "noise_segments": used_segments,
+            "event_metadata": event_metadata,
+            "preprocessing_fit_split": "train_only",
+            "shared_noise_within_pair": True,
+            "shared_source_parameters": self.waveform_generator is None,
+            "paired_gr_control_used_as_feature": False,
+            "independent_noise_segments_between_splits": True,
+            "test_evaluated": False,
+            "observed_snr": {
+                split: snr_by_split[split] for split in counts
+            },
+        }
+        result = {**X, **{f"y_{split}": values for split, values in y.items()}}
+        result["metadata"] = metadata
+        if verbose:
+            print(
+                "GR-vs-ppE dataset: "
+                f"train={result['X_train'].shape}, val={result['X_val'].shape}, "
+                f"test={result['X_test'].shape}; train-only preprocessing"
+            )
+        return result
+
     def generate_balanced_dataset(
         self,
         n_per_class: int = 500,
