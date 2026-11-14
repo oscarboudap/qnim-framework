@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import pycbc.waveform as pycbc_waveform
 
 from src.domain.astrophysics.sstg.injectors.layer5_beyond_gr_complete import (
     Layer5BeyondGRInjector,
@@ -13,6 +14,30 @@ from src.infrastructure.stochastic_signal_generator import (
     _inject_pn_deformation,
     _inject_qnm_subdominant,
 )
+
+
+def test_base_waveform_window_keeps_the_merger_peak(monkeypatch):
+    full_strain = np.zeros(100)
+    full_strain[70] = 1.0
+
+    class FakeTimeSeries:
+        def numpy(self):
+            return full_strain
+
+    monkeypatch.setattr(
+        pycbc_waveform,
+        "get_td_waveform",
+        lambda **kwargs: (FakeTimeSeries(), FakeTimeSeries()),
+    )
+
+    window, dt = physics_sstg_adapter._generate_base_waveform(
+        30.0, 20.0, 300.0, duration=0.2, sample_rate=100, f_lower=20.0
+    )
+
+    assert window.shape == (20,)
+    assert dt == pytest.approx(0.01)
+    assert np.argmax(np.abs(window)) == 18
+    assert np.max(np.abs(window)) == pytest.approx(1.0)
 
 
 def test_extra_dimension_and_lqg_labels_use_their_own_injectors(monkeypatch):

@@ -23,15 +23,11 @@ from src.application.scaling_metrics import (
 SCALING_MATRIX = (
     {"id": "n12_d12", "n_qubits": 12, "pca_components": 12},
     {"id": "n16_d12", "n_qubits": 16, "pca_components": 12},
-    {"id": "n16_d16", "n_qubits": 16, "pca_components": 16},
     {"id": "n20_d12", "n_qubits": 20, "pca_components": 12},
-    {"id": "n20_d20", "n_qubits": 20, "pca_components": 20},
     {"id": "n32_d12", "n_qubits": 32, "pca_components": 12},
+    {"id": "n16_d16", "n_qubits": 16, "pca_components": 16},
+    {"id": "n20_d20", "n_qubits": 20, "pca_components": 20},
     {"id": "n32_d32", "n_qubits": 32, "pca_components": 32},
-    {"id": "n48_d48", "n_qubits": 48, "pca_components": 48},
-    {"id": "n64_d64", "n_qubits": 64, "pca_components": 64},
-    {"id": "n96_d96", "n_qubits": 96, "pca_components": 96},
-    {"id": "n128_d128", "n_qubits": 128, "pca_components": 128},
 )
 
 
@@ -41,8 +37,6 @@ class ScalingDataset:
     y_train: np.ndarray
     X_val: np.ndarray
     y_val: np.ndarray
-    X_test: np.ndarray
-    y_test: np.ndarray
     n_classes: int
 
 
@@ -73,31 +67,28 @@ class RunScalingStudyUseCase:
 
     def _load_dataset(self) -> tuple[ScalingDataset, str]:
         arrays = {}
-        for name in ("X_train", "y_train", "X_val", "y_val", "X_test", "y_test"):
+        split_names = ("X_train", "y_train", "X_val", "y_val")
+        for name in split_names:
             path = self.dataset_dir / f"{name}.npy"
             if not path.is_file():
                 raise FileNotFoundError(f"Falta el conjunto independiente requerido: {path}")
             arrays[name] = np.load(path, allow_pickle=False)
 
-        for split in ("train", "val", "test"):
+        for split in ("train", "val"):
             X, y = arrays[f"X_{split}"], arrays[f"y_{split}"]
             if X.ndim != 2 or y.ndim != 1 or len(X) != len(y) or len(y) == 0:
                 raise ValueError(f"El split {split} debe tener X 2D y y 1D alineados")
 
-        feature_counts = {arrays[f"X_{split}"].shape[1] for split in ("train", "val", "test")}
+        feature_counts = {arrays[f"X_{split}"].shape[1] for split in ("train", "val")}
         if len(feature_counts) != 1:
             raise ValueError("Train, validation y test deben tener igual número de features")
 
         classes = np.unique(arrays["y_train"])
         if not np.array_equal(classes, np.arange(len(classes))):
             raise ValueError("Las etiquetas deben ser consecutivas desde cero")
-        for split in ("val", "test"):
+        for split in ("val",):
             if not np.array_equal(np.unique(arrays[f"y_{split}"]), classes):
                 raise ValueError(f"El split {split} no contiene las mismas clases que train")
-
-        test_counts = np.bincount(arrays["y_test"], minlength=len(classes))
-        if len(np.unique(test_counts)) != 1:
-            raise ValueError("El conjunto de test debe estar estratificado con igual conteo por clase")
 
         required_features = max(item["pca_components"] for item in self.experiments)
         if next(iter(feature_counts)) < required_features:
@@ -106,14 +97,11 @@ class RunScalingStudyUseCase:
             )
 
         digest = hashlib.sha256()
-        for name in ("X_train", "y_train", "X_val", "y_val", "X_test", "y_test"):
+        for name in split_names:
             digest.update(name.encode("ascii"))
             digest.update(np.ascontiguousarray(arrays[name]).tobytes())
 
-        dataset = ScalingDataset(
-            **arrays,
-            n_classes=len(classes),
-        )
+        dataset = ScalingDataset(**arrays, n_classes=len(classes))
         return dataset, digest.hexdigest()
 
     def _build_trainer(self, experiment: dict):
@@ -173,12 +161,13 @@ class RunScalingStudyUseCase:
                 shots=self.shots,
                 max_iterations=self.max_iterations,
                 use_real_hardware=False,
+                compute_accuracy_vs_snr=False,
             )
             accuracy, confusion_matrix, predictions = trainer._evaluate_real_predictions(
                 weights=training_result.final_weights,
                 X_train=current_dataset.X_train,
-                X_val=dataset.X_test[:, :n_features],
-                y_val=dataset.y_test,
+                X_val=current_dataset.X_val,
+                y_val=current_dataset.y_val,
                 n_qubits=n_qubits,
                 n_features=n_features,
                 n_classes=dataset.n_classes,
@@ -186,10 +175,10 @@ class RunScalingStudyUseCase:
             )
             predictions = np.asarray(predictions, dtype=int)
             bootstrap = stratified_bootstrap(
-                dataset.y_test, predictions, self.bootstrap_iterations, self.metrics_seed
+                current_dataset.y_val, predictions, self.bootstrap_iterations, self.metrics_seed
             )
             permutation = permutation_test(
-                dataset.y_test, predictions, self.permutation_iterations, self.metrics_seed
+                current_dataset.y_val, predictions, self.permutation_iterations, self.metrics_seed
             )
             records.append({
                 **experiment,
@@ -202,11 +191,12 @@ class RunScalingStudyUseCase:
                 "dataset_sha256": dataset_hash,
                 "git_commit": commit_hash,
                 "accuracy_sim": float(training_result.accuracy_sim),
+                "evaluation_split": "validation",
                 "balanced_accuracy": float(accuracy),
                 "bootstrap_ci": bootstrap,
                 "permutation_test": permutation,
                 "confusion_matrix": confusion_matrix,
-                "y_true": dataset.y_test.astype(int).tolist(),
+                "y_true": current_dataset.y_val.astype(int).tolist(),
                 "y_pred": predictions.tolist(),
                 "paired_difference_vs_reference": None,
             })
@@ -223,9 +213,7 @@ class RunScalingStudyUseCase:
         )
         if reference is None:
             raise ValueError("La matriz debe incluir la referencia de 12 qubits / 12 PCA")
-        random_baseline = (
-            RANDOM_BASELINE if dataset.n_classes == 13 else 1.0 / dataset.n_classes
-        )
+        random_baseline = RANDOM_BASELINE if dataset.n_classes == 13 else 1.0 / dataset.n_classes
 
         for record in records:
             if record is not reference:

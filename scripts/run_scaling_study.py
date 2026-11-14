@@ -15,7 +15,7 @@ from src.application.scaling_metrics import holm_bonferroni
 
 def parse_args():
     parser = argparse.ArgumentParser(description="QNIM controlled scaling study (local simulator only)")
-    parser.add_argument("--dataset-dir", required=True, help="Directory with train/val/test .npy arrays")
+    parser.add_argument("--dataset-dir", required=True, help="Directory with train/validation .npy arrays; test is not read")
     parser.add_argument("--output-dir", default="results/scaling_study")
     parser.add_argument("--max-iter", type=int, default=60)
     parser.add_argument("--shots", type=int, default=512)
@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument(
         "--seeds",
         default=None,
-        help="Semillas de entrenamiento separadas por coma; comparten el mismo test",
+        help="Semillas de entrenamiento separadas por coma; comparten el mismo validation",
     )
     parser.add_argument("--metrics-seed", type=int, default=4242)
     parser.add_argument("--bootstrap-iterations", type=int, default=10000)

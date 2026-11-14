@@ -15,6 +15,7 @@ class FakeTrainer:
 
     def train_and_evaluate(self, dataset, **kwargs):
         assert kwargs["use_real_hardware"] is False
+        assert kwargs["compute_accuracy_vs_snr"] is False
         self.training_features = dataset.X_train.copy()
         self.feature_count = kwargs["n_features"]
         return SimpleNamespace(accuracy_sim=0.5, final_weights=np.array([1.0]))
@@ -36,9 +37,11 @@ def _write_dataset(path):
     np.save(path / "y_test.npy", np.repeat(np.arange(3), 4))
 
 
-def test_scaling_study_uses_common_independent_test_and_saves_results(tmp_path, monkeypatch):
+def test_scaling_study_uses_validation_without_reading_test_and_saves_results(tmp_path, monkeypatch):
     dataset_dir = tmp_path / "dataset"
     _write_dataset(dataset_dir)
+    (dataset_dir / "X_test.npy").unlink()
+    (dataset_dir / "y_test.npy").unlink()
     experiments = (
         {"id": "n12_d12", "n_qubits": 12, "pca_components": 12},
         {"id": "n16_d12", "n_qubits": 16, "pca_components": 12},
@@ -55,9 +58,9 @@ def test_scaling_study_uses_common_independent_test_and_saves_results(tmp_path, 
     def build_trainer(experiment):
         seen_train_rows.append(experiment["id"])
         predictions = (
-            np.zeros(12, dtype=int)
+            np.zeros(9, dtype=int)
             if experiment["id"] == "n12_d12"
-            else np.repeat(np.arange(3), 4)
+            else np.repeat(np.arange(3), 3)
         )
         return FakeTrainer(predictions)
 
@@ -70,12 +73,14 @@ def test_scaling_study_uses_common_independent_test_and_saves_results(tmp_path, 
     assert summary["records"][1]["paired_difference_vs_reference"]["lower_95"] > 0
     assert summary["records"][0]["dataset_sha256"] == summary["records"][1]["dataset_sha256"]
     assert summary["records"][1]["y_true"] == summary["records"][0]["y_true"]
+    assert summary["records"][0]["evaluation_split"] == "validation"
+    assert len(summary["records"][0]["y_true"]) == 9
     assert (tmp_path / "results/summary/scaling_metrics.csv").is_file()
     saved = json.loads(
         (tmp_path / "results/experiments/n16_d12_seed42/result.json").read_text()
     )
     assert saved["backend"] == "local_simulator"
-    assert saved["y_pred"] == np.repeat(np.arange(3), 4).tolist()
+    assert saved["y_pred"] == np.repeat(np.arange(3), 3).tolist()
 
 
 def test_scaling_study_requires_independent_test_files(tmp_path):

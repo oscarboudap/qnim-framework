@@ -188,6 +188,67 @@ def test_feature_map_rejects_more_features_than_qubits(monkeypatch):
         trainer_module._build_feature_map_and_ansatz(n_qubits=12, n_features=16)
 
 
+def test_simulator_trainer_does_not_resolve_ibm_credentials(monkeypatch):
+    import src.ibm_credentials as credentials
+
+    trainer_module = _load_vqc_trainer_module(monkeypatch)
+    monkeypatch.setattr(
+        credentials,
+        "get_ibm_quantum_token",
+        lambda token=None: pytest.fail("sim mode must not load IBM credentials"),
+    )
+
+    trainer = trainer_module.QiskitVQCTrainer(mode="sim")
+
+    assert trainer.token == ""
+
+
+def test_snr_sweep_supports_fewer_features_than_qubits(monkeypatch):
+    import numpy as np
+
+    trainer_module = _load_vqc_trainer_module(monkeypatch)
+    captured = {}
+
+    class FakeCircuit:
+        def copy(self):
+            return self
+
+        def measure_all(self):
+            return None
+
+    def fake_build(n_qubits, **kwargs):
+        captured.update(n_qubits=n_qubits, **kwargs)
+        return FakeCircuit(), [], []
+
+    monkeypatch.setattr(trainer_module, "_build_feature_map_and_ansatz", fake_build)
+    monkeypatch.setattr(
+        trainer_module,
+        "_split_readout_mlp",
+        lambda *args: (np.zeros((4, 3)), np.zeros(4), np.zeros((2, 4)), np.zeros(2)),
+    )
+    monkeypatch.setattr(
+        trainer_module,
+        "_predict_via_circuit",
+        lambda *args, **kwargs: np.zeros(len(args[8]), dtype=int),
+    )
+    trainer = trainer_module.QiskitVQCTrainer(mode="sim")
+    features = np.zeros((4, 2))
+
+    result = trainer.estimate_accuracy_vs_snr(
+        X_val=features,
+        y_val=np.array([0, 1, 0, 1]),
+        snr_vals=np.full(4, 20.0),
+        weights=np.zeros(1),
+        num_qubits=3,
+        X_train=features,
+        n_features=2,
+    )
+
+    assert captured["n_qubits"] == 3
+    assert captured["n_features"] == 2
+    assert result == {8: 0.5, 12: 0.5, 20: 0.5, 30: 0.5, 50: 0.5}
+
+
 def test_hardware_finetuning_uses_remote_sampler_with_mocked_runtime(monkeypatch):
     import sys
     from types import ModuleType, SimpleNamespace

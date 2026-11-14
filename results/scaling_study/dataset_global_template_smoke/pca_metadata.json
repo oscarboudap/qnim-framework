@@ -1,0 +1,3683 @@
+{
+  "seed": 45,
+  "sample_rate": 4096,
+  "duration": 4.0,
+  "n_components": 4,
+  "n_pca_fit": 6,
+  "n_per_class": 2,
+  "n_val_per_class": 1,
+  "n_test_per_class": 1,
+  "approximant": "IMRPhenomD",
+  "noise_segments": {
+    "train": [
+      "H1:1256693424.000",
+      "H1:1256683212.000"
+    ],
+    "val": [
+      "H1:1256696912.000"
+    ],
+    "test": [
+      "H1:1256700748.000"
+    ]
+  },
+  "paired_injections": {
+    "shared_source_parameters": true,
+    "shared_noise_within_pair": true,
+    "shared_base_target_snr": true,
+    "normalization_reference": "unmodified_GR_waveform",
+    "waveform_generation": "one_GR_waveform_reused_per_pair"
+  },
+  "physical_features": {
+    "method": "complex_band_overlap_against_paired_GR_reference",
+    "n_bands": 16,
+    "feature_names": [
+      "matched_re_band_0",
+      "matched_im_band_0",
+      "matched_re_band_1",
+      "matched_im_band_1",
+      "matched_re_band_2",
+      "matched_im_band_2",
+      "matched_re_band_3",
+      "matched_im_band_3",
+      "matched_re_band_4",
+      "matched_im_band_4",
+      "matched_re_band_5",
+      "matched_im_band_5",
+      "matched_re_band_6",
+      "matched_im_band_6",
+      "matched_re_band_7",
+      "matched_im_band_7",
+      "matched_re_band_8",
+      "matched_im_band_8",
+      "matched_re_band_9",
+      "matched_im_band_9",
+      "matched_re_band_10",
+      "matched_im_band_10",
+      "matched_re_band_11",
+      "matched_im_band_11",
+      "matched_re_band_12",
+      "matched_im_band_12",
+      "matched_re_band_13",
+      "matched_im_band_13",
+      "matched_re_band_14",
+      "matched_im_band_14",
+      "matched_re_band_15",
+      "matched_im_band_15"
+    ],
+    "template_fit_split": "train_GR_only_for_global_fallback",
+    "paired_reference_is_oracle": true,
+    "retains_amplitude_and_phase": true
+  },
+  "global_template_features": {
+    "method": "complex_band_overlap_against_train_GR_mean_template",
+    "n_bands": 16,
+    "feature_names": [
+      "matched_re_band_0",
+      "matched_im_band_0",
+      "matched_re_band_1",
+      "matched_im_band_1",
+      "matched_re_band_2",
+      "matched_im_band_2",
+      "matched_re_band_3",
+      "matched_im_band_3",
+      "matched_re_band_4",
+      "matched_im_band_4",
+      "matched_re_band_5",
+      "matched_im_band_5",
+      "matched_re_band_6",
+      "matched_im_band_6",
+      "matched_re_band_7",
+      "matched_im_band_7",
+      "matched_re_band_8",
+      "matched_im_band_8",
+      "matched_re_band_9",
+      "matched_im_band_9",
+      "matched_re_band_10",
+      "matched_im_band_10",
+      "matched_re_band_11",
+      "matched_im_band_11",
+      "matched_re_band_12",
+      "matched_im_band_12",
+      "matched_re_band_13",
+      "matched_im_band_13",
+      "matched_re_band_14",
+      "matched_im_band_14",
+      "matched_re_band_15",
+      "matched_im_band_15"
+    ],
+    "template_fit_split": "train_GR_only_leave_pair_out_for_train",
+    "train_template_cross_fitted_by_pair": true,
+    "paired_reference_is_oracle": false,
+    "retains_amplitude_and_phase": true
+  },
+  "pca_analysis": {
+    "explained_variance": [
+      0.9999999999974541,
+      9.852915525867693e-13,
+      9.087102961054095e-13,
+      2.932439836944978e-13,
+      1.9753740758507342e-13,
+      7.27427767584903e-14
+    ],
+    "cumulative_variance": [
+      0.9999999999974541,
+      0.9999999999984395,
+      0.9999999999993482,
+      0.9999999999996414,
+      0.9999999999998389,
+      0.9999999999999116
+    ],
+    "class_fisher_scores": [
+      3.056619366979382e-17,
+      12.283437712046224,
+      0.09552145610020282,
+      1.456820242714811,
+      0.779280268490799,
+      1.3252715679035398
+    ],
+    "class_fisher_pvalues": [
+      1.0,
+      3.419784143938408e-05,
+      0.9998740469565759,
+      0.2550065466852291,
+      0.6638159764190292,
+      0.31018072582963513
+    ]
+  },
+  "event_metadata": {
+    "train": [
+      {
+        "m1": 50.11914598632539,
+        "m2": 31.202613405563653,
+        "Mc": 34.23540156264117,
+        "distance_mpc": 787.2852158217335,
+        "theory_class": 0,
+        "theory_name": "GR",
+        "injection_parameters": {},
+        "pair_id": "train-000000",
+        "noise_segment_id": "H1:1256693424.000",
+        "detector": "H1",
+        "gps_start": 1256693424.0,
+        "base_target_snr": 24.800305275642373,
+        "observed_snr": 24.800305275642373
+      },
+      {
+        "m1": 50.11914598632539,
+        "m2": 31.202613405563653,
+        "Mc": 34.23540156264117,
+        "distance_mpc": 787.2852158217335,
+        "theory_class": 1,
+        "theory_name": "standard-siren",
+        "injection_parameters": {
+          "H0_true_km_s_mpc": 76.23385534019214
+        },
+        "pair_id": "train-000000",
+        "noise_segment_id": "H1:1256693424.000",
+        "detector": "H1",
+        "gps_start": 1256693424.0,
+        "base_target_snr": 24.800305275642373,
+        "observed_snr": 21.913473428734235
+      },
+      {
+        "m1": 50.11914598632539,
+        "m2": 31.202613405563653,
+        "Mc": 34.23540156264117,
+        "distance_mpc": 787.2852158217335,
+        "theory_class": 2,
+        "theory_name": "qnm-21",
+        "injection_parameters": {
+          "qnm_mode": "21"
+        },
+        "pair_id": "train-000000",
+        "noise_segment_id": "H1:1256693424.000",
+        "detector": "H1",
+        "gps_start": 1256693424.0,
+        "base_target_snr": 24.800305275642373,
+        "observed_snr": 24.828561785418447
+      },
+      {
+        "m1": 50.11914598632539,
+        "m2": 31.202613405563653,
+        "Mc": 34.23540156264117,
+        "distance_mpc": 787.2852158217335,
+        "theory_class": 3,
+        "theory_name": "qnm-33",
+        "injection_parameters": {
+          "qnm_mode": "33"
+        },
+        "pair_id": "train-000000",
+        "noise_segment_id": "H1:1256693424.000",
+        "detector": "H1",
+        "gps_start": 1256693424.0,
+        "base_target_snr": 24.800305275642373,
+        "observed_snr": 24.843997415400366
+      },
+      {
+        "m1": 50.11914598632539,
+        "m2": 31.202613405563653,
+        "Mc": 34.23540156264117,
+        "distance_mpc": 787.2852158217335,
+        "theory_class": 4,
+        "theory_name": "pn-deformation",
+        "injection_parameters": {
+          "delta_phi_100hz_rad": 0.008305234903086465
+        },
+        "pair_id": "train-000000",
+        "noise_segment_id": "H1:1256693424.000",
+        "detector": "H1",
+        "gps_start": 1256693424.0,
+        "base_target_snr": 24.800305275642373,
+        "observed_snr": 24.800305275642373
+      },
+      {
+        "m1": 50.11914598632539,
+        "m2": 31.202613405563653,
+        "Mc": 34.23540156264117,
+        "distance_mpc": 787.2852158217335,
+        "theory_class": 5,
+        "theory_name": "extra-dimensions",
+        "injection_parameters": {
+          "n_extra_dims": 1
+        },
+        "pair_id": "train-000000",
+        "noise_segment_id": "H1:1256693424.000",
+        "detector": "H1",
+        "gps_start": 1256693424.0,
+        "base_target_snr": 24.800305275642373,
+        "observed_snr": 0.8848900153167417
+      },
+      {
+        "m1": 50.11914598632539,
+        "m2": 31.202613405563653,
+        "Mc": 34.23540156264117,
+        "distance_mpc": 787.2852158217335,
+        "theory_class": 6,
+        "theory_name": "scalar-tensor",
+        "injection_parameters": {
+          "omega_BD_eff": 72467.71068038428
+        },
+        "pair_id": "train-000000",
+        "noise_segment_id": "H1:1256693424.000",
+        "detector": "H1",
+        "gps_start": 1256693424.0,
+        "base_target_snr": 24.800305275642373,
+        "observed_snr": 24.800305275642366
+      },
+      {
+        "m1": 50.11914598632539,
+        "m2": 31.202613405563653,
+        "Mc": 34.23540156264117,
+        "distance_mpc": 787.2852158217335,
+        "theory_class": 7,
+        "theory_name": "graviton-mass",
+        "injection_parameters": {
+          "graviton_mass_eV": 1.27e-23
+        },
+        "pair_id": "train-000000",
+        "noise_segment_id": "H1:1256693424.000",
+        "detector": "H1",
+        "gps_start": 1256693424.0,
+        "base_target_snr": 24.800305275642373,
+        "observed_snr": 24.800305275642373
+      },
+      {
+        "m1": 50.11914598632539,
+        "m2": 31.202613405563653,
+        "Mc": 34.23540156264117,
+        "distance_mpc": 787.2852158217335,
+        "theory_class": 8,
+        "theory_name": "chern-simons",
+        "injection_parameters": {
+          "kappa_gpc": 1.068184936906725
+        },
+        "pair_id": "train-000000",
+        "noise_segment_id": "H1:1256693424.000",
+        "detector": "H1",
+        "gps_start": 1256693424.0,
+        "base_target_snr": 24.800305275642373,
+        "observed_snr": 28.376148995637568
+      },
+      {
+        "m1": 50.11914598632539,
+        "m2": 31.202613405563653,
+        "Mc": 34.23540156264117,
+        "distance_mpc": 787.2852158217335,
+        "theory_class": 9,
+        "theory_name": "liv-alpha1.5",
+        "injection_parameters": {
+          "alpha": 1.5,
+          "phase_at_100hz_rad": 0.08681849369067249
+        },
+        "pair_id": "train-000000",
+        "noise_segment_id": "H1:1256693424.000",
+        "detector": "H1",
+        "gps_start": 1256693424.0,
+        "base_target_snr": 24.800305275642373,
+        "observed_snr": 24.800305275642373
+      },
+      {
+        "m1": 50.11914598632539,
+        "m2": 31.202613405563653,
+        "Mc": 34.23540156264117,
+        "distance_mpc": 787.2852158217335,
+        "theory_class": 10,
+        "theory_name": "liv-alpha4",
+        "injection_parameters": {
+          "alpha": 4.0,
+          "phase_at_100hz_rad": 0.08681849369067249
+        },
+        "pair_id": "train-000000",
+        "noise_segment_id": "H1:1256693424.000",
+        "detector": "H1",
+        "gps_start": 1256693424.0,
+        "base_target_snr": 24.800305275642373,
+        "observed_snr": 24.800305275642373
+      },
+      {
+        "m1": 50.11914598632539,
+        "m2": 31.202613405563653,
+        "Mc": 34.23540156264117,
+        "distance_mpc": 787.2852158217335,
+        "theory_class": 11,
+        "theory_name": "loop-quantum-gravity",
+        "injection_parameters": {
+          "area_quantum": 0.1
+        },
+        "pair_id": "train-000000",
+        "noise_segment_id": "H1:1256693424.000",
+        "detector": "H1",
+        "gps_start": 1256693424.0,
+        "base_target_snr": 24.800305275642373,
+        "observed_snr": 25.22295483064181
+      },
+      {
+        "m1": 50.11914598632539,
+        "m2": 31.202613405563653,
+        "Mc": 34.23540156264117,
+        "distance_mpc": 787.2852158217335,
+        "theory_class": 12,
+        "theory_name": "gup",
+        "injection_parameters": {
+          "phase_at_100hz_rad": 0.08681849369067249
+        },
+        "pair_id": "train-000000",
+        "noise_segment_id": "H1:1256693424.000",
+        "detector": "H1",
+        "gps_start": 1256693424.0,
+        "base_target_snr": 24.800305275642373,
+        "observed_snr": 24.800305275642373
+      },
+      {
+        "m1": 29.742012399367116,
+        "m2": 12.455610110080206,
+        "Mc": 16.45067099806749,
+        "distance_mpc": 274.7139662336514,
+        "theory_class": 0,
+        "theory_name": "GR",
+        "injection_parameters": {},
+        "pair_id": "train-000001",
+        "noise_segment_id": "H1:1256683212.000",
+        "detector": "H1",
+        "gps_start": 1256683212.0,
+        "base_target_snr": 25.857240874211353,
+        "observed_snr": 25.857240874211353
+      },
+      {
+        "m1": 29.742012399367116,
+        "m2": 12.455610110080206,
+        "Mc": 16.45067099806749,
+        "distance_mpc": 274.7139662336514,
+        "theory_class": 1,
+        "theory_name": "standard-siren",
+        "injection_parameters": {
+          "H0_true_km_s_mpc": 60.5565783611275
+        },
+        "pair_id": "train-000001",
+        "noise_segment_id": "H1:1256683212.000",
+        "detector": "H1",
+        "gps_start": 1256683212.0,
+        "base_target_snr": 25.857240874211353,
+        "observed_snr": 28.76225494280796
+      },
+      {
+        "m1": 29.742012399367116,
+        "m2": 12.455610110080206,
+        "Mc": 16.45067099806749,
+        "distance_mpc": 274.7139662336514,
+        "theory_class": 2,
+        "theory_name": "qnm-21",
+        "injection_parameters": {
+          "qnm_mode": "21"
+        },
+        "pair_id": "train-000001",
+        "noise_segment_id": "H1:1256683212.000",
+        "detector": "H1",
+        "gps_start": 1256683212.0,
+        "base_target_snr": 25.857240874211353,
+        "observed_snr": 25.858153948618874
+      },
+      {
+        "m1": 29.742012399367116,
+        "m2": 12.455610110080206,
+        "Mc": 16.45067099806749,
+        "distance_mpc": 274.7139662336514,
+        "theory_class": 3,
+        "theory_name": "qnm-33",
+        "injection_parameters": {
+          "qnm_mode": "33"
+        },
+        "pair_id": "train-000001",
+        "noise_segment_id": "H1:1256683212.000",
+        "detector": "H1",
+        "gps_start": 1256683212.0,
+        "base_target_snr": 25.857240874211353,
+        "observed_snr": 25.934009015324957
+      },
+      {
+        "m1": 29.742012399367116,
+        "m2": 12.455610110080206,
+        "Mc": 16.45067099806749,
+        "distance_mpc": 274.7139662336514,
+        "theory_class": 4,
+        "theory_name": "pn-deformation",
+        "injection_parameters": {
+          "delta_phi_100hz_rad": 0.0012504602625073749
+        },
+        "pair_id": "train-000001",
+        "noise_segment_id": "H1:1256683212.000",
+        "detector": "H1",
+        "gps_start": 1256683212.0,
+        "base_target_snr": 25.857240874211353,
+        "observed_snr": 25.857240874211353
+      },
+      {
+        "m1": 29.742012399367116,
+        "m2": 12.455610110080206,
+        "Mc": 16.45067099806749,
+        "distance_mpc": 274.7139662336514,
+        "theory_class": 5,
+        "theory_name": "extra-dimensions",
+        "injection_parameters": {
+          "n_extra_dims": 1
+        },
+        "pair_id": "train-000001",
+        "noise_segment_id": "H1:1256683212.000",
+        "detector": "H1",
+        "gps_start": 1256683212.0,
+        "base_target_snr": 25.857240874211353,
+        "observed_snr": 1.560856019847383
+      },
+      {
+        "m1": 29.742012399367116,
+        "m2": 12.455610110080206,
+        "Mc": 16.45067099806749,
+        "distance_mpc": 274.7139662336514,
+        "theory_class": 6,
+        "theory_name": "scalar-tensor",
+        "injection_parameters": {
+          "omega_BD_eff": 41113.156722255
+        },
+        "pair_id": "train-000001",
+        "noise_segment_id": "H1:1256683212.000",
+        "detector": "H1",
+        "gps_start": 1256683212.0,
+        "base_target_snr": 25.857240874211353,
+        "observed_snr": 25.85724087421136
+      },
+      {
+        "m1": 29.742012399367116,
+        "m2": 12.455610110080206,
+        "Mc": 16.45067099806749,
+        "distance_mpc": 274.7139662336514,
+        "theory_class": 7,
+        "theory_name": "graviton-mass",
+        "injection_parameters": {
+          "graviton_mass_eV": 1.27e-23
+        },
+        "pair_id": "train-000001",
+        "noise_segment_id": "H1:1256683212.000",
+        "detector": "H1",
+        "gps_start": 1256683212.0,
+        "base_target_snr": 25.857240874211353,
+        "observed_snr": 25.857240874211353
+      },
+      {
+        "m1": 29.742012399367116,
+        "m2": 12.455610110080206,
+        "Mc": 16.45067099806749,
+        "distance_mpc": 274.7139662336514,
+        "theory_class": 8,
+        "theory_name": "chern-simons",
+        "injection_parameters": {
+          "kappa_gpc": 0.5194802426394625
+        },
+        "pair_id": "train-000001",
+        "noise_segment_id": "H1:1256683212.000",
+        "detector": "H1",
+        "gps_start": 1256683212.0,
+        "base_target_snr": 25.857240874211353,
+        "observed_snr": 27.600340684540363
+      },
+      {
+        "m1": 29.742012399367116,
+        "m2": 12.455610110080206,
+        "Mc": 16.45067099806749,
+        "distance_mpc": 274.7139662336514,
+        "theory_class": 9,
+        "theory_name": "liv-alpha1.5",
+        "injection_parameters": {
+          "alpha": 1.5,
+          "phase_at_100hz_rad": 0.031948024263946245
+        },
+        "pair_id": "train-000001",
+        "noise_segment_id": "H1:1256683212.000",
+        "detector": "H1",
+        "gps_start": 1256683212.0,
+        "base_target_snr": 25.857240874211353,
+        "observed_snr": 25.85724087421136
+      },
+      {
+        "m1": 29.742012399367116,
+        "m2": 12.455610110080206,
+        "Mc": 16.45067099806749,
+        "distance_mpc": 274.7139662336514,
+        "theory_class": 10,
+        "theory_name": "liv-alpha4",
+        "injection_parameters": {
+          "alpha": 4.0,
+          "phase_at_100hz_rad": 0.031948024263946245
+        },
+        "pair_id": "train-000001",
+        "noise_segment_id": "H1:1256683212.000",
+        "detector": "H1",
+        "gps_start": 1256683212.0,
+        "base_target_snr": 25.857240874211353,
+        "observed_snr": 25.857240874211353
+      },
+      {
+        "m1": 29.742012399367116,
+        "m2": 12.455610110080206,
+        "Mc": 16.45067099806749,
+        "distance_mpc": 274.7139662336514,
+        "theory_class": 11,
+        "theory_name": "loop-quantum-gravity",
+        "injection_parameters": {
+          "area_quantum": 0.1
+        },
+        "pair_id": "train-000001",
+        "noise_segment_id": "H1:1256683212.000",
+        "detector": "H1",
+        "gps_start": 1256683212.0,
+        "base_target_snr": 25.857240874211353,
+        "observed_snr": 25.91827327449944
+      },
+      {
+        "m1": 29.742012399367116,
+        "m2": 12.455610110080206,
+        "Mc": 16.45067099806749,
+        "distance_mpc": 274.7139662336514,
+        "theory_class": 12,
+        "theory_name": "gup",
+        "injection_parameters": {
+          "phase_at_100hz_rad": 0.031948024263946245
+        },
+        "pair_id": "train-000001",
+        "noise_segment_id": "H1:1256683212.000",
+        "detector": "H1",
+        "gps_start": 1256683212.0,
+        "base_target_snr": 25.857240874211353,
+        "observed_snr": 25.85724087421136
+      }
+    ],
+    "val": [
+      {
+        "m1": 70.15650684075251,
+        "m2": 22.14757591771638,
+        "Mc": 33.250050665125855,
+        "distance_mpc": 645.2156681124274,
+        "theory_class": 0,
+        "theory_name": "GR",
+        "injection_parameters": {},
+        "pair_id": "val-000000",
+        "noise_segment_id": "H1:1256696912.000",
+        "detector": "H1",
+        "gps_start": 1256696912.0,
+        "base_target_snr": 19.22503481441592,
+        "observed_snr": 19.225034814415924
+      },
+      {
+        "m1": 70.15650684075251,
+        "m2": 22.14757591771638,
+        "Mc": 33.250050665125855,
+        "distance_mpc": 645.2156681124274,
+        "theory_class": 1,
+        "theory_name": "standard-siren",
+        "injection_parameters": {
+          "H0_true_km_s_mpc": 62.757678923409564
+        },
+        "pair_id": "val-000000",
+        "noise_segment_id": "H1:1256696912.000",
+        "detector": "H1",
+        "gps_start": 1256696912.0,
+        "base_target_snr": 19.22503481441592,
+        "observed_snr": 20.6348986660181
+      },
+      {
+        "m1": 70.15650684075251,
+        "m2": 22.14757591771638,
+        "Mc": 33.250050665125855,
+        "distance_mpc": 645.2156681124274,
+        "theory_class": 2,
+        "theory_name": "qnm-21",
+        "injection_parameters": {
+          "qnm_mode": "21"
+        },
+        "pair_id": "val-000000",
+        "noise_segment_id": "H1:1256696912.000",
+        "detector": "H1",
+        "gps_start": 1256696912.0,
+        "base_target_snr": 19.22503481441592,
+        "observed_snr": 19.226161244439183
+      },
+      {
+        "m1": 70.15650684075251,
+        "m2": 22.14757591771638,
+        "Mc": 33.250050665125855,
+        "distance_mpc": 645.2156681124274,
+        "theory_class": 3,
+        "theory_name": "qnm-33",
+        "injection_parameters": {
+          "qnm_mode": "33"
+        },
+        "pair_id": "val-000000",
+        "noise_segment_id": "H1:1256696912.000",
+        "detector": "H1",
+        "gps_start": 1256696912.0,
+        "base_target_snr": 19.22503481441592,
+        "observed_snr": 19.252374448420504
+      },
+      {
+        "m1": 70.15650684075251,
+        "m2": 22.14757591771638,
+        "Mc": 33.250050665125855,
+        "distance_mpc": 645.2156681124274,
+        "theory_class": 4,
+        "theory_name": "pn-deformation",
+        "injection_parameters": {
+          "delta_phi_100hz_rad": 0.002240955515534303
+        },
+        "pair_id": "val-000000",
+        "noise_segment_id": "H1:1256696912.000",
+        "detector": "H1",
+        "gps_start": 1256696912.0,
+        "base_target_snr": 19.22503481441592,
+        "observed_snr": 19.22503481441592
+      },
+      {
+        "m1": 70.15650684075251,
+        "m2": 22.14757591771638,
+        "Mc": 33.250050665125855,
+        "distance_mpc": 645.2156681124274,
+        "theory_class": 5,
+        "theory_name": "extra-dimensions",
+        "injection_parameters": {
+          "n_extra_dims": 1
+        },
+        "pair_id": "val-000000",
+        "noise_segment_id": "H1:1256696912.000",
+        "detector": "H1",
+        "gps_start": 1256696912.0,
+        "base_target_snr": 19.22503481441592,
+        "observed_snr": 0.7572529663408367
+      },
+      {
+        "m1": 70.15650684075251,
+        "m2": 22.14757591771638,
+        "Mc": 33.250050665125855,
+        "distance_mpc": 645.2156681124274,
+        "theory_class": 6,
+        "theory_name": "scalar-tensor",
+        "injection_parameters": {
+          "omega_BD_eff": 45515.357846819126
+        },
+        "pair_id": "val-000000",
+        "noise_segment_id": "H1:1256696912.000",
+        "detector": "H1",
+        "gps_start": 1256696912.0,
+        "base_target_snr": 19.22503481441592,
+        "observed_snr": 19.22503481441592
+      },
+      {
+        "m1": 70.15650684075251,
+        "m2": 22.14757591771638,
+        "Mc": 33.250050665125855,
+        "distance_mpc": 645.2156681124274,
+        "theory_class": 7,
+        "theory_name": "graviton-mass",
+        "injection_parameters": {
+          "graviton_mass_eV": 1.27e-23
+        },
+        "pair_id": "val-000000",
+        "noise_segment_id": "H1:1256696912.000",
+        "detector": "H1",
+        "gps_start": 1256696912.0,
+        "base_target_snr": 19.22503481441592,
+        "observed_snr": 19.225034814415917
+      },
+      {
+        "m1": 70.15650684075251,
+        "m2": 22.14757591771638,
+        "Mc": 33.250050665125855,
+        "distance_mpc": 645.2156681124274,
+        "theory_class": 8,
+        "theory_name": "chern-simons",
+        "injection_parameters": {
+          "kappa_gpc": 0.5965187623193347
+        },
+        "pair_id": "val-000000",
+        "noise_segment_id": "H1:1256696912.000",
+        "detector": "H1",
+        "gps_start": 1256696912.0,
+        "base_target_snr": 19.22503481441592,
+        "observed_snr": 19.151887234689255
+      },
+      {
+        "m1": 70.15650684075251,
+        "m2": 22.14757591771638,
+        "Mc": 33.250050665125855,
+        "distance_mpc": 645.2156681124274,
+        "theory_class": 9,
+        "theory_name": "liv-alpha1.5",
+        "injection_parameters": {
+          "alpha": 1.5,
+          "phase_at_100hz_rad": 0.03965187623193346
+        },
+        "pair_id": "val-000000",
+        "noise_segment_id": "H1:1256696912.000",
+        "detector": "H1",
+        "gps_start": 1256696912.0,
+        "base_target_snr": 19.22503481441592,
+        "observed_snr": 19.225034814415917
+      },
+      {
+        "m1": 70.15650684075251,
+        "m2": 22.14757591771638,
+        "Mc": 33.250050665125855,
+        "distance_mpc": 645.2156681124274,
+        "theory_class": 10,
+        "theory_name": "liv-alpha4",
+        "injection_parameters": {
+          "alpha": 4.0,
+          "phase_at_100hz_rad": 0.03965187623193346
+        },
+        "pair_id": "val-000000",
+        "noise_segment_id": "H1:1256696912.000",
+        "detector": "H1",
+        "gps_start": 1256696912.0,
+        "base_target_snr": 19.22503481441592,
+        "observed_snr": 19.22503481441592
+      },
+      {
+        "m1": 70.15650684075251,
+        "m2": 22.14757591771638,
+        "Mc": 33.250050665125855,
+        "distance_mpc": 645.2156681124274,
+        "theory_class": 11,
+        "theory_name": "loop-quantum-gravity",
+        "injection_parameters": {
+          "area_quantum": 0.1
+        },
+        "pair_id": "val-000000",
+        "noise_segment_id": "H1:1256696912.000",
+        "detector": "H1",
+        "gps_start": 1256696912.0,
+        "base_target_snr": 19.22503481441592,
+        "observed_snr": 19.494409843567066
+      },
+      {
+        "m1": 70.15650684075251,
+        "m2": 22.14757591771638,
+        "Mc": 33.250050665125855,
+        "distance_mpc": 645.2156681124274,
+        "theory_class": 12,
+        "theory_name": "gup",
+        "injection_parameters": {
+          "phase_at_100hz_rad": 0.03965187623193346
+        },
+        "pair_id": "val-000000",
+        "noise_segment_id": "H1:1256696912.000",
+        "detector": "H1",
+        "gps_start": 1256696912.0,
+        "base_target_snr": 19.22503481441592,
+        "observed_snr": 19.225034814415917
+      }
+    ],
+    "test": [
+      {
+        "m1": 33.32231714921241,
+        "m2": 22.994827831583823,
+        "Mc": 24.015469831387176,
+        "distance_mpc": 218.50310635490024,
+        "theory_class": 0,
+        "theory_name": "GR",
+        "injection_parameters": {},
+        "pair_id": "test-000000",
+        "noise_segment_id": "H1:1256700748.000",
+        "detector": "H1",
+        "gps_start": 1256700748.0,
+        "base_target_snr": 25.514492698120982,
+        "observed_snr": 25.51449269812098
+      },
+      {
+        "m1": 33.32231714921241,
+        "m2": 22.994827831583823,
+        "Mc": 24.015469831387176,
+        "distance_mpc": 218.50310635490024,
+        "theory_class": 1,
+        "theory_name": "standard-siren",
+        "injection_parameters": {
+          "H0_true_km_s_mpc": 65.33582239242259
+        },
+        "pair_id": "test-000000",
+        "noise_segment_id": "H1:1256700748.000",
+        "detector": "H1",
+        "gps_start": 1256700748.0,
+        "base_target_snr": 25.514492698120982,
+        "observed_snr": 26.30496051343425
+      },
+      {
+        "m1": 33.32231714921241,
+        "m2": 22.994827831583823,
+        "Mc": 24.015469831387176,
+        "distance_mpc": 218.50310635490024,
+        "theory_class": 2,
+        "theory_name": "qnm-21",
+        "injection_parameters": {
+          "qnm_mode": "21"
+        },
+        "pair_id": "test-000000",
+        "noise_segment_id": "H1:1256700748.000",
+        "detector": "H1",
+        "gps_start": 1256700748.0,
+        "base_target_snr": 25.514492698120982,
+        "observed_snr": 25.520231194350202
+      },
+      {
+        "m1": 33.32231714921241,
+        "m2": 22.994827831583823,
+        "Mc": 24.015469831387176,
+        "distance_mpc": 218.50310635490024,
+        "theory_class": 3,
+        "theory_name": "qnm-33",
+        "injection_parameters": {
+          "qnm_mode": "33"
+        },
+        "pair_id": "test-000000",
+        "noise_segment_id": "H1:1256700748.000",
+        "detector": "H1",
+        "gps_start": 1256700748.0,
+        "base_target_snr": 25.514492698120982,
+        "observed_snr": 25.613437370205254
+      },
+      {
+        "m1": 33.32231714921241,
+        "m2": 22.994827831583823,
+        "Mc": 24.015469831387176,
+        "distance_mpc": 218.50310635490024,
+        "theory_class": 4,
+        "theory_name": "pn-deformation",
+        "injection_parameters": {
+          "delta_phi_100hz_rad": 0.0034011200765901614
+        },
+        "pair_id": "test-000000",
+        "noise_segment_id": "H1:1256700748.000",
+        "detector": "H1",
+        "gps_start": 1256700748.0,
+        "base_target_snr": 25.514492698120982,
+        "observed_snr": 25.51449269812098
+      },
+      {
+        "m1": 33.32231714921241,
+        "m2": 22.994827831583823,
+        "Mc": 24.015469831387176,
+        "distance_mpc": 218.50310635490024,
+        "theory_class": 5,
+        "theory_name": "extra-dimensions",
+        "injection_parameters": {
+          "n_extra_dims": 1
+        },
+        "pair_id": "test-000000",
+        "noise_segment_id": "H1:1256700748.000",
+        "detector": "H1",
+        "gps_start": 1256700748.0,
+        "base_target_snr": 25.514492698120982,
+        "observed_snr": 1.7261352294893675
+      },
+      {
+        "m1": 33.32231714921241,
+        "m2": 22.994827831583823,
+        "Mc": 24.015469831387176,
+        "distance_mpc": 218.50310635490024,
+        "theory_class": 6,
+        "theory_name": "scalar-tensor",
+        "injection_parameters": {
+          "omega_BD_eff": 50671.644784845164
+        },
+        "pair_id": "test-000000",
+        "noise_segment_id": "H1:1256700748.000",
+        "detector": "H1",
+        "gps_start": 1256700748.0,
+        "base_target_snr": 25.514492698120982,
+        "observed_snr": 25.51449269812098
+      },
+      {
+        "m1": 33.32231714921241,
+        "m2": 22.994827831583823,
+        "Mc": 24.015469831387176,
+        "distance_mpc": 218.50310635490024,
+        "theory_class": 7,
+        "theory_name": "graviton-mass",
+        "injection_parameters": {
+          "graviton_mass_eV": 1.27e-23
+        },
+        "pair_id": "test-000000",
+        "noise_segment_id": "H1:1256700748.000",
+        "detector": "H1",
+        "gps_start": 1256700748.0,
+        "base_target_snr": 25.514492698120982,
+        "observed_snr": 25.51449269812098
+      },
+      {
+        "m1": 33.32231714921241,
+        "m2": 22.994827831583823,
+        "Mc": 24.015469831387176,
+        "distance_mpc": 218.50310635490024,
+        "theory_class": 8,
+        "theory_name": "chern-simons",
+        "injection_parameters": {
+          "kappa_gpc": 0.6867537837347903
+        },
+        "pair_id": "test-000000",
+        "noise_segment_id": "H1:1256700748.000",
+        "detector": "H1",
+        "gps_start": 1256700748.0,
+        "base_target_snr": 25.514492698120982,
+        "observed_snr": 27.799360574801423
+      },
+      {
+        "m1": 33.32231714921241,
+        "m2": 22.994827831583823,
+        "Mc": 24.015469831387176,
+        "distance_mpc": 218.50310635490024,
+        "theory_class": 9,
+        "theory_name": "liv-alpha1.5",
+        "injection_parameters": {
+          "alpha": 1.5,
+          "phase_at_100hz_rad": 0.04867537837347903
+        },
+        "pair_id": "test-000000",
+        "noise_segment_id": "H1:1256700748.000",
+        "detector": "H1",
+        "gps_start": 1256700748.0,
+        "base_target_snr": 25.514492698120982,
+        "observed_snr": 25.51449269812098
+      },
+      {
+        "m1": 33.32231714921241,
+        "m2": 22.994827831583823,
+        "Mc": 24.015469831387176,
+        "distance_mpc": 218.50310635490024,
+        "theory_class": 10,
+        "theory_name": "liv-alpha4",
+        "injection_parameters": {
+          "alpha": 4.0,
+          "phase_at_100hz_rad": 0.04867537837347903
+        },
+        "pair_id": "test-000000",
+        "noise_segment_id": "H1:1256700748.000",
+        "detector": "H1",
+        "gps_start": 1256700748.0,
+        "base_target_snr": 25.514492698120982,
+        "observed_snr": 25.51449269812098
+      },
+      {
+        "m1": 33.32231714921241,
+        "m2": 22.994827831583823,
+        "Mc": 24.015469831387176,
+        "distance_mpc": 218.50310635490024,
+        "theory_class": 11,
+        "theory_name": "loop-quantum-gravity",
+        "injection_parameters": {
+          "area_quantum": 0.1
+        },
+        "pair_id": "test-000000",
+        "noise_segment_id": "H1:1256700748.000",
+        "detector": "H1",
+        "gps_start": 1256700748.0,
+        "base_target_snr": 25.514492698120982,
+        "observed_snr": 25.777096675892
+      },
+      {
+        "m1": 33.32231714921241,
+        "m2": 22.994827831583823,
+        "Mc": 24.015469831387176,
+        "distance_mpc": 218.50310635490024,
+        "theory_class": 12,
+        "theory_name": "gup",
+        "injection_parameters": {
+          "phase_at_100hz_rad": 0.04867537837347903
+        },
+        "pair_id": "test-000000",
+        "noise_segment_id": "H1:1256700748.000",
+        "detector": "H1",
+        "gps_start": 1256700748.0,
+        "base_target_snr": 25.514492698120982,
+        "observed_snr": 25.51449269812098
+      }
+    ]
+  },
+  "detector": "H1",
+  "gps_ranges": {
+    "train": [
+      [
+        1256663960.0,
+        1256663964.0
+      ],
+      [
+        1256664092.0,
+        1256664096.0
+      ],
+      [
+        1256664160.0,
+        1256664164.0
+      ],
+      [
+        1256664164.0,
+        1256664168.0
+      ],
+      [
+        1256664240.0,
+        1256664244.0
+      ],
+      [
+        1256664288.0,
+        1256664292.0
+      ],
+      [
+        1256664344.0,
+        1256664348.0
+      ],
+      [
+        1256664356.0,
+        1256664360.0
+      ],
+      [
+        1256664392.0,
+        1256664396.0
+      ],
+      [
+        1256664468.0,
+        1256664472.0
+      ],
+      [
+        1256664528.0,
+        1256664532.0
+      ],
+      [
+        1256664576.0,
+        1256664580.0
+      ],
+      [
+        1256664652.0,
+        1256664656.0
+      ],
+      [
+        1256664732.0,
+        1256664736.0
+      ],
+      [
+        1256664784.0,
+        1256664788.0
+      ],
+      [
+        1256664820.0,
+        1256664824.0
+      ],
+      [
+        1256664952.0,
+        1256664956.0
+      ],
+      [
+        1256665012.0,
+        1256665016.0
+      ],
+      [
+        1256665024.0,
+        1256665028.0
+      ],
+      [
+        1256665044.0,
+        1256665048.0
+      ],
+      [
+        1256665072.0,
+        1256665076.0
+      ],
+      [
+        1256665092.0,
+        1256665096.0
+      ],
+      [
+        1256665180.0,
+        1256665184.0
+      ],
+      [
+        1256665228.0,
+        1256665232.0
+      ],
+      [
+        1256665280.0,
+        1256665284.0
+      ],
+      [
+        1256665284.0,
+        1256665288.0
+      ],
+      [
+        1256665380.0,
+        1256665384.0
+      ],
+      [
+        1256665484.0,
+        1256665488.0
+      ],
+      [
+        1256665828.0,
+        1256665832.0
+      ],
+      [
+        1256665864.0,
+        1256665868.0
+      ],
+      [
+        1256665924.0,
+        1256665928.0
+      ],
+      [
+        1256666016.0,
+        1256666020.0
+      ],
+      [
+        1256666140.0,
+        1256666144.0
+      ],
+      [
+        1256666212.0,
+        1256666216.0
+      ],
+      [
+        1256666224.0,
+        1256666228.0
+      ],
+      [
+        1256666240.0,
+        1256666244.0
+      ],
+      [
+        1256666244.0,
+        1256666248.0
+      ],
+      [
+        1256666300.0,
+        1256666304.0
+      ],
+      [
+        1256666328.0,
+        1256666332.0
+      ],
+      [
+        1256666344.0,
+        1256666348.0
+      ],
+      [
+        1256666420.0,
+        1256666424.0
+      ],
+      [
+        1256666460.0,
+        1256666464.0
+      ],
+      [
+        1256666532.0,
+        1256666536.0
+      ],
+      [
+        1256666536.0,
+        1256666540.0
+      ],
+      [
+        1256666668.0,
+        1256666672.0
+      ],
+      [
+        1256666672.0,
+        1256666676.0
+      ],
+      [
+        1256666704.0,
+        1256666708.0
+      ],
+      [
+        1256666756.0,
+        1256666760.0
+      ],
+      [
+        1256666816.0,
+        1256666820.0
+      ],
+      [
+        1256666840.0,
+        1256666844.0
+      ],
+      [
+        1256666856.0,
+        1256666860.0
+      ],
+      [
+        1256666868.0,
+        1256666872.0
+      ],
+      [
+        1256666964.0,
+        1256666968.0
+      ],
+      [
+        1256666980.0,
+        1256666984.0
+      ],
+      [
+        1256666996.0,
+        1256667000.0
+      ],
+      [
+        1256667036.0,
+        1256667040.0
+      ],
+      [
+        1256667148.0,
+        1256667152.0
+      ],
+      [
+        1256667180.0,
+        1256667184.0
+      ],
+      [
+        1256667380.0,
+        1256667384.0
+      ],
+      [
+        1256667404.0,
+        1256667408.0
+      ],
+      [
+        1256667412.0,
+        1256667416.0
+      ],
+      [
+        1256667552.0,
+        1256667556.0
+      ],
+      [
+        1256667584.0,
+        1256667588.0
+      ],
+      [
+        1256667596.0,
+        1256667600.0
+      ],
+      [
+        1256667656.0,
+        1256667660.0
+      ],
+      [
+        1256667688.0,
+        1256667692.0
+      ],
+      [
+        1256667780.0,
+        1256667784.0
+      ],
+      [
+        1256667896.0,
+        1256667900.0
+      ],
+      [
+        1256667940.0,
+        1256667944.0
+      ],
+      [
+        1256667984.0,
+        1256667988.0
+      ],
+      [
+        1256668064.0,
+        1256668068.0
+      ],
+      [
+        1256668072.0,
+        1256668076.0
+      ],
+      [
+        1256668136.0,
+        1256668140.0
+      ],
+      [
+        1256668168.0,
+        1256668172.0
+      ],
+      [
+        1256668192.0,
+        1256668196.0
+      ],
+      [
+        1256668208.0,
+        1256668212.0
+      ],
+      [
+        1256668232.0,
+        1256668236.0
+      ],
+      [
+        1256668280.0,
+        1256668284.0
+      ],
+      [
+        1256668316.0,
+        1256668320.0
+      ],
+      [
+        1256668356.0,
+        1256668360.0
+      ],
+      [
+        1256668416.0,
+        1256668420.0
+      ],
+      [
+        1256668428.0,
+        1256668432.0
+      ],
+      [
+        1256668580.0,
+        1256668584.0
+      ],
+      [
+        1256668680.0,
+        1256668684.0
+      ],
+      [
+        1256668756.0,
+        1256668760.0
+      ],
+      [
+        1256668792.0,
+        1256668796.0
+      ],
+      [
+        1256668820.0,
+        1256668824.0
+      ],
+      [
+        1256668884.0,
+        1256668888.0
+      ],
+      [
+        1256668996.0,
+        1256669000.0
+      ],
+      [
+        1256669016.0,
+        1256669020.0
+      ],
+      [
+        1256669044.0,
+        1256669048.0
+      ],
+      [
+        1256669072.0,
+        1256669076.0
+      ],
+      [
+        1256669084.0,
+        1256669088.0
+      ],
+      [
+        1256669116.0,
+        1256669120.0
+      ],
+      [
+        1256669200.0,
+        1256669204.0
+      ],
+      [
+        1256669224.0,
+        1256669228.0
+      ],
+      [
+        1256669324.0,
+        1256669328.0
+      ],
+      [
+        1256669368.0,
+        1256669372.0
+      ],
+      [
+        1256669384.0,
+        1256669388.0
+      ],
+      [
+        1256669408.0,
+        1256669412.0
+      ],
+      [
+        1256669584.0,
+        1256669588.0
+      ],
+      [
+        1256669592.0,
+        1256669596.0
+      ],
+      [
+        1256669644.0,
+        1256669648.0
+      ],
+      [
+        1256669660.0,
+        1256669664.0
+      ],
+      [
+        1256669696.0,
+        1256669700.0
+      ],
+      [
+        1256669716.0,
+        1256669720.0
+      ],
+      [
+        1256669724.0,
+        1256669728.0
+      ],
+      [
+        1256669772.0,
+        1256669776.0
+      ],
+      [
+        1256669860.0,
+        1256669864.0
+      ],
+      [
+        1256669880.0,
+        1256669884.0
+      ],
+      [
+        1256670004.0,
+        1256670008.0
+      ],
+      [
+        1256670060.0,
+        1256670064.0
+      ],
+      [
+        1256670280.0,
+        1256670284.0
+      ],
+      [
+        1256670352.0,
+        1256670356.0
+      ],
+      [
+        1256670504.0,
+        1256670508.0
+      ],
+      [
+        1256670532.0,
+        1256670536.0
+      ],
+      [
+        1256670572.0,
+        1256670576.0
+      ],
+      [
+        1256670736.0,
+        1256670740.0
+      ],
+      [
+        1256670836.0,
+        1256670840.0
+      ],
+      [
+        1256670880.0,
+        1256670884.0
+      ],
+      [
+        1256671108.0,
+        1256671112.0
+      ],
+      [
+        1256671228.0,
+        1256671232.0
+      ],
+      [
+        1256671244.0,
+        1256671248.0
+      ],
+      [
+        1256671252.0,
+        1256671256.0
+      ],
+      [
+        1256671276.0,
+        1256671280.0
+      ],
+      [
+        1256671320.0,
+        1256671324.0
+      ],
+      [
+        1256671332.0,
+        1256671336.0
+      ],
+      [
+        1256671388.0,
+        1256671392.0
+      ],
+      [
+        1256671424.0,
+        1256671428.0
+      ],
+      [
+        1256671460.0,
+        1256671464.0
+      ],
+      [
+        1256671472.0,
+        1256671476.0
+      ],
+      [
+        1256671516.0,
+        1256671520.0
+      ],
+      [
+        1256671588.0,
+        1256671592.0
+      ],
+      [
+        1256671612.0,
+        1256671616.0
+      ],
+      [
+        1256671628.0,
+        1256671632.0
+      ],
+      [
+        1256671636.0,
+        1256671640.0
+      ],
+      [
+        1256671680.0,
+        1256671684.0
+      ],
+      [
+        1256671748.0,
+        1256671752.0
+      ],
+      [
+        1256671752.0,
+        1256671756.0
+      ],
+      [
+        1256671780.0,
+        1256671784.0
+      ],
+      [
+        1256671832.0,
+        1256671836.0
+      ],
+      [
+        1256671852.0,
+        1256671856.0
+      ],
+      [
+        1256671884.0,
+        1256671888.0
+      ],
+      [
+        1256671900.0,
+        1256671904.0
+      ],
+      [
+        1256671968.0,
+        1256671972.0
+      ],
+      [
+        1256672004.0,
+        1256672008.0
+      ],
+      [
+        1256672176.0,
+        1256672180.0
+      ],
+      [
+        1256672196.0,
+        1256672200.0
+      ],
+      [
+        1256672284.0,
+        1256672288.0
+      ],
+      [
+        1256672396.0,
+        1256672400.0
+      ],
+      [
+        1256672580.0,
+        1256672584.0
+      ],
+      [
+        1256672684.0,
+        1256672688.0
+      ],
+      [
+        1256672692.0,
+        1256672696.0
+      ],
+      [
+        1256672764.0,
+        1256672768.0
+      ],
+      [
+        1256672840.0,
+        1256672844.0
+      ],
+      [
+        1256672860.0,
+        1256672864.0
+      ],
+      [
+        1256672872.0,
+        1256672876.0
+      ],
+      [
+        1256672900.0,
+        1256672904.0
+      ],
+      [
+        1256672904.0,
+        1256672908.0
+      ],
+      [
+        1256672968.0,
+        1256672972.0
+      ],
+      [
+        1256673028.0,
+        1256673032.0
+      ],
+      [
+        1256673112.0,
+        1256673116.0
+      ],
+      [
+        1256673136.0,
+        1256673140.0
+      ],
+      [
+        1256673168.0,
+        1256673172.0
+      ],
+      [
+        1256673764.0,
+        1256673768.0
+      ],
+      [
+        1256673812.0,
+        1256673816.0
+      ],
+      [
+        1256673836.0,
+        1256673840.0
+      ],
+      [
+        1256673860.0,
+        1256673864.0
+      ],
+      [
+        1256673976.0,
+        1256673980.0
+      ],
+      [
+        1256674132.0,
+        1256674136.0
+      ],
+      [
+        1256674164.0,
+        1256674168.0
+      ],
+      [
+        1256674292.0,
+        1256674296.0
+      ],
+      [
+        1256674296.0,
+        1256674300.0
+      ],
+      [
+        1256674340.0,
+        1256674344.0
+      ],
+      [
+        1256674356.0,
+        1256674360.0
+      ],
+      [
+        1256674380.0,
+        1256674384.0
+      ],
+      [
+        1256674420.0,
+        1256674424.0
+      ],
+      [
+        1256674492.0,
+        1256674496.0
+      ],
+      [
+        1256674532.0,
+        1256674536.0
+      ],
+      [
+        1256674620.0,
+        1256674624.0
+      ],
+      [
+        1256674648.0,
+        1256674652.0
+      ],
+      [
+        1256674696.0,
+        1256674700.0
+      ],
+      [
+        1256674776.0,
+        1256674780.0
+      ],
+      [
+        1256674900.0,
+        1256674904.0
+      ],
+      [
+        1256674916.0,
+        1256674920.0
+      ],
+      [
+        1256675024.0,
+        1256675028.0
+      ],
+      [
+        1256675040.0,
+        1256675044.0
+      ],
+      [
+        1256675072.0,
+        1256675076.0
+      ],
+      [
+        1256675108.0,
+        1256675112.0
+      ],
+      [
+        1256675120.0,
+        1256675124.0
+      ],
+      [
+        1256675156.0,
+        1256675160.0
+      ],
+      [
+        1256675208.0,
+        1256675212.0
+      ],
+      [
+        1256675228.0,
+        1256675232.0
+      ],
+      [
+        1256675440.0,
+        1256675444.0
+      ],
+      [
+        1256675448.0,
+        1256675452.0
+      ],
+      [
+        1256675520.0,
+        1256675524.0
+      ],
+      [
+        1256675560.0,
+        1256675564.0
+      ],
+      [
+        1256675576.0,
+        1256675580.0
+      ],
+      [
+        1256675640.0,
+        1256675644.0
+      ],
+      [
+        1256675656.0,
+        1256675660.0
+      ],
+      [
+        1256675756.0,
+        1256675760.0
+      ],
+      [
+        1256675764.0,
+        1256675768.0
+      ],
+      [
+        1256675824.0,
+        1256675828.0
+      ],
+      [
+        1256675840.0,
+        1256675844.0
+      ],
+      [
+        1256675936.0,
+        1256675940.0
+      ],
+      [
+        1256675944.0,
+        1256675948.0
+      ],
+      [
+        1256675948.0,
+        1256675952.0
+      ],
+      [
+        1256676024.0,
+        1256676028.0
+      ],
+      [
+        1256676036.0,
+        1256676040.0
+      ],
+      [
+        1256676076.0,
+        1256676080.0
+      ],
+      [
+        1256676212.0,
+        1256676216.0
+      ],
+      [
+        1256676264.0,
+        1256676268.0
+      ],
+      [
+        1256676280.0,
+        1256676284.0
+      ],
+      [
+        1256676288.0,
+        1256676292.0
+      ],
+      [
+        1256676308.0,
+        1256676312.0
+      ],
+      [
+        1256676328.0,
+        1256676332.0
+      ],
+      [
+        1256676380.0,
+        1256676384.0
+      ],
+      [
+        1256676436.0,
+        1256676440.0
+      ],
+      [
+        1256676500.0,
+        1256676504.0
+      ],
+      [
+        1256676512.0,
+        1256676516.0
+      ],
+      [
+        1256676536.0,
+        1256676540.0
+      ],
+      [
+        1256676588.0,
+        1256676592.0
+      ],
+      [
+        1256676720.0,
+        1256676724.0
+      ],
+      [
+        1256676736.0,
+        1256676740.0
+      ],
+      [
+        1256676756.0,
+        1256676760.0
+      ],
+      [
+        1256676760.0,
+        1256676764.0
+      ],
+      [
+        1256676788.0,
+        1256676792.0
+      ],
+      [
+        1256676804.0,
+        1256676808.0
+      ],
+      [
+        1256676816.0,
+        1256676820.0
+      ],
+      [
+        1256676840.0,
+        1256676844.0
+      ],
+      [
+        1256676852.0,
+        1256676856.0
+      ],
+      [
+        1256676860.0,
+        1256676864.0
+      ],
+      [
+        1256676868.0,
+        1256676872.0
+      ],
+      [
+        1256676876.0,
+        1256676880.0
+      ],
+      [
+        1256676896.0,
+        1256676900.0
+      ],
+      [
+        1256676916.0,
+        1256676920.0
+      ],
+      [
+        1256677040.0,
+        1256677044.0
+      ],
+      [
+        1256677064.0,
+        1256677068.0
+      ],
+      [
+        1256677096.0,
+        1256677100.0
+      ],
+      [
+        1256677108.0,
+        1256677112.0
+      ],
+      [
+        1256677128.0,
+        1256677132.0
+      ],
+      [
+        1256677144.0,
+        1256677148.0
+      ],
+      [
+        1256677148.0,
+        1256677152.0
+      ],
+      [
+        1256677152.0,
+        1256677156.0
+      ],
+      [
+        1256677160.0,
+        1256677164.0
+      ],
+      [
+        1256677180.0,
+        1256677184.0
+      ],
+      [
+        1256677208.0,
+        1256677212.0
+      ],
+      [
+        1256677220.0,
+        1256677224.0
+      ],
+      [
+        1256677228.0,
+        1256677232.0
+      ],
+      [
+        1256677240.0,
+        1256677244.0
+      ],
+      [
+        1256677284.0,
+        1256677288.0
+      ],
+      [
+        1256677384.0,
+        1256677388.0
+      ],
+      [
+        1256677416.0,
+        1256677420.0
+      ],
+      [
+        1256677432.0,
+        1256677436.0
+      ],
+      [
+        1256677452.0,
+        1256677456.0
+      ],
+      [
+        1256677524.0,
+        1256677528.0
+      ],
+      [
+        1256677880.0,
+        1256677884.0
+      ],
+      [
+        1256677980.0,
+        1256677984.0
+      ],
+      [
+        1256678080.0,
+        1256678084.0
+      ],
+      [
+        1256678176.0,
+        1256678180.0
+      ],
+      [
+        1256678180.0,
+        1256678184.0
+      ],
+      [
+        1256678216.0,
+        1256678220.0
+      ],
+      [
+        1256678260.0,
+        1256678264.0
+      ],
+      [
+        1256678280.0,
+        1256678284.0
+      ],
+      [
+        1256678424.0,
+        1256678428.0
+      ],
+      [
+        1256678464.0,
+        1256678468.0
+      ],
+      [
+        1256678660.0,
+        1256678664.0
+      ],
+      [
+        1256678672.0,
+        1256678676.0
+      ],
+      [
+        1256678768.0,
+        1256678772.0
+      ],
+      [
+        1256678928.0,
+        1256678932.0
+      ],
+      [
+        1256678956.0,
+        1256678960.0
+      ],
+      [
+        1256679068.0,
+        1256679072.0
+      ],
+      [
+        1256679228.0,
+        1256679232.0
+      ],
+      [
+        1256679232.0,
+        1256679236.0
+      ],
+      [
+        1256679376.0,
+        1256679380.0
+      ],
+      [
+        1256682812.0,
+        1256682816.0
+      ],
+      [
+        1256682940.0,
+        1256682944.0
+      ],
+      [
+        1256682952.0,
+        1256682956.0
+      ],
+      [
+        1256682988.0,
+        1256682992.0
+      ],
+      [
+        1256683000.0,
+        1256683004.0
+      ],
+      [
+        1256683048.0,
+        1256683052.0
+      ],
+      [
+        1256683092.0,
+        1256683096.0
+      ],
+      [
+        1256683100.0,
+        1256683104.0
+      ],
+      [
+        1256683124.0,
+        1256683128.0
+      ],
+      [
+        1256683132.0,
+        1256683136.0
+      ],
+      [
+        1256683212.0,
+        1256683216.0
+      ],
+      [
+        1256683232.0,
+        1256683236.0
+      ],
+      [
+        1256683248.0,
+        1256683252.0
+      ],
+      [
+        1256683384.0,
+        1256683388.0
+      ],
+      [
+        1256683508.0,
+        1256683512.0
+      ],
+      [
+        1256683532.0,
+        1256683536.0
+      ],
+      [
+        1256683548.0,
+        1256683552.0
+      ],
+      [
+        1256683556.0,
+        1256683560.0
+      ],
+      [
+        1256683568.0,
+        1256683572.0
+      ],
+      [
+        1256683776.0,
+        1256683780.0
+      ],
+      [
+        1256683876.0,
+        1256683880.0
+      ],
+      [
+        1256683900.0,
+        1256683904.0
+      ],
+      [
+        1256683932.0,
+        1256683936.0
+      ],
+      [
+        1256683952.0,
+        1256683956.0
+      ],
+      [
+        1256683980.0,
+        1256683984.0
+      ],
+      [
+        1256684000.0,
+        1256684004.0
+      ],
+      [
+        1256684004.0,
+        1256684008.0
+      ],
+      [
+        1256684012.0,
+        1256684016.0
+      ],
+      [
+        1256684044.0,
+        1256684048.0
+      ],
+      [
+        1256684304.0,
+        1256684308.0
+      ],
+      [
+        1256684308.0,
+        1256684312.0
+      ],
+      [
+        1256684432.0,
+        1256684436.0
+      ],
+      [
+        1256684440.0,
+        1256684444.0
+      ],
+      [
+        1256684448.0,
+        1256684452.0
+      ],
+      [
+        1256684492.0,
+        1256684496.0
+      ],
+      [
+        1256684512.0,
+        1256684516.0
+      ],
+      [
+        1256684536.0,
+        1256684540.0
+      ],
+      [
+        1256684564.0,
+        1256684568.0
+      ],
+      [
+        1256684692.0,
+        1256684696.0
+      ],
+      [
+        1256684780.0,
+        1256684784.0
+      ],
+      [
+        1256684800.0,
+        1256684804.0
+      ],
+      [
+        1256684820.0,
+        1256684824.0
+      ],
+      [
+        1256684828.0,
+        1256684832.0
+      ],
+      [
+        1256684844.0,
+        1256684848.0
+      ],
+      [
+        1256684872.0,
+        1256684876.0
+      ],
+      [
+        1256684916.0,
+        1256684920.0
+      ],
+      [
+        1256684924.0,
+        1256684928.0
+      ],
+      [
+        1256685028.0,
+        1256685032.0
+      ],
+      [
+        1256685056.0,
+        1256685060.0
+      ],
+      [
+        1256685084.0,
+        1256685088.0
+      ],
+      [
+        1256685108.0,
+        1256685112.0
+      ],
+      [
+        1256685152.0,
+        1256685156.0
+      ],
+      [
+        1256685156.0,
+        1256685160.0
+      ],
+      [
+        1256685200.0,
+        1256685204.0
+      ],
+      [
+        1256685224.0,
+        1256685228.0
+      ],
+      [
+        1256685256.0,
+        1256685260.0
+      ],
+      [
+        1256685288.0,
+        1256685292.0
+      ],
+      [
+        1256685400.0,
+        1256685404.0
+      ],
+      [
+        1256685416.0,
+        1256685420.0
+      ],
+      [
+        1256685456.0,
+        1256685460.0
+      ],
+      [
+        1256685472.0,
+        1256685476.0
+      ],
+      [
+        1256685572.0,
+        1256685576.0
+      ],
+      [
+        1256685808.0,
+        1256685812.0
+      ],
+      [
+        1256685812.0,
+        1256685816.0
+      ],
+      [
+        1256685984.0,
+        1256685988.0
+      ],
+      [
+        1256686176.0,
+        1256686180.0
+      ],
+      [
+        1256686180.0,
+        1256686184.0
+      ],
+      [
+        1256686192.0,
+        1256686196.0
+      ],
+      [
+        1256686260.0,
+        1256686264.0
+      ],
+      [
+        1256686300.0,
+        1256686304.0
+      ],
+      [
+        1256686368.0,
+        1256686372.0
+      ],
+      [
+        1256686392.0,
+        1256686396.0
+      ],
+      [
+        1256686432.0,
+        1256686436.0
+      ],
+      [
+        1256686512.0,
+        1256686516.0
+      ],
+      [
+        1256686536.0,
+        1256686540.0
+      ],
+      [
+        1256686576.0,
+        1256686580.0
+      ],
+      [
+        1256686588.0,
+        1256686592.0
+      ],
+      [
+        1256686628.0,
+        1256686632.0
+      ],
+      [
+        1256686692.0,
+        1256686696.0
+      ],
+      [
+        1256688844.0,
+        1256688848.0
+      ],
+      [
+        1256688864.0,
+        1256688868.0
+      ],
+      [
+        1256688876.0,
+        1256688880.0
+      ],
+      [
+        1256688892.0,
+        1256688896.0
+      ],
+      [
+        1256688896.0,
+        1256688900.0
+      ],
+      [
+        1256688940.0,
+        1256688944.0
+      ],
+      [
+        1256688952.0,
+        1256688956.0
+      ],
+      [
+        1256688956.0,
+        1256688960.0
+      ],
+      [
+        1256689040.0,
+        1256689044.0
+      ],
+      [
+        1256689224.0,
+        1256689228.0
+      ],
+      [
+        1256689232.0,
+        1256689236.0
+      ],
+      [
+        1256689244.0,
+        1256689248.0
+      ],
+      [
+        1256689312.0,
+        1256689316.0
+      ],
+      [
+        1256689356.0,
+        1256689360.0
+      ],
+      [
+        1256689380.0,
+        1256689384.0
+      ],
+      [
+        1256689416.0,
+        1256689420.0
+      ],
+      [
+        1256689460.0,
+        1256689464.0
+      ],
+      [
+        1256689476.0,
+        1256689480.0
+      ],
+      [
+        1256689504.0,
+        1256689508.0
+      ],
+      [
+        1256689516.0,
+        1256689520.0
+      ],
+      [
+        1256689552.0,
+        1256689556.0
+      ],
+      [
+        1256689564.0,
+        1256689568.0
+      ],
+      [
+        1256689576.0,
+        1256689580.0
+      ],
+      [
+        1256689640.0,
+        1256689644.0
+      ],
+      [
+        1256689672.0,
+        1256689676.0
+      ],
+      [
+        1256689700.0,
+        1256689704.0
+      ],
+      [
+        1256689712.0,
+        1256689716.0
+      ],
+      [
+        1256689760.0,
+        1256689764.0
+      ],
+      [
+        1256689776.0,
+        1256689780.0
+      ],
+      [
+        1256689792.0,
+        1256689796.0
+      ],
+      [
+        1256689800.0,
+        1256689804.0
+      ],
+      [
+        1256689824.0,
+        1256689828.0
+      ],
+      [
+        1256689844.0,
+        1256689848.0
+      ],
+      [
+        1256689928.0,
+        1256689932.0
+      ],
+      [
+        1256690028.0,
+        1256690032.0
+      ],
+      [
+        1256690048.0,
+        1256690052.0
+      ],
+      [
+        1256690188.0,
+        1256690192.0
+      ],
+      [
+        1256690196.0,
+        1256690200.0
+      ],
+      [
+        1256690208.0,
+        1256690212.0
+      ],
+      [
+        1256690292.0,
+        1256690296.0
+      ],
+      [
+        1256690300.0,
+        1256690304.0
+      ],
+      [
+        1256690336.0,
+        1256690340.0
+      ],
+      [
+        1256690352.0,
+        1256690356.0
+      ],
+      [
+        1256690372.0,
+        1256690376.0
+      ],
+      [
+        1256690388.0,
+        1256690392.0
+      ],
+      [
+        1256690456.0,
+        1256690460.0
+      ],
+      [
+        1256690464.0,
+        1256690468.0
+      ],
+      [
+        1256690524.0,
+        1256690528.0
+      ],
+      [
+        1256690528.0,
+        1256690532.0
+      ],
+      [
+        1256690576.0,
+        1256690580.0
+      ],
+      [
+        1256690648.0,
+        1256690652.0
+      ],
+      [
+        1256690656.0,
+        1256690660.0
+      ],
+      [
+        1256690700.0,
+        1256690704.0
+      ],
+      [
+        1256690812.0,
+        1256690816.0
+      ],
+      [
+        1256691040.0,
+        1256691044.0
+      ],
+      [
+        1256691168.0,
+        1256691172.0
+      ],
+      [
+        1256691208.0,
+        1256691212.0
+      ],
+      [
+        1256691232.0,
+        1256691236.0
+      ],
+      [
+        1256691272.0,
+        1256691276.0
+      ],
+      [
+        1256691336.0,
+        1256691340.0
+      ],
+      [
+        1256691352.0,
+        1256691356.0
+      ],
+      [
+        1256691400.0,
+        1256691404.0
+      ],
+      [
+        1256691436.0,
+        1256691440.0
+      ],
+      [
+        1256691464.0,
+        1256691468.0
+      ],
+      [
+        1256691484.0,
+        1256691488.0
+      ],
+      [
+        1256691552.0,
+        1256691556.0
+      ],
+      [
+        1256691588.0,
+        1256691592.0
+      ],
+      [
+        1256691680.0,
+        1256691684.0
+      ],
+      [
+        1256691724.0,
+        1256691728.0
+      ],
+      [
+        1256691836.0,
+        1256691840.0
+      ],
+      [
+        1256691852.0,
+        1256691856.0
+      ],
+      [
+        1256691916.0,
+        1256691920.0
+      ],
+      [
+        1256692000.0,
+        1256692004.0
+      ],
+      [
+        1256692048.0,
+        1256692052.0
+      ],
+      [
+        1256692052.0,
+        1256692056.0
+      ],
+      [
+        1256692096.0,
+        1256692100.0
+      ],
+      [
+        1256692148.0,
+        1256692152.0
+      ],
+      [
+        1256692256.0,
+        1256692260.0
+      ],
+      [
+        1256692316.0,
+        1256692320.0
+      ],
+      [
+        1256692336.0,
+        1256692340.0
+      ],
+      [
+        1256692352.0,
+        1256692356.0
+      ],
+      [
+        1256692376.0,
+        1256692380.0
+      ],
+      [
+        1256692412.0,
+        1256692416.0
+      ],
+      [
+        1256692428.0,
+        1256692432.0
+      ],
+      [
+        1256692448.0,
+        1256692452.0
+      ],
+      [
+        1256692512.0,
+        1256692516.0
+      ],
+      [
+        1256692612.0,
+        1256692616.0
+      ],
+      [
+        1256692636.0,
+        1256692640.0
+      ],
+      [
+        1256692684.0,
+        1256692688.0
+      ],
+      [
+        1256692700.0,
+        1256692704.0
+      ],
+      [
+        1256692720.0,
+        1256692724.0
+      ],
+      [
+        1256692792.0,
+        1256692796.0
+      ],
+      [
+        1256692836.0,
+        1256692840.0
+      ],
+      [
+        1256692848.0,
+        1256692852.0
+      ],
+      [
+        1256692916.0,
+        1256692920.0
+      ],
+      [
+        1256693032.0,
+        1256693036.0
+      ],
+      [
+        1256693060.0,
+        1256693064.0
+      ],
+      [
+        1256693132.0,
+        1256693136.0
+      ],
+      [
+        1256693168.0,
+        1256693172.0
+      ],
+      [
+        1256693172.0,
+        1256693176.0
+      ],
+      [
+        1256693252.0,
+        1256693256.0
+      ],
+      [
+        1256693256.0,
+        1256693260.0
+      ],
+      [
+        1256693272.0,
+        1256693276.0
+      ],
+      [
+        1256693280.0,
+        1256693284.0
+      ],
+      [
+        1256693356.0,
+        1256693360.0
+      ],
+      [
+        1256693368.0,
+        1256693372.0
+      ],
+      [
+        1256693424.0,
+        1256693428.0
+      ],
+      [
+        1256693568.0,
+        1256693572.0
+      ],
+      [
+        1256693660.0,
+        1256693664.0
+      ],
+      [
+        1256693820.0,
+        1256693824.0
+      ],
+      [
+        1256693860.0,
+        1256693864.0
+      ],
+      [
+        1256693932.0,
+        1256693936.0
+      ],
+      [
+        1256693960.0,
+        1256693964.0
+      ],
+      [
+        1256693992.0,
+        1256693996.0
+      ],
+      [
+        1256694036.0,
+        1256694040.0
+      ],
+      [
+        1256694068.0,
+        1256694072.0
+      ],
+      [
+        1256694076.0,
+        1256694080.0
+      ],
+      [
+        1256694168.0,
+        1256694172.0
+      ],
+      [
+        1256694244.0,
+        1256694248.0
+      ],
+      [
+        1256694336.0,
+        1256694340.0
+      ],
+      [
+        1256694356.0,
+        1256694360.0
+      ],
+      [
+        1256694380.0,
+        1256694384.0
+      ],
+      [
+        1256694588.0,
+        1256694592.0
+      ],
+      [
+        1256694604.0,
+        1256694608.0
+      ],
+      [
+        1256694840.0,
+        1256694844.0
+      ],
+      [
+        1256694996.0,
+        1256695000.0
+      ],
+      [
+        1256695008.0,
+        1256695012.0
+      ],
+      [
+        1256695024.0,
+        1256695028.0
+      ],
+      [
+        1256695044.0,
+        1256695048.0
+      ],
+      [
+        1256695084.0,
+        1256695088.0
+      ],
+      [
+        1256695116.0,
+        1256695120.0
+      ],
+      [
+        1256695124.0,
+        1256695128.0
+      ],
+      [
+        1256695184.0,
+        1256695188.0
+      ],
+      [
+        1256695224.0,
+        1256695228.0
+      ],
+      [
+        1256695228.0,
+        1256695232.0
+      ],
+      [
+        1256695232.0,
+        1256695236.0
+      ],
+      [
+        1256695396.0,
+        1256695400.0
+      ],
+      [
+        1256695416.0,
+        1256695420.0
+      ],
+      [
+        1256695424.0,
+        1256695428.0
+      ],
+      [
+        1256695428.0,
+        1256695432.0
+      ],
+      [
+        1256695480.0,
+        1256695484.0
+      ],
+      [
+        1256695492.0,
+        1256695496.0
+      ],
+      [
+        1256695556.0,
+        1256695560.0
+      ],
+      [
+        1256695596.0,
+        1256695600.0
+      ],
+      [
+        1256695608.0,
+        1256695612.0
+      ]
+    ],
+    "val": [
+      [
+        1256695860.0,
+        1256695864.0
+      ],
+      [
+        1256695868.0,
+        1256695872.0
+      ],
+      [
+        1256695908.0,
+        1256695912.0
+      ],
+      [
+        1256696016.0,
+        1256696020.0
+      ],
+      [
+        1256696036.0,
+        1256696040.0
+      ],
+      [
+        1256696056.0,
+        1256696060.0
+      ],
+      [
+        1256696160.0,
+        1256696164.0
+      ],
+      [
+        1256696172.0,
+        1256696176.0
+      ],
+      [
+        1256696208.0,
+        1256696212.0
+      ],
+      [
+        1256696260.0,
+        1256696264.0
+      ],
+      [
+        1256696320.0,
+        1256696324.0
+      ],
+      [
+        1256696392.0,
+        1256696396.0
+      ],
+      [
+        1256696428.0,
+        1256696432.0
+      ],
+      [
+        1256696552.0,
+        1256696556.0
+      ],
+      [
+        1256696568.0,
+        1256696572.0
+      ],
+      [
+        1256696704.0,
+        1256696708.0
+      ],
+      [
+        1256696724.0,
+        1256696728.0
+      ],
+      [
+        1256696736.0,
+        1256696740.0
+      ],
+      [
+        1256696748.0,
+        1256696752.0
+      ],
+      [
+        1256696756.0,
+        1256696760.0
+      ],
+      [
+        1256696776.0,
+        1256696780.0
+      ],
+      [
+        1256696816.0,
+        1256696820.0
+      ],
+      [
+        1256696820.0,
+        1256696824.0
+      ],
+      [
+        1256696836.0,
+        1256696840.0
+      ],
+      [
+        1256696908.0,
+        1256696912.0
+      ],
+      [
+        1256696912.0,
+        1256696916.0
+      ],
+      [
+        1256696940.0,
+        1256696944.0
+      ],
+      [
+        1256697112.0,
+        1256697116.0
+      ],
+      [
+        1256697176.0,
+        1256697180.0
+      ],
+      [
+        1256697180.0,
+        1256697184.0
+      ],
+      [
+        1256697188.0,
+        1256697192.0
+      ],
+      [
+        1256697200.0,
+        1256697204.0
+      ],
+      [
+        1256697372.0,
+        1256697376.0
+      ],
+      [
+        1256697404.0,
+        1256697408.0
+      ],
+      [
+        1256697504.0,
+        1256697508.0
+      ],
+      [
+        1256697560.0,
+        1256697564.0
+      ],
+      [
+        1256697584.0,
+        1256697588.0
+      ],
+      [
+        1256697704.0,
+        1256697708.0
+      ],
+      [
+        1256697748.0,
+        1256697752.0
+      ],
+      [
+        1256697824.0,
+        1256697828.0
+      ],
+      [
+        1256697884.0,
+        1256697888.0
+      ],
+      [
+        1256697960.0,
+        1256697964.0
+      ],
+      [
+        1256698112.0,
+        1256698116.0
+      ],
+      [
+        1256698120.0,
+        1256698124.0
+      ],
+      [
+        1256698144.0,
+        1256698148.0
+      ],
+      [
+        1256698164.0,
+        1256698168.0
+      ],
+      [
+        1256698176.0,
+        1256698180.0
+      ],
+      [
+        1256698188.0,
+        1256698192.0
+      ],
+      [
+        1256698244.0,
+        1256698248.0
+      ]
+    ],
+    "test": [
+      [
+        1256698392.0,
+        1256698396.0
+      ],
+      [
+        1256698412.0,
+        1256698416.0
+      ],
+      [
+        1256698544.0,
+        1256698548.0
+      ],
+      [
+        1256698588.0,
+        1256698592.0
+      ],
+      [
+        1256698648.0,
+        1256698652.0
+      ],
+      [
+        1256698672.0,
+        1256698676.0
+      ],
+      [
+        1256698692.0,
+        1256698696.0
+      ],
+      [
+        1256698708.0,
+        1256698712.0
+      ],
+      [
+        1256698836.0,
+        1256698840.0
+      ],
+      [
+        1256698852.0,
+        1256698856.0
+      ],
+      [
+        1256698912.0,
+        1256698916.0
+      ],
+      [
+        1256698936.0,
+        1256698940.0
+      ],
+      [
+        1256699040.0,
+        1256699044.0
+      ],
+      [
+        1256699068.0,
+        1256699072.0
+      ],
+      [
+        1256699084.0,
+        1256699088.0
+      ],
+      [
+        1256699128.0,
+        1256699132.0
+      ],
+      [
+        1256699156.0,
+        1256699160.0
+      ],
+      [
+        1256699200.0,
+        1256699204.0
+      ],
+      [
+        1256699256.0,
+        1256699260.0
+      ],
+      [
+        1256699300.0,
+        1256699304.0
+      ],
+      [
+        1256699444.0,
+        1256699448.0
+      ],
+      [
+        1256699472.0,
+        1256699476.0
+      ],
+      [
+        1256699548.0,
+        1256699552.0
+      ],
+      [
+        1256699624.0,
+        1256699628.0
+      ],
+      [
+        1256699700.0,
+        1256699704.0
+      ],
+      [
+        1256699756.0,
+        1256699760.0
+      ],
+      [
+        1256699800.0,
+        1256699804.0
+      ],
+      [
+        1256699856.0,
+        1256699860.0
+      ],
+      [
+        1256699872.0,
+        1256699876.0
+      ],
+      [
+        1256700012.0,
+        1256700016.0
+      ],
+      [
+        1256700032.0,
+        1256700036.0
+      ],
+      [
+        1256700096.0,
+        1256700100.0
+      ],
+      [
+        1256700124.0,
+        1256700128.0
+      ],
+      [
+        1256700196.0,
+        1256700200.0
+      ],
+      [
+        1256700320.0,
+        1256700324.0
+      ],
+      [
+        1256700412.0,
+        1256700416.0
+      ],
+      [
+        1256700472.0,
+        1256700476.0
+      ],
+      [
+        1256700536.0,
+        1256700540.0
+      ],
+      [
+        1256700552.0,
+        1256700556.0
+      ],
+      [
+        1256700592.0,
+        1256700596.0
+      ],
+      [
+        1256700648.0,
+        1256700652.0
+      ],
+      [
+        1256700720.0,
+        1256700724.0
+      ],
+      [
+        1256700748.0,
+        1256700752.0
+      ],
+      [
+        1256700776.0,
+        1256700780.0
+      ],
+      [
+        1256700804.0,
+        1256700808.0
+      ],
+      [
+        1256700828.0,
+        1256700832.0
+      ],
+      [
+        1256700872.0,
+        1256700876.0
+      ],
+      [
+        1256700920.0,
+        1256700924.0
+      ],
+      [
+        1256700936.0,
+        1256700940.0
+      ],
+      [
+        1256700972.0,
+        1256700976.0
+      ],
+      [
+        1256700992.0,
+        1256700996.0
+      ],
+      [
+        1256701028.0,
+        1256701032.0
+      ],
+      [
+        1256701068.0,
+        1256701072.0
+      ],
+      [
+        1256701108.0,
+        1256701112.0
+      ],
+      [
+        1256701256.0,
+        1256701260.0
+      ],
+      [
+        1256701276.0,
+        1256701280.0
+      ],
+      [
+        1256701344.0,
+        1256701348.0
+      ],
+      [
+        1256701368.0,
+        1256701372.0
+      ],
+      [
+        1256701396.0,
+        1256701400.0
+      ],
+      [
+        1256701428.0,
+        1256701432.0
+      ],
+      [
+        1256701456.0,
+        1256701460.0
+      ],
+      [
+        1256701480.0,
+        1256701484.0
+      ],
+      [
+        1256701520.0,
+        1256701524.0
+      ],
+      [
+        1256701588.0,
+        1256701592.0
+      ],
+      [
+        1256701632.0,
+        1256701636.0
+      ],
+      [
+        1256701844.0,
+        1256701848.0
+      ],
+      [
+        1256701864.0,
+        1256701868.0
+      ],
+      [
+        1256701884.0,
+        1256701888.0
+      ],
+      [
+        1256701904.0,
+        1256701908.0
+      ],
+      [
+        1256701940.0,
+        1256701944.0
+      ],
+      [
+        1256702100.0,
+        1256702104.0
+      ],
+      [
+        1256702132.0,
+        1256702136.0
+      ],
+      [
+        1256702160.0,
+        1256702164.0
+      ],
+      [
+        1256702220.0,
+        1256702224.0
+      ],
+      [
+        1256702268.0,
+        1256702272.0
+      ],
+      [
+        1256702364.0,
+        1256702368.0
+      ],
+      [
+        1256702416.0,
+        1256702420.0
+      ],
+      [
+        1256702432.0,
+        1256702436.0
+      ],
+      [
+        1256702476.0,
+        1256702480.0
+      ],
+      [
+        1256702612.0,
+        1256702616.0
+      ],
+      [
+        1256702644.0,
+        1256702648.0
+      ],
+      [
+        1256702660.0,
+        1256702664.0
+      ],
+      [
+        1256702772.0,
+        1256702776.0
+      ],
+      [
+        1256702788.0,
+        1256702792.0
+      ],
+      [
+        1256702920.0,
+        1256702924.0
+      ],
+      [
+        1256702952.0,
+        1256702956.0
+      ],
+      [
+        1256702984.0,
+        1256702988.0
+      ],
+      [
+        1256703076.0,
+        1256703080.0
+      ],
+      [
+        1256703124.0,
+        1256703128.0
+      ],
+      [
+        1256703140.0,
+        1256703144.0
+      ],
+      [
+        1256703184.0,
+        1256703188.0
+      ],
+      [
+        1256703208.0,
+        1256703212.0
+      ],
+      [
+        1256703244.0,
+        1256703248.0
+      ],
+      [
+        1256703308.0,
+        1256703312.0
+      ],
+      [
+        1256703348.0,
+        1256703352.0
+      ],
+      [
+        1256703384.0,
+        1256703388.0
+      ],
+      [
+        1256703424.0,
+        1256703428.0
+      ],
+      [
+        1256703452.0,
+        1256703456.0
+      ],
+      [
+        1256703504.0,
+        1256703508.0
+      ],
+      [
+        1256703524.0,
+        1256703528.0
+      ]
+    ]
+  },
+  "snr_train": [
+    24.800305275642373,
+    21.913473428734235,
+    24.828561785418447,
+    24.843997415400366,
+    24.800305275642373,
+    0.8848900153167417,
+    24.800305275642366,
+    24.800305275642373,
+    28.376148995637568,
+    24.800305275642373,
+    24.800305275642373,
+    25.22295483064181,
+    24.800305275642373,
+    25.857240874211353,
+    28.76225494280796,
+    25.858153948618874,
+    25.934009015324957,
+    25.857240874211353,
+    1.560856019847383,
+    25.85724087421136,
+    25.857240874211353,
+    27.600340684540363,
+    25.85724087421136,
+    25.857240874211353,
+    25.91827327449944,
+    25.85724087421136
+  ],
+  "snr_val": [
+    19.225034814415924,
+    20.6348986660181,
+    19.226161244439183,
+    19.252374448420504,
+    19.22503481441592,
+    0.7572529663408367,
+    19.22503481441592,
+    19.225034814415917,
+    19.151887234689255,
+    19.225034814415917,
+    19.22503481441592,
+    19.494409843567066,
+    19.225034814415917
+  ]
+}

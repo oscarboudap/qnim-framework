@@ -123,6 +123,10 @@ class GWDataset:
     X_physical_train: Optional[np.ndarray] = None
     X_physical_val: Optional[np.ndarray] = None
     X_physical_test: Optional[np.ndarray] = None
+    X_global_template_train: Optional[np.ndarray] = None
+    X_global_template_val: Optional[np.ndarray] = None
+    X_global_template_test: Optional[np.ndarray] = None
+    X_matched_filter_val: Optional[np.ndarray] = None
 
 
 # ---------------------------------------------------------------------------

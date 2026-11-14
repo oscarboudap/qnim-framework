@@ -43,6 +43,18 @@ def parse_args():
     parser.add_argument("--n-pca-fit", type=int, default=128)
     parser.add_argument("--snr-min", type=float, default=8.0)
     parser.add_argument("--snr-max", type=float, default=30.0)
+    parser.add_argument(
+        "--snr-normalization",
+        choices=("reference_gr", "per_waveform"),
+        default="reference_gr",
+        help="Use GR-referenced physical SNR or equalize each theory waveform for a morphology ablation",
+    )
+    parser.add_argument(
+        "--matched-filter-bank-size",
+        type=int,
+        default=0,
+        help="Generate validation matched-filter scores using this many train templates per class",
+    )
     parser.add_argument("--approximant", default="IMRPhenomD")
     parser.add_argument("--max-classes", type=int, default=None)
     parser.add_argument("--seed", type=int, default=42)
@@ -168,6 +180,8 @@ def main():
         target_snr_range=(args.snr_min, args.snr_max),
         approximant=args.approximant,
         max_classes=args.max_classes,
+        snr_normalization=args.snr_normalization,
+        matched_filter_bank_size=args.matched_filter_bank_size,
     )
     dataset = adapter.generate_balanced_dataset(
         n_per_class=args.n_per_class,
@@ -188,6 +202,19 @@ def main():
                 physical_features,
                 allow_pickle=False,
             )
+        global_template_features = getattr(dataset, f"X_global_template_{split}")
+        if global_template_features is not None:
+            np.save(
+                output_dir / f"X_global_template_{split}.npy",
+                global_template_features,
+                allow_pickle=False,
+            )
+    if dataset.X_matched_filter_val is not None:
+        np.save(
+            output_dir / "X_matched_filter_val.npy",
+            dataset.X_matched_filter_val,
+            allow_pickle=False,
+        )
     (output_dir / "labels.json").write_text(
         json.dumps({"theory_names": dataset.theory_names}, indent=2), encoding="utf-8"
     )

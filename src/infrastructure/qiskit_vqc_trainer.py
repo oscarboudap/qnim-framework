@@ -989,12 +989,15 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
     ):
         self.temp_dir = Path(temp_dir or tempfile.gettempdir()) / "qnim_qiskit"
         self.temp_dir.mkdir(parents=True, exist_ok=True)
-        from src.ibm_credentials import get_ibm_quantum_token
-
         self.use_real_hardware = bool(use_real_hardware)
         self.train_on_hardware = bool(train_on_hardware)
         self.backend_name = backend_name
-        self.token = get_ibm_quantum_token(token)
+        if mode == "ibm" or self.use_real_hardware or self.train_on_hardware:
+            from src.ibm_credentials import get_ibm_quantum_token
+
+            self.token = get_ibm_quantum_token(token)
+        else:
+            self.token = (token or "").strip()
         self.mode = mode
         self.n_hw_validation = n_hw_validation
         self.shots_validation = shots_validation
@@ -1412,6 +1415,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         use_zne: bool = False,
         n_feynman_params: Optional[int] = None,
         hardware_finetune_steps: Optional[int] = None,
+        compute_accuracy_vs_snr: bool = True,
     ) -> VQCTrainingResult:
         """Entrena y evalúa el VQC. Retorna VQCTrainingResult completo."""
         try:
@@ -1512,14 +1516,17 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 acc_real_no_zne = None
                 acc_real_zne = None
 
-            acc_vs_snr = self.estimate_accuracy_vs_snr(
-                X_val=dataset.X_val,
-                y_val=dataset.y_val,
-                snr_vals=self._estimate_snr(dataset.X_val),
-                weights=final_weights,
-                num_qubits=n_qubits,
-                X_train=dataset.X_train,
-            )
+            acc_vs_snr = {}
+            if compute_accuracy_vs_snr:
+                acc_vs_snr = self.estimate_accuracy_vs_snr(
+                    X_val=dataset.X_val,
+                    y_val=dataset.y_val,
+                    snr_vals=self._estimate_snr(dataset.X_val),
+                    weights=final_weights,
+                    num_qubits=n_qubits,
+                    X_train=dataset.X_train,
+                    n_features=n_features,
+                )
 
             acc_val_history = []
 
@@ -1723,6 +1730,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         num_qubits: int,
         snr_bins: int = 5,
         X_train: Optional[np.ndarray] = None,
+        n_features: Optional[int] = None,
     ) -> dict:
         """
         Ejecuta el circuito cuántico REAL (feature map + ansatz + capa
@@ -1733,9 +1741,17 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         results = {}
         n_classes = int(np.max(y_val)) + 1
         y_true = y_val if len(y_val.shape) == 1 else np.argmax(y_val, axis=1)
+        if n_features is None:
+            n_features = min(X_val.shape[1], num_qubits)
 
         try:
-            combined, x_params, ansatz_params = _build_feature_map_and_ansatz(num_qubits, reps=self.ansatz_reps)
+            combined, x_params, ansatz_params = _build_feature_map_and_ansatz(
+                num_qubits,
+                n_features=n_features,
+                feature_map_reps=self.feature_map_reps,
+                ansatz_reps=self.ansatz_reps,
+                entanglement=self.entanglement,
+            )
             combined_run = combined.copy()
             combined_run.measure_all()
 
@@ -1744,8 +1760,8 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 weights, n_ansatz_params, num_qubits, n_classes, self.readout_hidden_size
             )
 
-            X_train_proc = _prepare_feature_matrix(X_train, num_qubits) if X_train is not None else None
-            X_val_proc = _prepare_feature_matrix(X_val, num_qubits)
+            X_train_proc = _prepare_feature_matrix(X_train, n_features) if X_train is not None else None
+            X_val_proc = _prepare_feature_matrix(X_val, n_features)
             train_stats = (
                 compute_chebyshev_stats(X_train_proc) if X_train_proc is not None
                 else compute_chebyshev_stats(X_val_proc)
@@ -1753,10 +1769,13 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
 
             from qiskit.primitives import StatevectorSampler
             sampler = StatevectorSampler(seed=self.random_seed)
+            rng = np.random.default_rng(self.random_seed)
 
             for snr in snr_levels:
                 noise_scale = 20.0 / snr
-                X_noisy = X_val_proc + np.random.normal(0, noise_scale * X_val_proc.std(), X_val_proc.shape)
+                X_noisy = X_val_proc + rng.normal(
+                    0, noise_scale * X_val_proc.std(), X_val_proc.shape
+                )
                 X_noisy_clipped = np.clip(X_noisy, X_val_proc.min(), X_val_proc.max())
                 X_noisy_cheb = chebyshev_preprocess(X_noisy_clipped, stats=train_stats)
 

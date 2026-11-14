@@ -1,0 +1,241 @@
+{
+  "dataset_dir": "results\\scaling_study\\dataset_merger_centered_300",
+  "dataset_sha256_train_val": "4bb1e9193a4fb3cfb84f33902c03d5a3e101c553fb9cdd5b6551025cb3daf31b",
+  "n_classes": 13,
+  "random_baseline": 0.07692307692307693,
+  "n_train_pairs": 300,
+  "n_validation_pairs": 100,
+  "n_test_per_class_from_metadata": 1,
+  "test_arrays_read": false,
+  "paired_reference_is_oracle": true,
+  "bootstrap_iterations": 20000,
+  "permutation_iterations": 20000,
+  "seed": 20261112,
+  "feature_results": {
+    "pca": {
+      "single_event_features": {
+        "grouped_5_fold_cv_balanced_accuracy": {
+          "logistic": 0.07692307692307693,
+          "svc_rbf": 0.07692307692307693,
+          "extra_trees": 0.07692307692307693
+        },
+        "validation": {
+          "logistic": {
+            "balanced_accuracy": 0.07692307692307693,
+            "group_bootstrap_95_ci": [
+              0.07692307692307693,
+              0.07692307692307693
+            ],
+            "within_pair_permutation_p_unadjusted": 1.0
+          },
+          "svc_rbf": {
+            "balanced_accuracy": 0.07692307692307694,
+            "group_bootstrap_95_ci": [
+              0.07692307692307693,
+              0.07692307692307693
+            ],
+            "within_pair_permutation_p_unadjusted": 1.0
+          },
+          "extra_trees": {
+            "balanced_accuracy": 0.07692307692307693,
+            "group_bootstrap_95_ci": [
+              0.07692307692307693,
+              0.07692307692307693
+            ],
+            "within_pair_permutation_p_unadjusted": 1.0
+          }
+        },
+        "best_model_by_training_cv": "logistic"
+      },
+      "paired_control_delta_diagnostic": {
+        "grouped_5_fold_cv_balanced_accuracy": {
+          "logistic": 0.2633333333333333,
+          "svc_rbf": 0.36179487179487185,
+          "extra_trees": 0.7476923076923078
+        },
+        "validation": {
+          "logistic": {
+            "balanced_accuracy": 0.2969230769230769,
+            "group_bootstrap_95_ci": [
+              0.27,
+              0.32461538461538464
+            ],
+            "within_pair_permutation_p_unadjusted": 4.999750012499375e-05
+          },
+          "svc_rbf": {
+            "balanced_accuracy": 0.3792307692307692,
+            "group_bootstrap_95_ci": [
+              0.35384615384615387,
+              0.40384615384615385
+            ],
+            "within_pair_permutation_p_unadjusted": 4.999750012499375e-05
+          },
+          "extra_trees": {
+            "balanced_accuracy": 0.7392307692307691,
+            "group_bootstrap_95_ci": [
+              0.7107692307692308,
+              0.7661538461538462
+            ],
+            "within_pair_permutation_p_unadjusted": 4.999750012499375e-05
+          }
+        },
+        "best_model_by_training_cv": "extra_trees"
+      }
+    },
+    "physical": {
+      "single_event_features": {
+        "grouped_5_fold_cv_balanced_accuracy": {
+          "logistic": 0.07692307692307693,
+          "svc_rbf": 0.07692307692307693,
+          "extra_trees": 0.07717948717948718
+        },
+        "validation": {
+          "logistic": {
+            "balanced_accuracy": 0.07692307692307693,
+            "group_bootstrap_95_ci": [
+              0.07692307692307693,
+              0.07692307692307693
+            ],
+            "within_pair_permutation_p_unadjusted": 1.0
+          },
+          "svc_rbf": {
+            "balanced_accuracy": 0.07692307692307693,
+            "group_bootstrap_95_ci": [
+              0.07692307692307693,
+              0.07692307692307693
+            ],
+            "within_pair_permutation_p_unadjusted": 1.0
+          },
+          "extra_trees": {
+            "balanced_accuracy": 0.07692307692307693,
+            "group_bootstrap_95_ci": [
+              0.07692307692307693,
+              0.07692307692307693
+            ],
+            "within_pair_permutation_p_unadjusted": 1.0
+          }
+        },
+        "best_model_by_training_cv": "extra_trees"
+      },
+      "paired_control_delta_diagnostic": {
+        "grouped_5_fold_cv_balanced_accuracy": {
+          "logistic": 0.7517948717948718,
+          "svc_rbf": 0.6174358974358973,
+          "extra_trees": 0.9230769230769232
+        },
+        "validation": {
+          "logistic": {
+            "balanced_accuracy": 0.7484615384615385,
+            "group_bootstrap_95_ci": [
+              0.7269230769230769,
+              0.7684615384615384
+            ],
+            "within_pair_permutation_p_unadjusted": 4.999750012499375e-05
+          },
+          "svc_rbf": {
+            "balanced_accuracy": 0.6161538461538462,
+            "group_bootstrap_95_ci": [
+              0.5969230769230769,
+              0.6338461538461538
+            ],
+            "within_pair_permutation_p_unadjusted": 4.999750012499375e-05
+          },
+          "extra_trees": {
+            "balanced_accuracy": 0.9315384615384616,
+            "group_bootstrap_95_ci": [
+              0.9207692307692308,
+              0.9423076923076923
+            ],
+            "within_pair_permutation_p_unadjusted": 4.999750012499375e-05
+          }
+        },
+        "best_model_by_training_cv": "extra_trees"
+      }
+    }
+  },
+  "resource_projection_binomial_approximation": {
+    "assumption": "Independent per-event correctness with a balanced 13-class test set; optimistic when events share a noise segment.",
+    "alpha_one_sided": 0.05,
+    "power_table": [
+      {
+        "n_test_per_class": 10,
+        "n_total": 130,
+        "critical_correct_for_one_sided_alpha_0_05": 16,
+        "critical_accuracy": 0.12307692307692308,
+        "power": {
+          "true_accuracy_0.10": 0.22679471875251814,
+          "true_accuracy_0.15": 0.8370868807579218,
+          "true_accuracy_0.20": 0.9922912283312342
+        }
+      },
+      {
+        "n_test_per_class": 30,
+        "n_total": 390,
+        "critical_correct_for_one_sided_alpha_0_05": 40,
+        "critical_accuracy": 0.10256410256410256,
+        "power": {
+          "true_accuracy_0.10": 0.45749230005834024,
+          "true_accuracy_0.15": 0.9975834835921855,
+          "true_accuracy_0.20": 0.9999999275459386
+        }
+      },
+      {
+        "n_test_per_class": 50,
+        "n_total": 650,
+        "critical_correct_for_one_sided_alpha_0_05": 62,
+        "critical_accuracy": 0.09538461538461539,
+        "power": {
+          "true_accuracy_0.10": 0.6713595448641794,
+          "true_accuracy_0.15": 0.9999856111740778,
+          "true_accuracy_0.20": 0.9999999999998649
+        }
+      },
+      {
+        "n_test_per_class": 100,
+        "n_total": 1300,
+        "critical_correct_for_one_sided_alpha_0_05": 117,
+        "critical_accuracy": 0.09,
+        "power": {
+          "true_accuracy_0.10": 0.8953640531002229,
+          "true_accuracy_0.15": 0.9999999999607884,
+          "true_accuracy_0.20": 1.0
+        }
+      },
+      {
+        "n_test_per_class": 300,
+        "n_total": 3900,
+        "critical_correct_for_one_sided_alpha_0_05": 329,
+        "critical_accuracy": 0.08435897435897435,
+        "power": {
+          "true_accuracy_0.10": 0.9996070100704803,
+          "true_accuracy_0.15": 1.0,
+          "true_accuracy_0.20": 1.0
+        }
+      },
+      {
+        "n_test_per_class": 900,
+        "n_total": 11700,
+        "critical_correct_for_one_sided_alpha_0_05": 949,
+        "critical_accuracy": 0.0811111111111111,
+        "power": {
+          "true_accuracy_0.10": 0.9999999999989718,
+          "true_accuracy_0.15": 1.0,
+          "true_accuracy_0.20": 1.0
+        }
+      }
+    ],
+    "minimum_test_events_per_class_for_80_percent_power": {
+      "true_accuracy_0.10": 75,
+      "true_accuracy_0.15": 10,
+      "true_accuracy_0.20": 4
+    },
+    "worst_case_shot_probability_standard_error": {
+      "64": 0.0625,
+      "512": 0.022097086912079608,
+      "1024": 0.015625,
+      "4096": 0.0078125,
+      "16384": 0.00390625
+    }
+  },
+  "interpretation": "The paired-control delta subtracts each theory feature vector from the GR feature vector for the same source/noise pair. This oracle control is a diagnostic only, not a deployable single-event input. Validation statistics are exploratory and unadjusted."
+}

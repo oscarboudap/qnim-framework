@@ -58,6 +58,7 @@ def test_noise_injection_dataset_has_disjoint_balanced_splits(monkeypatch):
         waveform_generator=_waveform_generator(),
         f_low=2.0,
         f_high=60.0,
+        matched_filter_bank_size=4,
     )
 
     dataset = adapter.generate_balanced_dataset(
@@ -74,6 +75,11 @@ def test_noise_injection_dataset_has_disjoint_balanced_splits(monkeypatch):
     assert dataset.X_physical_train.shape == (18, 32)
     assert dataset.X_physical_val.shape == (6, 32)
     assert dataset.X_physical_test.shape == (9, 32)
+    assert dataset.X_global_template_train.shape == (18, 32)
+    assert dataset.X_global_template_val.shape == (6, 32)
+    assert dataset.X_global_template_test.shape == (9, 32)
+    assert dataset.X_matched_filter_val.shape == (6, 3)
+    assert np.isfinite(dataset.X_matched_filter_val).all()
     np.testing.assert_array_equal(np.bincount(dataset.y_train), [6, 6, 6])
     np.testing.assert_array_equal(np.bincount(dataset.y_val), [2, 2, 2])
     np.testing.assert_array_equal(np.bincount(dataset.y_test), [3, 3, 3])
@@ -91,6 +97,29 @@ def test_noise_injection_dataset_has_disjoint_balanced_splits(monkeypatch):
             assert len({record["base_target_snr"] for record in pair}) == 1
     assert dataset.metadata["paired_injections"]["normalization_reference"] == "unmodified_GR_waveform"
     assert dataset.metadata["paired_injections"]["waveform_generation"] == "custom_generator"
+    assert dataset.metadata["physical_features"]["paired_reference_is_oracle"] is True
+    assert dataset.metadata["global_template_features"]["paired_reference_is_oracle"] is False
+    assert dataset.metadata["global_template_features"]["train_template_cross_fitted_by_pair"] is True
+    assert dataset.metadata["matched_filter_bank"]["template_source_split"] == "train_only"
+    assert dataset.metadata["matched_filter_bank"]["test_evaluated"] is False
+
+
+def test_matched_filter_scores_identify_a_strong_centered_template(monkeypatch):
+    module = _load_adapter(monkeypatch)
+
+    segment = _noise_segments(module)["val"][0]
+    time = np.arange(128) / 128
+    templates = np.stack([
+        np.sin(2.0 * np.pi * frequency * time)
+        for frequency in (8.0, 20.0, 32.0)
+    ])[:, None, :]
+    queries = templates[:, 0, :]
+
+    scores = module._matched_filter_scores(
+        queries, templates, segment, sample_rate=128, f_low=2.0, f_high=60.0
+    )
+
+    np.testing.assert_array_equal(scores.argmax(axis=1), np.arange(3))
 
 
 def test_snr_normalization_preserves_modified_amplitude(monkeypatch):
@@ -116,6 +145,35 @@ def test_snr_normalization_preserves_modified_amplitude(monkeypatch):
 
     assert observed_snr == pytest.approx(12.0)
     assert reference_whitened.shape == reference.shape
+
+
+def test_per_waveform_snr_normalization_equalizes_modified_waveform(monkeypatch):
+    module = _load_adapter(monkeypatch)
+    adapter = module.LIGONoiseInjectionAdapter(
+        noise_segments=_noise_segments(module),
+        sample_rate=128,
+        duration=1.0,
+        n_components=4,
+        n_pca_fit=6,
+        target_snr_range=(8.0, 12.0),
+        max_classes=3,
+        waveform_generator=_waveform_generator(),
+        f_low=2.0,
+        f_high=60.0,
+        snr_normalization="per_waveform",
+    )
+    segment = adapter.noise_segments["test"][0]
+    reference = np.sin(2.0 * np.pi * 8.0 * np.arange(128) / 128)
+
+    _, observed_snr, reference_whitened = adapter._inject_and_whiten(
+        reference * 1.2, segment, 10.0, reference_waveform=reference
+    )
+
+    assert observed_snr == pytest.approx(10.0)
+    _, _, expected_reference = adapter._inject_and_whiten(
+        reference, segment, 10.0, reference_waveform=reference
+    )
+    np.testing.assert_allclose(reference_whitened, expected_reference)
 
 
 def test_noise_injection_rejects_reused_segment_ids_between_splits(monkeypatch):

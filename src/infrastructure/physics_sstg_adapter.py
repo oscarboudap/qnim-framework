@@ -46,8 +46,16 @@ def _generate_base_waveform(m1, m2, distance_mpc, duration=4.0,
         )
         strain = hp.numpy()
         n_target = int(duration * sample_rate)
-        strain = strain[-n_target:] if len(strain) >= n_target else \
-                 np.pad(strain, (n_target - len(strain), 0))
+        peak_index = int(np.argmax(np.abs(strain)))
+        peak_offset = int(round(0.9 * n_target))
+        start_index = peak_index - peak_offset
+        end_index = start_index + n_target
+        source_start = max(0, start_index)
+        source_end = min(len(strain), end_index)
+        strain = np.pad(
+            strain[source_start:source_end],
+            (source_start - start_index, end_index - source_end),
+        )
         return strain, 1.0 / sample_rate
     except Exception as exc:
         warnings.warn(f"PyCBC falló ({exc}); usando chirp sinusoidal de fallback.", stacklevel=3)

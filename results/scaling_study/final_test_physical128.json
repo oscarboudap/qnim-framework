@@ -1,0 +1,51 @@
+{
+  "dataset_dir": "results\\scaling_study\\dataset_physical128",
+  "dataset_test_sha256": "c12439aa44688a51a42067a005fb7f81bae836a35b22e29b88a9174f5a7f9d5a",
+  "model": "ExtraTreesClassifier(n_estimators=300,class_weight=balanced,random_state=42)",
+  "n_train": 6487,
+  "n_train_pairs": 499,
+  "n_test": 1300,
+  "n_test_pairs": 100,
+  "n_classes": 13,
+  "test_per_class": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+  ],
+  "noise_segments_disjoint": true,
+  "accuracy": 0.07692307692307693,
+  "balanced_accuracy": 0.07692307692307693,
+  "chance": 0.07692307692307693,
+  "group_bootstrap_95_ci": [
+    0.07692307692307693,
+    0.07692307692307693
+  ],
+  "within_pair_permutation_p_unadjusted": 1.0,
+  "permutation_iterations": 20000,
+  "predicted_class_counts": [
+    0,
+    0,
+    0,
+    0,
+    1170,
+    0,
+    104,
+    0,
+    26,
+    0,
+    0,
+    0,
+    0
+  ],
+  "test_used_for_training_or_tuning": false
+}

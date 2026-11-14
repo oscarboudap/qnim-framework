@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass
-from typing import Callable, Optional, Sequence
+from typing import Callable, Literal, Optional, Sequence
 
 import numpy as np
 from scipy.signal import welch
@@ -22,6 +22,75 @@ class NoiseSegment:
     sample_rate: int
     detector: str
     gps_start: Optional[float] = None
+
+
+def _matched_filter_scores(
+    queries: np.ndarray,
+    templates: np.ndarray,
+    segment: NoiseSegment,
+    sample_rate: int,
+    f_low: float,
+    f_high: float,
+) -> np.ndarray:
+    """Score centered whitened queries against a per-class template bank."""
+    from scipy.signal import hilbert
+
+    queries = np.asarray(queries, dtype=float)
+    templates = np.asarray(templates, dtype=float)
+    if queries.ndim != 2 or templates.ndim != 3:
+        raise ValueError("queries debe ser 2D y templates debe ser 3D")
+    if queries.shape[1] != templates.shape[2] or len(segment.data) < queries.shape[1]:
+        raise ValueError("queries y templates deben alinearse con el segmento")
+    if segment.sample_rate != sample_rate:
+        raise ValueError("El segmento y la configuración deben usar el mismo sample_rate")
+    if not np.isfinite(queries).all() or not np.isfinite(templates).all():
+        raise ValueError("queries y templates deben ser finitos")
+
+    noise = np.asarray(segment.data[:queries.shape[1]], dtype=float)
+    frequencies, psd = welch(
+        noise,
+        fs=sample_rate,
+        nperseg=min(len(noise), max(256, sample_rate)),
+        detrend="constant",
+        scaling="density",
+    )
+    bins = np.fft.rfftfreq(queries.shape[1], d=1.0 / sample_rate)
+    psd_bins = np.interp(bins, frequencies, psd)
+    usable = (bins >= f_low) & (bins <= f_high) & (psd_bins > 0)
+    if not np.any(usable):
+        raise ValueError(f"El segmento {segment.segment_id} no tiene bins PSD utilizables")
+
+    scale = np.sqrt(psd_bins[usable] * (sample_rate / queries.shape[1]))
+    query_fft = np.fft.rfft(queries, axis=-1)
+    query_white_fft = np.zeros_like(query_fft)
+    query_white_fft[..., usable] = query_fft[..., usable] / scale
+    queries_white = np.fft.irfft(
+        query_white_fft, n=queries.shape[1], axis=-1
+    )
+
+    template_fft = np.fft.rfft(templates, axis=-1)
+    quadrature = hilbert(templates, axis=-1).imag
+    quadrature_fft = np.fft.rfft(quadrature, axis=-1)
+    real_white_fft = np.zeros_like(template_fft)
+    quad_white_fft = np.zeros_like(quadrature_fft)
+    real_white_fft[..., usable] = template_fft[..., usable] / scale
+    quad_white_fft[..., usable] = quadrature_fft[..., usable] / scale
+    real_white = np.fft.irfft(real_white_fft, n=queries.shape[1], axis=-1)
+    quad_white = np.fft.irfft(quad_white_fft, n=queries.shape[1], axis=-1)
+    template_norm = np.sqrt(
+        np.sum(real_white**2 + quad_white**2, axis=-1)
+    )
+    if np.any(template_norm <= 0) or not np.isfinite(template_norm).all():
+        raise ValueError("El banco contiene plantillas con norma no válida")
+
+    real_overlap = np.einsum(
+        "in,ctn->ict", queries_white, real_white, optimize=True
+    )
+    quad_overlap = np.einsum(
+        "in,ctn->ict", queries_white, quad_white, optimize=True
+    )
+    scores = np.sqrt(real_overlap**2 + quad_overlap**2) / template_norm[None, :, :]
+    return scores.max(axis=-1)
 
 
 class LIGONoiseInjectionAdapter:
@@ -50,6 +119,8 @@ class LIGONoiseInjectionAdapter:
         waveform_generator: Optional[Callable] = None,
         f_low: float = 20.0,
         f_high: float = 1024.0,
+        snr_normalization: Literal["reference_gr", "per_waveform"] = "reference_gr",
+        matched_filter_bank_size: int = 0,
     ):
         if sample_rate < 1 or duration <= 0:
             raise ValueError("sample_rate y duration deben ser positivos")
@@ -59,6 +130,10 @@ class LIGONoiseInjectionAdapter:
             raise ValueError("target_snr_range debe ser positivo y ordenado")
         if not 0 < f_low < f_high <= sample_rate / 2:
             raise ValueError("Se requiere 0 < f_low < f_high <= Nyquist")
+        if snr_normalization not in ("reference_gr", "per_waveform"):
+            raise ValueError("snr_normalization debe ser reference_gr o per_waveform")
+        if matched_filter_bank_size < 0:
+            raise ValueError("matched_filter_bank_size no puede ser negativo")
 
         self.sample_rate = sample_rate
         self.duration = duration
@@ -69,6 +144,8 @@ class LIGONoiseInjectionAdapter:
         self.approximant = approximant
         self.f_low = f_low
         self.f_high = f_high
+        self.snr_normalization = snr_normalization
+        self.matched_filter_bank_size = matched_filter_bank_size
         self.waveform_generator = waveform_generator
         self.n_classes = min(max_classes, len(self.THEORY_CLASSES)) if max_classes else len(self.THEORY_CLASSES)
         self.theory_names = list(self.THEORY_CLASSES[:self.n_classes])
@@ -202,6 +279,45 @@ class LIGONoiseInjectionAdapter:
             raise ValueError("El waveform GR de referencia debe ser finito y tener la longitud configurada")
         return waveform, metadata, reference_waveform
 
+    def _build_matched_filter_bank(
+        self,
+        train_event_metadata: list[dict],
+        seed: int,
+    ) -> tuple[np.ndarray, list[int]]:
+        train_pairs = train_event_metadata[::self.n_classes]
+        bank_size = min(self.matched_filter_bank_size, len(train_pairs))
+        if bank_size < 1:
+            raise ValueError("El banco requiere al menos una pareja de train")
+
+        chirp_masses = np.asarray(
+            [item.get("Mc", np.nan) for item in train_pairs], dtype=float
+        )
+        if np.isfinite(chirp_masses).all():
+            order = np.argsort(chirp_masses, kind="stable")
+        else:
+            order = np.arange(len(train_pairs))
+        positions = np.rint(
+            np.linspace(0, len(order) - 1, num=bank_size)
+        ).astype(int)
+        selected_pairs = order[positions].tolist()
+        templates = np.empty(
+            (self.n_classes, bank_size, self.n_samples), dtype=np.float64
+        )
+
+        split_id = 0
+        for bank_index, event_index in enumerate(selected_pairs):
+            pair_seed = np.random.SeedSequence([seed, split_id, event_index])
+            base_waveform = None
+            for theory_class in range(self.n_classes):
+                waveform_rng = np.random.default_rng(pair_seed)
+                waveform, _, _ = self._make_waveform(
+                    theory_class, waveform_rng, base_waveform
+                )
+                if theory_class == 0:
+                    base_waveform = waveform
+                templates[theory_class, bank_index] = waveform
+        return templates, selected_pairs
+
     def _inject_and_whiten(
         self,
         waveform: np.ndarray,
@@ -237,7 +353,14 @@ class LIGONoiseInjectionAdapter:
         if not np.isfinite(reference_snr) or reference_snr <= 0:
             raise ValueError("No se pudo calcular un SNR válido para la señal")
 
-        scale = target_snr / reference_snr
+        normalization_snr = (
+            modified_snr if self.snr_normalization == "per_waveform" else reference_snr
+        )
+        if not np.isfinite(normalization_snr) or normalization_snr <= 0:
+            raise ValueError("No se pudo calcular el SNR usado para normalizar la señal")
+
+        scale = target_snr / normalization_snr
+        reference_scale = target_snr / reference_snr
         scaled_waveform = waveform * scale
         observed_snr = float(modified_snr * scale)
         injected = noise + scaled_waveform
@@ -247,7 +370,7 @@ class LIGONoiseInjectionAdapter:
         whitened = np.fft.irfft(whitened_fft, n=self.n_samples)
         reference_white_fft = np.zeros_like(reference_fft)
         reference_white_fft[usable] = (
-            reference_fft[usable] * scale / np.sqrt(psd_bins[usable] * delta_f)
+            reference_fft[usable] * reference_scale / np.sqrt(psd_bins[usable] * delta_f)
         )
         reference_whitened = np.fft.irfft(reference_white_fft, n=self.n_samples)
         return whitened, observed_snr, reference_whitened
@@ -334,6 +457,39 @@ class LIGONoiseInjectionAdapter:
         X_val = np.clip(scaler.transform(X_val_pca), -1.0, 1.0)
         X_test = np.clip(scaler.transform(X_test_pca), -1.0, 1.0)
 
+        X_matched_filter_val = None
+        matched_filter_metadata = None
+        if self.matched_filter_bank_size:
+            template_bank, selected_pairs = self._build_matched_filter_bank(
+                event_metadata["train"], seed
+            )
+            segments_by_id = {
+                segment.segment_id: segment for segment in self.noise_segments["val"]
+            }
+            matched_filter_scores = []
+            for pair_index in range(len(X_val_raw) // self.n_classes):
+                start = pair_index * self.n_classes
+                pair_metadata = event_metadata["val"][start]
+                segment = segments_by_id[pair_metadata["noise_segment_id"]]
+                matched_filter_scores.append(_matched_filter_scores(
+                    X_val_raw[start:start + self.n_classes],
+                    template_bank,
+                    segment,
+                    self.sample_rate,
+                    self.f_low,
+                    self.f_high,
+                ))
+            X_matched_filter_val = np.concatenate(matched_filter_scores, axis=0)
+            matched_filter_metadata = {
+                "method": "maximum_phase_marginalized_matched_filter",
+                "bank_size_per_class": int(template_bank.shape[1]),
+                "template_source_split": "train_only",
+                "template_pair_indices": selected_pairs,
+                "template_selection": "uniform_quantiles_of_train_chirp_mass",
+                "validation_time_alignment": "centered_windows_no_time_shift_search",
+                "test_evaluated": False,
+            }
+
         from src.infrastructure.dephasing_features import MatchedFilterFeatureExtractor
 
         gr_references = np.stack(reference_by_split["train"])[::self.n_classes]
@@ -354,6 +510,30 @@ class LIGONoiseInjectionAdapter:
             X_test_raw,
             dt=1.0 / self.sample_rate,
             templates=np.stack(reference_by_split["test"]),
+        )
+        if len(gr_references) > 1:
+            gr_spectra = np.fft.rfft(gr_references, axis=1)
+            train_templates = np.fft.irfft(
+                (gr_spectra.sum(axis=0, keepdims=True) - gr_spectra)
+                / (len(gr_references) - 1),
+                n=self.n_samples,
+                axis=1,
+            )
+            train_templates = np.repeat(train_templates, self.n_classes, axis=0)
+        else:
+            train_templates = None
+        X_global_template_train = physical_extractor.transform(
+            X_train_raw,
+            dt=1.0 / self.sample_rate,
+            templates=train_templates,
+        )
+        X_global_template_val = physical_extractor.transform(
+            X_val_raw,
+            dt=1.0 / self.sample_rate,
+        )
+        X_global_template_test = physical_extractor.transform(
+            X_test_raw,
+            dt=1.0 / self.sample_rate,
         )
 
         fisher_scores, fisher_pvalues = f_classif(pca.transform(X_train_raw), y_train)
@@ -376,7 +556,12 @@ class LIGONoiseInjectionAdapter:
                 "shared_source_parameters": True,
                 "shared_noise_within_pair": True,
                 "shared_base_target_snr": True,
-                "normalization_reference": "unmodified_GR_waveform",
+                "normalization_reference": (
+                    "unmodified_GR_waveform"
+                    if self.snr_normalization == "reference_gr"
+                    else "each_theory_waveform"
+                ),
+                "snr_normalization": self.snr_normalization,
                 "waveform_generation": (
                     "one_GR_waveform_reused_per_pair"
                     if self.waveform_generator is None else "custom_generator"
@@ -390,6 +575,16 @@ class LIGONoiseInjectionAdapter:
                 "paired_reference_is_oracle": True,
                 "retains_amplitude_and_phase": True,
             },
+            "global_template_features": {
+                "method": "complex_band_overlap_against_train_GR_mean_template",
+                "n_bands": physical_extractor.n_bands,
+                "feature_names": physical_extractor.get_feature_names(),
+                "template_fit_split": "train_GR_only_leave_pair_out_for_train",
+                "train_template_cross_fitted_by_pair": len(gr_references) > 1,
+                "paired_reference_is_oracle": False,
+                "retains_amplitude_and_phase": True,
+            },
+            "matched_filter_bank": matched_filter_metadata,
             "pca_analysis": {
                 "explained_variance": variance.tolist(),
                 "cumulative_variance": variance.cumsum().tolist(),
@@ -421,4 +616,8 @@ class LIGONoiseInjectionAdapter:
             X_physical_train=X_physical_train,
             X_physical_val=X_physical_val,
             X_physical_test=X_physical_test,
+            X_global_template_train=X_global_template_train,
+            X_global_template_val=X_global_template_val,
+            X_global_template_test=X_global_template_test,
+            X_matched_filter_val=X_matched_filter_val,
         )
