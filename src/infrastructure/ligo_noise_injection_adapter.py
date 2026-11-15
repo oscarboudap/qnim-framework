@@ -15,6 +15,23 @@ from sklearn.preprocessing import MinMaxScaler
 from src.infrastructure.ligo_pca_adapter import GWDataset
 
 
+def _optimal_snr(
+    waveform_fft: np.ndarray,
+    psd_bins: np.ndarray,
+    usable: np.ndarray,
+    delta_f: float,
+    delta_t: float,
+) -> float:
+    return float(
+        np.sqrt(
+            4.0
+            * delta_f
+            * delta_t**2
+            * np.sum(np.abs(waveform_fft[usable]) ** 2 / psd_bins[usable])
+        )
+    )
+
+
 @dataclass(frozen=True)
 class NoiseSegment:
     segment_id: str
@@ -344,11 +361,12 @@ class LIGONoiseInjectionAdapter:
             waveform if reference_waveform is None else reference_waveform
         )
         delta_f = self.sample_rate / self.n_samples
-        reference_snr = np.sqrt(
-            4.0 * delta_f * np.sum(np.abs(reference_fft[usable]) ** 2 / psd_bins[usable])
+        delta_t = 1.0 / self.sample_rate
+        reference_snr = _optimal_snr(
+            reference_fft, psd_bins, usable, delta_f, delta_t
         )
-        modified_snr = np.sqrt(
-            4.0 * delta_f * np.sum(np.abs(waveform_fft[usable]) ** 2 / psd_bins[usable])
+        modified_snr = _optimal_snr(
+            waveform_fft, psd_bins, usable, delta_f, delta_t
         )
         if not np.isfinite(reference_snr) or reference_snr <= 0:
             raise ValueError("No se pudo calcular un SNR válido para la señal")

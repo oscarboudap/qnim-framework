@@ -175,3 +175,59 @@ def test_qnm_injection_uses_coherent_phase_across_frequency_bins():
 
     assert active.any()
     assert np.std(np.unwrap(np.angle(added[active]))) < 1e-7
+
+
+def test_physics_dataset_fits_templates_and_scaler_on_train_only(monkeypatch):
+    sample_rate = 128
+    duration = 1.0
+    generated = {"count": 0}
+    fit_calls = []
+    transform_calls = []
+
+    def generate_base(*args, **kwargs):
+        generated["count"] += 1
+        return (
+            np.full(sample_rate, float(generated["count"])),
+            1.0 / sample_rate,
+        )
+
+    class RecordingFeatureExtractor:
+        def __init__(self, **kwargs):
+            self.raw_features = None
+
+        def fit(self, gr_strains, dt, mc_values=None):
+            fit_calls.append((len(gr_strains), mc_values))
+            return self
+
+        def transform(self, strains, dt, mc_values=None):
+            transform_calls.append(mc_values)
+            self.raw_features = np.asarray(strains)[:, :12].copy()
+            return self.raw_features.copy()
+
+    monkeypatch.setattr(physics_sstg_adapter, "_generate_base_waveform", generate_base)
+    monkeypatch.setattr(
+        physics_sstg_adapter, "DephasingFeatureExtractor", RecordingFeatureExtractor
+    )
+    adapter = physics_sstg_adapter.PhysicsSSTGAdapter(
+        waveform_duration=duration,
+        sample_rate=sample_rate,
+        max_classes=2,
+    )
+
+    dataset = adapter.generate_balanced_dataset(
+        n_per_class=3,
+        n_val_per_class=2,
+        seed=7,
+        verbose=False,
+    )
+
+    train_indices = np.array([0, 1, 2, 5, 6, 7])
+    raw_features = dataset.feature_extractor.raw_features
+    expected_mean = raw_features[train_indices].mean(axis=0)
+    np.testing.assert_allclose(dataset.metadata["col_mean"], expected_mean)
+    assert not np.allclose(dataset.metadata["col_mean"], raw_features.mean(axis=0))
+    assert fit_calls == [(3, None)]
+    assert transform_calls == [None]
+    assert dataset.metadata["template_fit_split"] == "train_GR_only"
+    assert dataset.metadata["chirp_mass_input"] is False
+    assert dataset.metadata["scaler_fit_split"] == "train_only"

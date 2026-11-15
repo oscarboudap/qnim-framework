@@ -1,0 +1,177 @@
+{
+  "task": "GR_vs_ppE_minus_1PN_positive_control",
+  "noise_source": "data/o3b/samples/first_train_window_1256663960.npz",
+  "noise_model": "independent Gaussian realizations shaped by the sample PSD",
+  "real_noise_segments_used_for_PSD": 1,
+  "test_data_read": false,
+  "preprocessing_fit_split": "train_only",
+  "paired_difference_used_as_classifier_input": false,
+  "signature": {
+    "name": "pn-deformation",
+    "delta_phi_100hz_rad_configured_range": [
+      0.001,
+      0.01
+    ],
+    "delta_phi_100hz_rad_range": [
+      0.0010169482746399782,
+      0.00999268638955507
+    ],
+    "median_phase_formula_error_rad": 4.570042200595236e-13
+  },
+  "sample_rate": 4096,
+  "duration": 4.0,
+  "snr_range": [
+    8.0,
+    30.0
+  ],
+  "mass_range_msun": [
+    10.0,
+    80.0
+  ],
+  "distance_range_mpc": [
+    100.0,
+    1000.0
+  ],
+  "train_pairs": 200,
+  "validation_pairs": 100,
+  "n_components": 128,
+  "paired_raw_whitened_delta_norm_median": {
+    "train": 34.33718488803464,
+    "validation": 36.1183981735481,
+    "diagnostic_only_oracle": true
+  },
+  "paired_pca_delta_norm_median": {
+    "train": 10.563625476198759,
+    "validation": 9.986705212919919,
+    "diagnostic_only_oracle": true
+  },
+  "validation": {
+    "whitened_strain": {
+      "accuracy": 0.495,
+      "balanced_accuracy": 0.495,
+      "class_counts": [
+        100,
+        100
+      ],
+      "prediction_counts": [
+        99,
+        101
+      ],
+      "validation_pairs": 100,
+      "pair_bootstrap_ci95": [
+        0.48,
+        0.51
+      ],
+      "pair_swap_permutation_p": 0.8788242351529694,
+      "permutations": 5000,
+      "balanced_accuracy_by_target_snr": {
+        "8-12": 0.4642857142857143,
+        "12-20": 0.5113636363636364,
+        "20-30": 0.4880952380952381
+      }
+    },
+    "pca_scaled": {
+      "accuracy": 0.495,
+      "balanced_accuracy": 0.495,
+      "class_counts": [
+        100,
+        100
+      ],
+      "prediction_counts": [
+        87,
+        113
+      ],
+      "validation_pairs": 100,
+      "pair_bootstrap_ci95": [
+        0.485,
+        0.5
+      ],
+      "pair_swap_permutation_p": 1.0,
+      "permutations": 5000,
+      "balanced_accuracy_by_target_snr": {
+        "8-12": 0.5,
+        "12-20": 0.5,
+        "20-30": 0.48809523809523814
+      }
+    }
+  },
+  "additional_classifiers": {
+    "whitened_strain_logistic": {
+      "accuracy": 0.51,
+      "balanced_accuracy": 0.51,
+      "prediction_counts": [
+        98,
+        102
+      ],
+      "validation_pairs": 100,
+      "pair_bootstrap_ci95": [
+        0.5,
+        0.525
+      ],
+      "pair_swap_permutation_p": 0.2461507698460308,
+      "permutations": 5000
+    },
+    "whitened_strain_svc_rbf": {
+      "accuracy": 0.505,
+      "balanced_accuracy": 0.505,
+      "prediction_counts": [
+        53,
+        147
+      ],
+      "validation_pairs": 100,
+      "pair_bootstrap_ci95": [
+        0.5,
+        0.515
+      ],
+      "pair_swap_permutation_p": 0.5062987402519497,
+      "permutations": 5000
+    },
+    "pca_scaled_logistic": {
+      "accuracy": 0.505,
+      "balanced_accuracy": 0.505,
+      "prediction_counts": [
+        91,
+        109
+      ],
+      "validation_pairs": 100,
+      "pair_bootstrap_ci95": [
+        0.5,
+        0.515
+      ],
+      "pair_swap_permutation_p": 0.5032993401319736,
+      "permutations": 5000
+    },
+    "pca_scaled_svc_rbf": {
+      "accuracy": 0.5,
+      "balanced_accuracy": 0.5,
+      "prediction_counts": [
+        88,
+        112
+      ],
+      "validation_pairs": 100,
+      "pair_bootstrap_ci95": [
+        0.5,
+        0.5
+      ],
+      "pair_swap_permutation_p": 1.0,
+      "permutations": 5000
+    }
+  },
+  "known_parameter_template_likelihood_diagnostic": {
+    "accuracy": 0.58,
+    "balanced_accuracy": 0.58,
+    "prediction_counts": [
+      98,
+      102
+    ],
+    "validation_pairs": 100,
+    "uses_exact_validation_source_parameters_and_delta_phi": true,
+    "deployable": false,
+    "pair_bootstrap_ci95": [
+      0.545,
+      0.615
+    ],
+    "pair_swap_permutation_p": 0.0001999600079984003,
+    "permutations": 5000
+  }
+}

@@ -1,6 +1,6 @@
 # Diagnóstico de accuracy y proyección de recursos
 
-**Fecha:** 12-11-2026  
+**Fecha:** 14-11-2026
 **Dataset analizado:** `dataset_merger_centered_300`  
 **Clases:** 13; azar uniforme = `1/13 = 7,69 %`
 
@@ -22,6 +22,23 @@ de pesos sin reentrenamiento en hardware y ausencia de mitigación de lectura.
 
 Por tanto, no es correcto prometer ni proyectar una mejora de accuracy en IBM
 sin corregir primero el dataset/representación y repetir una prueba independiente.
+
+## Corrección crítica del pipeline (14-11-2026)
+
+La auditoría encontró un error de unidades en
+[`_inject_and_whiten`](../../src/infrastructure/ligo_noise_injection_adapter.py):
+se calculaba el SNR con `numpy.fft` sin el factor `delta_t**2` requerido al
+combinar una FFT discreta con una PSD física en strain²/Hz. A 4096 Hz, las
+inyecciones generadas con la fórmula anterior quedaban escaladas para un SNR
+físico aproximadamente 4096 veces menor que el objetivo. La fórmula se corrigió
+y hay una prueba analítica de regresión.
+
+También se corrigió el generador de ruido del control sintético: normalizaba la
+PSD por su mediana y perdía su escala absoluta. En la única muestra O3b local,
+el factor de amplitud que correspondía a esa escala era `3,2e-22`, no 1. Los
+resultados de los controles ppE anteriores a estas correcciones quedan
+**invalidados**. Cualquier dataset generado por este adaptador antes del arreglo
+debe regenerarse antes de interpretar su SNR; sus arrays de test siguen cerrados.
 
 ## Resultados reproducidos
 
@@ -167,6 +184,45 @@ valida una búsqueda física completa con marginalización de parámetros y
 tiempo. Resultado vigente en
 [`accuracy_gap_projection_matched_filter_whitened.json`](./accuracy_gap_projection_matched_filter_whitened.json).
 
+### Control positivo ppE con ruido coloreado
+
+Tras corregir SNR y escala de ruido, ejecuté varios clasificadores con 200
+parejas train/100 validation. Con fuente fija (masa total 30 M☉, distancia
+300 Mpc, SNR 20–30) y `delta_phi_100hz = 0,01`, Logistic Regression sobre
+strain blanqueado obtuvo **70,5 %** de balanced accuracy (IC bootstrap por
+pareja 65,5–75,5 %; permutación `p = 0,0002`). Extra Trees obtuvo 61,0 %.
+Con PCA de 128 componentes y el escalado existente, Logistic Regression bajó
+a 54,0 % y Extra Trees quedó en 50,0 %. En este control, evitar PCA mejora la
+accuracy y es una alternativa concreta que merece validación independiente.
+
+| Control (balanced accuracy) | Strain: Logistic | Strain: Extra Trees | PCA: Logistic | PCA: Extra Trees |
+|---|---:|---:|---:|---:|
+| Fuente fija, `delta_phi=0,01` | **70,5 %** | 61,0 % | 54,0 % | 50,0 % |
+| Rangos nominales y fuente variable | 51,0 % | 49,5 % | 50,5 % | 49,5 % |
+| Stress, fuente fija, `delta_phi=0,1` | 100,0 % | 99,5 % | 96,0 % | 77,5 % |
+
+El segundo renglón usa `delta_phi=0,001–0,01`, SNR 8–30, masas 10–80 M☉ y
+distancias 100–1000 Mpc; no muestra mejora significativa en el clasificador
+de evento único. Un diagnóstico de likelihood con **parámetros fuente y
+`delta_phi` exactos de validation** dio 58,0 % (IC 54,5–61,5 %; `p=0,0002`),
+pero es un oráculo no desplegable. Apunta a que una búsqueda GR/ppE que
+marginalice los parámetros de fuente es el siguiente candidato físico; no
+demuestra aún que esa solución generalice.
+
+El stress test usa `delta_phi=0,1`, diez veces el extremo superior nominal:
+prueba que, con señal grande y fuente fija, el strain bruto puede clasificarse
+casi perfectamente; no es una mejora válida para el rango físico nominal. Los
+resultados de selección de modelos sobre validation son exploratorios y los
+p-valores no están corregidos por comparaciones múltiples.
+
+Todos estos controles siguen usando ruido gaussiano sintético coloreado con
+la PSD estimada de **un solo** segmento O3b: no reproducen glitches ni la
+no-gaussianidad de strain real. No se leyeron arrays de test ni se ejecutó IBM.
+Resultados reproducibles:
+[`ppe_pipeline_calibrated_fixed_source_20261114.json`](./ppe_pipeline_calibrated_fixed_source_20261114.json),
+[`ppe_pipeline_calibrated_nominal_20261114.json`](./ppe_pipeline_calibrated_nominal_20261114.json) y
+[`ppe_pipeline_calibrated_stress_20261114.json`](./ppe_pipeline_calibrated_stress_20261114.json).
+
 ## Proyección estadística
 
 ### Tamaño de test
@@ -243,10 +299,19 @@ evidencia de que el modelo discrimina esta familia de inyecciones simuladas
 bajo las condiciones ensayadas, no un descubrimiento de nueva física ni
 evidencia contra GR en datos observacionales.
 
-Esta formulación aún no tiene accuracy física de validación. Su prueba
-unitaria usa strain sintético para verificar pares, balance y separación de
-splits; no mide rendimiento científico. Generar los datos (usar únicamente
-rangos off-source y un inventario revisados):
+La reducción binaria se cribó también en los arrays físicos ya generados,
+sin abrir los arrays de test: Extra Trees sobre las features PCA de GR frente
+a ppE obtuvo balanced accuracy **50,00 %** en 98 eventos de validation (49
+parejas), IC bootstrap por pareja **50,00–50,00 %**, permutación por pareja
+`p = 1,0`. Logistic Regression, SVC RBF, LDA-shrinkage y Extra Trees sobre
+`global_template` también quedaron en 50,00 %. Por tanto, reducir las clases
+por sí solo **no** ha producido una mejora demostrada. Estos resultados no
+validan la nueva generación ni justifican abrir el test.
+
+La nueva generación está cubierta por una prueba unitaria de strain sintético
+que verifica pares, balance y separación de splits, no rendimiento científico.
+Para regenerar el conjunto (usar únicamente rangos off-source y un inventario
+revisados):
 
 ```bash
 python scripts/prepare_gr_vs_ppe_dataset.py \
@@ -377,6 +442,43 @@ El diagnóstico anterior del dataset histórico se reproduce desde Windows con:
 .\.venv312\Scripts\python.exe scripts\evaluate_single_event_holdout.py `
   --dataset-dir results\scaling_study\dataset_physical128 `
   --output results\scaling_study\final_test_physical128.json
+```
+
+El control ppE corregido se reproduce en WSL (ruido sintético con escala
+absoluta de PSD de una muestra local; no se consulta test):
+
+```bash
+~/.venvs/qnim-framework/bin/python scripts/diagnose_ppe_pipeline.py \
+  --train-pairs 200 --val-pairs 100 --n-components 128 \
+  --snr-min 20 --snr-max 30 \
+  --delta-phi-min 0.01 --delta-phi-max 0.01 \
+  --mass-min 30 --mass-max 30 \
+  --distance-min 300 --distance-max 300 \
+  --bootstrap-iterations 5000 --permutation-iterations 5000 \
+  --seed 20261114 \
+  --output results/scaling_study/ppe_pipeline_calibrated_fixed_source_20261114.json
+
+# Rango nominal, incluyendo variación de parámetros fuente
+~/.venvs/qnim-framework/bin/python scripts/diagnose_ppe_pipeline.py \
+  --train-pairs 200 --val-pairs 100 --n-components 128 \
+  --snr-min 8 --snr-max 30 \
+  --delta-phi-min 0.001 --delta-phi-max 0.01 \
+  --mass-min 10 --mass-max 80 \
+  --distance-min 100 --distance-max 1000 \
+  --bootstrap-iterations 5000 --permutation-iterations 5000 \
+  --seed 20261114 \
+  --output results/scaling_study/ppe_pipeline_calibrated_nominal_20261114.json
+
+# Stress test exploratorio: delta_phi=0.1; no es el rango nominal.
+~/.venvs/qnim-framework/bin/python scripts/diagnose_ppe_pipeline.py \
+  --train-pairs 200 --val-pairs 100 --n-components 128 \
+  --snr-min 20 --snr-max 30 \
+  --delta-phi-min 0.1 --delta-phi-max 0.1 \
+  --mass-min 30 --mass-max 30 \
+  --distance-min 300 --distance-max 300 \
+  --bootstrap-iterations 5000 --permutation-iterations 5000 \
+  --seed 20261114 \
+  --output results/scaling_study/ppe_pipeline_calibrated_stress_20261114.json
 ```
 
 Las métricas de validación son exploratorias: el dataset se inspeccionó durante

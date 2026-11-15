@@ -228,34 +228,38 @@ class PhysicsSSTGAdapter:
         all_snrs    = np.array(all_snrs)
         all_mc      = np.array(all_mc)
 
-        # Extractor: fit sobre eventos GR, pasando su chirp mass real
-        gr_idx = np.where(all_labels == 0)[0][:n_per_class]
+        train_indices_by_class = []
+        val_indices_by_class = []
+        for cls in range(self.n_classes):
+            indices = np.where(all_labels == cls)[0]
+            train_indices_by_class.append(indices[:n_per_class])
+            val_indices_by_class.append(
+                indices[n_per_class:n_per_class + n_val_per_class]
+            )
+        train_indices = np.concatenate(train_indices_by_class)
+        val_indices = np.concatenate(val_indices_by_class)
+
+        # Fit only on training GR references and use no unavailable true mass.
+        gr_idx = train_indices_by_class[0]
         extractor = DephasingFeatureExtractor(
             n_bands=4,  # 3 features/banda (Re+Im+dIm) → 12 total
             f_low=self.f_lower,
             f_high=min(self.sample_rate / 2.0, 512.0),
             n_mc_bins=5,
         )
-        extractor.fit(
-            [all_strains[i] for i in gr_idx],
-            dt=dt,
-            mc_values=all_mc[gr_idx],   # <-- chirp mass real, no estimada
-        )
+        extractor.fit([all_strains[i] for i in gr_idx], dt=dt)
+        features = extractor.transform(all_strains, dt=dt)
 
-        # Transform: pasar chirp mass de cada evento
-        features = extractor.transform(all_strains, dt=dt, mc_values=all_mc)
-
-        col_mean = features.mean(axis=0)
-        col_std  = features.std(axis=0) + 1e-10
+        col_mean = features[train_indices].mean(axis=0)
+        col_std = features[train_indices].std(axis=0) + 1e-10
         features = (features - col_mean) / col_std
 
         X_train_p, y_train_p, snr_train_p = [], [], []
         X_val_p,   y_val_p,   snr_val_p   = [], [], []
 
         for cls in range(self.n_classes):
-            idx       = np.where(all_labels == cls)[0]
-            train_idx = idx[:n_per_class]
-            val_idx   = idx[n_per_class:n_per_class + n_val_per_class]
+            train_idx = train_indices_by_class[cls]
+            val_idx = val_indices_by_class[cls]
             X_train_p.append(features[train_idx])
             y_train_p.append(all_labels[train_idx])
             snr_train_p.append(all_snrs[train_idx])
@@ -270,15 +274,15 @@ class PhysicsSSTGAdapter:
         y_val   = np.concatenate(y_val_p)
         snr_val = np.concatenate(snr_val_p)
 
-        all_snrs_c = np.concatenate([snr_train, snr_val])
-        all_mc_c   = np.concatenate([all_mc[np.where(all_labels==c)[0][:n_per_class]]
-                                      for c in range(self.n_classes)])
         if verbose:
             print(f"  ✅ Dataset físico generado: {len(X_train)} train / {len(X_val)} val")
-            print(f"     Features: {self.n_features} (fase diferencial, plantillas por Mc)")
+            print(f"     Features: {self.n_features} (fase diferencial, plantilla GR global)")
             print(f"     Clases: {self.n_classes}")
-            print(f"     Mc: {all_mc.mean():.1f} ± {all_mc.std():.1f} M☉")
-            print(f"     SNR: {all_snrs_c.mean():.1f} ± {all_snrs_c.std():.1f}")
+            print(
+                f"     Mc train: {all_mc[train_indices].mean():.1f} "
+                f"± {all_mc[train_indices].std():.1f} M☉"
+            )
+            print(f"     SNR train: {snr_train.mean():.1f} ± {snr_train.std():.1f}")
 
         return PhysicsGWDataset(
             X_train=X_train, y_train=y_train,
@@ -289,5 +293,8 @@ class PhysicsSSTGAdapter:
             snr_train=snr_train, snr_val=snr_val,
             metadata={"col_mean": col_mean, "col_std": col_std,
                       "n_per_class": n_per_class, "seed": seed,
-                      "approximant": self.approximant},
+                      "approximant": self.approximant,
+                      "template_fit_split": "train_GR_only",
+                      "chirp_mass_input": False,
+                      "scaler_fit_split": "train_only"},
         )

@@ -1,0 +1,177 @@
+{
+  "task": "GR_vs_ppE_minus_1PN_positive_control",
+  "noise_source": "data/o3b/samples/first_train_window_1256663960.npz",
+  "noise_model": "independent Gaussian realizations shaped by the sample PSD",
+  "real_noise_segments_used_for_PSD": 1,
+  "test_data_read": false,
+  "preprocessing_fit_split": "train_only",
+  "paired_difference_used_as_classifier_input": false,
+  "signature": {
+    "name": "pn-deformation",
+    "delta_phi_100hz_rad_configured_range": [
+      0.1,
+      0.1
+    ],
+    "delta_phi_100hz_rad_range": [
+      0.1,
+      0.1
+    ],
+    "median_phase_formula_error_rad": 4.705473250060826e-14
+  },
+  "sample_rate": 4096,
+  "duration": 4.0,
+  "snr_range": [
+    20.0,
+    30.0
+  ],
+  "mass_range_msun": [
+    30.0,
+    30.0
+  ],
+  "distance_range_mpc": [
+    300.0,
+    300.0
+  ],
+  "train_pairs": 200,
+  "validation_pairs": 100,
+  "n_components": 128,
+  "paired_raw_whitened_delta_norm_median": {
+    "train": 888.2878122316192,
+    "validation": 884.072562255312,
+    "diagnostic_only_oracle": true
+  },
+  "paired_pca_delta_norm_median": {
+    "train": 304.6636225895657,
+    "validation": 303.1941468863307,
+    "diagnostic_only_oracle": true
+  },
+  "validation": {
+    "whitened_strain": {
+      "accuracy": 0.995,
+      "balanced_accuracy": 0.995,
+      "class_counts": [
+        100,
+        100
+      ],
+      "prediction_counts": [
+        99,
+        101
+      ],
+      "validation_pairs": 100,
+      "pair_bootstrap_ci95": [
+        0.985,
+        1.0
+      ],
+      "pair_swap_permutation_p": 0.0001999600079984003,
+      "permutations": 5000,
+      "balanced_accuracy_by_target_snr": {
+        "20-12": null,
+        "12-20": null,
+        "20-30": 0.995
+      }
+    },
+    "pca_scaled": {
+      "accuracy": 0.775,
+      "balanced_accuracy": 0.775,
+      "class_counts": [
+        100,
+        100
+      ],
+      "prediction_counts": [
+        97,
+        103
+      ],
+      "validation_pairs": 100,
+      "pair_bootstrap_ci95": [
+        0.72,
+        0.825
+      ],
+      "pair_swap_permutation_p": 0.0001999600079984003,
+      "permutations": 5000,
+      "balanced_accuracy_by_target_snr": {
+        "20-12": null,
+        "12-20": null,
+        "20-30": 0.775
+      }
+    }
+  },
+  "additional_classifiers": {
+    "whitened_strain_logistic": {
+      "accuracy": 1.0,
+      "balanced_accuracy": 1.0,
+      "prediction_counts": [
+        100,
+        100
+      ],
+      "validation_pairs": 100,
+      "pair_bootstrap_ci95": [
+        1.0,
+        1.0
+      ],
+      "pair_swap_permutation_p": 0.0001999600079984003,
+      "permutations": 5000
+    },
+    "whitened_strain_svc_rbf": {
+      "accuracy": 1.0,
+      "balanced_accuracy": 1.0,
+      "prediction_counts": [
+        100,
+        100
+      ],
+      "validation_pairs": 100,
+      "pair_bootstrap_ci95": [
+        1.0,
+        1.0
+      ],
+      "pair_swap_permutation_p": 0.0001999600079984003,
+      "permutations": 5000
+    },
+    "pca_scaled_logistic": {
+      "accuracy": 0.96,
+      "balanced_accuracy": 0.96,
+      "prediction_counts": [
+        104,
+        96
+      ],
+      "validation_pairs": 100,
+      "pair_bootstrap_ci95": [
+        0.9299999999999999,
+        0.985
+      ],
+      "pair_swap_permutation_p": 0.0001999600079984003,
+      "permutations": 5000
+    },
+    "pca_scaled_svc_rbf": {
+      "accuracy": 0.96,
+      "balanced_accuracy": 0.96,
+      "prediction_counts": [
+        104,
+        96
+      ],
+      "validation_pairs": 100,
+      "pair_bootstrap_ci95": [
+        0.9299999999999999,
+        0.985
+      ],
+      "pair_swap_permutation_p": 0.0001999600079984003,
+      "permutations": 5000
+    }
+  },
+  "known_parameter_template_likelihood_diagnostic": {
+    "accuracy": 1.0,
+    "balanced_accuracy": 1.0,
+    "prediction_counts": [
+      100,
+      100
+    ],
+    "validation_pairs": 100,
+    "uses_exact_validation_source_parameters_and_delta_phi": true,
+    "deployable": false,
+    "pair_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "pair_swap_permutation_p": 0.0001999600079984003,
+    "permutations": 5000
+  }
+}

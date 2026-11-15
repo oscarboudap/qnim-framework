@@ -199,6 +199,28 @@ def test_snr_normalization_preserves_modified_amplitude(monkeypatch):
     assert reference_whitened.shape == reference.shape
 
 
+def test_optimal_snr_accounts_for_sample_interval(monkeypatch):
+    module = _load_adapter(monkeypatch)
+    sample_rate = 128
+    sample_count = 128
+    amplitude = 2e-21
+    time = np.arange(sample_count) / sample_rate
+    waveform = amplitude * np.sin(2.0 * np.pi * 8.0 * time)
+    frequencies = np.fft.rfftfreq(sample_count, d=1.0 / sample_rate)
+    psd = np.full(frequencies.shape, 1e-42)
+    usable = (frequencies > 0) & (frequencies < sample_rate / 2)
+
+    snr = module._optimal_snr(
+        np.fft.rfft(waveform),
+        psd,
+        usable,
+        delta_f=sample_rate / sample_count,
+        delta_t=1.0 / sample_rate,
+    )
+
+    assert snr == pytest.approx(amplitude * np.sqrt(1.0 / 1e-42))
+
+
 def test_per_waveform_snr_normalization_equalizes_modified_waveform(monkeypatch):
     module = _load_adapter(monkeypatch)
     adapter = module.LIGONoiseInjectionAdapter(
