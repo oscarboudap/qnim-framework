@@ -60,44 +60,66 @@ def phase_residual_log_likelihoods(
     if not np.isfinite(covariances).all():
         raise ValueError("phase_covariances debe contener solo valores finitos")
 
-    log_likelihoods = np.empty((n_events, beta.size), dtype=float)
-    for event_index in range(n_events):
-        covariance = covariances[event_index]
-        if not np.allclose(covariance, covariance.T, rtol=1e-10, atol=1e-12):
-            raise ValueError("Cada matriz de covarianza debe ser simétrica")
-        try:
-            np.linalg.cholesky(covariance)
-        except np.linalg.LinAlgError as exc:
-            raise ValueError("Cada matriz de covarianza debe ser definida positiva") from exc
+    if not np.allclose(
+        covariances,
+        np.swapaxes(covariances, 1, 2),
+        rtol=1e-10,
+        atol=1e-12,
+    ):
+        raise ValueError("Cada matriz de covarianza debe ser simétrica")
+    try:
+        np.linalg.cholesky(covariances)
+    except np.linalg.LinAlgError as exc:
+        raise ValueError("Cada matriz de covarianza debe ser definida positiva") from exc
 
-        frequencies_for_event = frequencies[event_index]
-        nuisance_design = np.column_stack(
-            (np.ones(n_bands), frequencies_for_event / 100.0)
+    nuisance_design = np.stack(
+        (np.ones_like(frequencies), frequencies / 100.0), axis=-1
+    )
+    if np.any(np.linalg.matrix_rank(nuisance_design) < 2):
+        raise ValueError(
+            "Cada evento debe tener al menos dos frecuencias centrales distintas"
         )
-        if np.linalg.matrix_rank(nuisance_design) < 2:
-            raise ValueError(
-                "Cada evento debe tener al menos dos frecuencias centrales distintas"
-            )
-        basis = (frequencies_for_event / 100.0) ** (-7.0 / 3.0)
-        weighted_nuisance = np.linalg.solve(covariance, nuisance_design)
-        nuisance_information = nuisance_design.T @ weighted_nuisance
-        residual = residuals[event_index]
-
-        for beta_index, beta_value in enumerate(beta):
-            unexplained = residual - beta_value * basis
-            weighted_unexplained = np.linalg.solve(covariance, unexplained)
-            nuisance_score = nuisance_design.T @ weighted_unexplained
-            chi_squared = (
-                unexplained @ weighted_unexplained
-                - nuisance_score
-                @ np.linalg.solve(nuisance_information, nuisance_score)
-            )
-            if chi_squared < -1e-8:
-                raise RuntimeError("La proyección de nuisance produjo chi-cuadrado negativo")
-            log_likelihoods[event_index, beta_index] = -0.5 * max(
-                float(chi_squared), 0.0
-            )
-    return log_likelihoods
+    basis = (frequencies / 100.0) ** (-7.0 / 3.0)
+    weighted_nuisance = np.linalg.solve(covariances, nuisance_design)
+    nuisance_information = np.einsum(
+        "nbi,nbj->nij", nuisance_design, weighted_nuisance
+    )
+    weighted_residual = np.linalg.solve(
+        covariances, residuals[..., np.newaxis]
+    )[..., 0]
+    weighted_basis = np.linalg.solve(
+        covariances, basis[..., np.newaxis]
+    )[..., 0]
+    residual_score = np.einsum(
+        "nbi,nb->ni", nuisance_design, weighted_residual
+    )
+    basis_score = np.einsum("nbi,nb->ni", nuisance_design, weighted_basis)
+    profiled_residual_score = np.linalg.solve(
+        nuisance_information, residual_score[..., np.newaxis]
+    )[..., 0]
+    profiled_basis_score = np.linalg.solve(
+        nuisance_information, basis_score[..., np.newaxis]
+    )[..., 0]
+    residual_chi_squared = (
+        np.einsum("nb,nb->n", residuals, weighted_residual)
+        - np.einsum("ni,ni->n", residual_score, profiled_residual_score)
+    )
+    cross_term = (
+        np.einsum("nb,nb->n", residuals, weighted_basis)
+        - np.einsum("ni,ni->n", residual_score, profiled_basis_score)
+    )
+    basis_chi_squared = (
+        np.einsum("nb,nb->n", basis, weighted_basis)
+        - np.einsum("ni,ni->n", basis_score, profiled_basis_score)
+    )
+    chi_squared = (
+        residual_chi_squared[:, np.newaxis]
+        - 2.0 * cross_term[:, np.newaxis] * beta[np.newaxis, :]
+        + basis_chi_squared[:, np.newaxis] * beta[np.newaxis, :] ** 2
+    )
+    if np.any(chi_squared < -1e-8):
+        raise RuntimeError("La proyección de nuisance produjo chi-cuadrado negativo")
+    return -0.5 * np.maximum(chi_squared, 0.0)
 
 
 def infer_shared_beta(

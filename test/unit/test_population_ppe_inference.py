@@ -91,3 +91,27 @@ def test_phase_likelihood_rejects_degenerate_frequencies():
             np.array([100.0, 100.0, 100.0]),
             np.eye(3),
         )
+
+
+def test_phase_likelihood_accepts_event_specific_frequencies_and_covariances():
+    beta_grid = np.linspace(-0.005, 0.005, 201)
+    frequencies = np.array([
+        [25.0, 40.0, 60.0, 90.0, 140.0],
+        [30.0, 50.0, 80.0, 120.0, 200.0],
+    ])
+    beta_true = 0.0015
+    phase_residuals = np.stack([
+        beta_true * (event_frequencies / 100.0) ** (-7.0 / 3.0)
+        + 0.2
+        - 0.03 * event_frequencies / 100.0
+        for event_frequencies in frequencies
+    ])
+    covariances = np.stack((np.eye(5) * 0.01**2, np.eye(5) * 0.02**2))
+
+    log_likelihoods = phase_residual_log_likelihoods(
+        beta_grid, phase_residuals, frequencies, covariances
+    )
+    inference = infer_shared_beta(beta_grid, log_likelihoods)
+
+    assert log_likelihoods.shape == (2, beta_grid.size)
+    assert inference.credible_interval[0] < beta_true < inference.credible_interval[1]

@@ -517,3 +517,65 @@ absoluta de PSD de una muestra local; no se consulta test):
 Las métricas de validación son exploratorias: el dataset se inspeccionó durante
 el diagnóstico y la transformación emparejada es un control oráculo. No deben
 presentarse como una mejora confirmada ni como una predicción de hardware.
+
+### Estudio de escalado de la inferencia poblacional
+
+Se ejecutó `scripts/run_population_ppe_phase_study.py` con 1.000 réplicas por
+celdilla: 6 tamaños de población (1, 4, 16, 64, 128 y 256 eventos), 3 números
+de bandas (3, 5 y 8) y 3 valores verdaderos de beta (0, 0,001 y 0,005), es
+decir, 54.000 inferencias. Se usaron centros de banda 25, 40, 60, 90, 140, 220,
+350 y 500 Hz; SNR independiente uniforme entre 8 y 30; y errores de fase
+gaussianos independientes con sigma = 1/SNR por banda. A cada evento se
+añadieron offsets aleatorios de fase y de frecuencia lineal, que el ajuste
+perfiló. El prior de beta fue uniforme en [-0,01, 0,01]. Se contó como detección
+solo si el factor de Bayes BF10 era mayor que 10 y el intervalo creíble del 95 %
+excluía beta = 0. Los intervalos de la fracción de detección son Wilson al 95 %.
+
+| beta inyectado | Eventos | Bandas | Detección | IC Wilson 95 % | Cobertura IC beta 95 % | mediana log(BF10) |
+|---:|---:|---:|---:|---:|---:|---:|
+| 0 | 256 | 8 | 0,2 % | 0,05–0,73 % | 94,1 % | -3,70 |
+| 0,001 | 64 | 8 | 42,2 % | 39,2–45,3 % | 93,8 % | 1,78 |
+| 0,001 | 128 | 8 | 84,1 % | 81,7–86,2 % | 93,7 % | 6,53 |
+| 0,001 | 256 | 8 | 99,5 % | 98,8–99,8 % | 93,7 % | 15,56 |
+| 0,005 | 4 | 8 | 83,4 % | 81,0–85,6 % | 94,9 % | 5,83 |
+| 0,005 | 16 | 8 | 100,0 % | 99,6–100,0 % | 95,9 % | 28,22 |
+
+En las 18 celdillas nulas (beta = 0), la tasa de detección más alta fue 1,0 %.
+En este modelo, más eventos estrechan el posterior y permiten detectar una
+deformación débil: con beta = 0,001 y 8 bandas, la potencia simulada sube de
+42,2 % con 64 eventos a 84,1 % con 128 y 99,5 % con 256. Esto es una
+proyección condicionada al modelo de error especificado, **no** una predicción
+para O3b ni una garantía de mejora con más qubits. La cobertura observada de los
+intervalos fue 93,1–99,8 % entre las celdillas.
+
+El experimento es deliberadamente sintético: no genera las fases a partir del
+strain, no estima la covarianza desde datos, no marginaliza masas/spins y
+supone errores independientes y una ley ppE exacta. La mejora con eventos y
+bandas queda demostrada únicamente dentro de esos supuestos. Para trasladar
+esta curva a física real hace falta extraer residuos de fase por evento,
+propagar incertidumbre de parámetros fuente, medir covarianzas con ruido
+off-source independiente y repetir las inyecciones sin abrir el test.
+
+Resultados completos y comando reproducible:
+
+[`population_ppe_phase_scaling_20261115.json`](./population_ppe_phase_scaling_20261115.json)
+
+```bash
+~/.venvs/qnim-framework/bin/python scripts/run_population_ppe_phase_study.py \
+  --replicates 1000 --seed 20261115 \
+  --output results/scaling_study/population_ppe_phase_scaling_20261115.json
+```
+
+En una repetición actual del control de clasificación nominal, la balanced
+accuracy fue 49,5 % sobre 100 parejas de validación tanto para strain blanqueado
+(IC bootstrap por pareja 48–51 %, p de permutación por pareja = 0,879) como para
+PCA escalada (49,5 %, p = 1,0). Logistic Regression sobre strain blanqueado dio
+51,0 % (IC 50–52,5 %, p = 0,246). El diagnóstico oráculo con parámetros de
+fuente y beta exactos de validación dio 58,0 %, pero no es desplegable. No se
+leyó test. Véase
+[`ppe_pipeline_calibrated_nominal_20261115.json`](./ppe_pipeline_calibrated_nominal_20261115.json).
+
+No se ejecutó IBM Quantum: en el entorno de ejecución faltan `qiskit` y
+`qiskit-ibm-runtime`. En cualquier caso, el escalado anterior mide información
+estadística al aumentar eventos/bandas, no rendimiento de un circuito ni una
+relación causal entre qubits y precisión.
