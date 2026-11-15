@@ -18,17 +18,100 @@ class SharedBetaInference:
     n_events: int
 
 
+def phase_residual_log_likelihoods(
+    beta_grid: np.ndarray,
+    phase_residuals: np.ndarray,
+    frequency_centers_hz: np.ndarray,
+    phase_covariances: np.ndarray,
+) -> np.ndarray:
+    """Build event likelihoods for the ppE -1PN phase law.
+
+    The residual in each frequency band is modeled as
+    ``beta * (f / 100 Hz)**(-7/3)`` plus event-specific constant and linear
+    frequency terms. Those two nuisance terms represent arbitrary phase and
+    coalescence-time offsets and are profiled out with generalized least
+    squares. Covariance matrices may be shared or event-specific.
+    """
+    beta = np.asarray(beta_grid, dtype=float)
+    residuals = np.asarray(phase_residuals, dtype=float)
+    frequencies = np.asarray(frequency_centers_hz, dtype=float)
+    covariances = np.asarray(phase_covariances, dtype=float)
+    if beta.ndim != 1 or beta.size < 1 or not np.isfinite(beta).all():
+        raise ValueError("beta_grid debe ser un vector finito no vacío")
+    if residuals.ndim != 2 or residuals.shape[0] < 1 or residuals.shape[1] < 3:
+        raise ValueError("phase_residuals debe tener forma (eventos, al menos 3 bandas)")
+    if not np.isfinite(residuals).all():
+        raise ValueError("phase_residuals debe contener solo valores finitos")
+
+    n_events, n_bands = residuals.shape
+    if frequencies.ndim == 1 and frequencies.shape == (n_bands,):
+        frequencies = np.broadcast_to(frequencies, (n_events, n_bands))
+    if frequencies.shape != (n_events, n_bands):
+        raise ValueError("frequency_centers_hz debe ser bandas o eventos x bandas")
+    if not np.isfinite(frequencies).all() or np.any(frequencies <= 0):
+        raise ValueError("Las frecuencias centrales deben ser positivas y finitas")
+
+    if covariances.ndim == 2 and covariances.shape == (n_bands, n_bands):
+        covariances = np.broadcast_to(
+            covariances, (n_events, n_bands, n_bands)
+        )
+    if covariances.shape != (n_events, n_bands, n_bands):
+        raise ValueError("phase_covariances debe ser bandas x bandas o eventos x bandas x bandas")
+    if not np.isfinite(covariances).all():
+        raise ValueError("phase_covariances debe contener solo valores finitos")
+
+    log_likelihoods = np.empty((n_events, beta.size), dtype=float)
+    for event_index in range(n_events):
+        covariance = covariances[event_index]
+        if not np.allclose(covariance, covariance.T, rtol=1e-10, atol=1e-12):
+            raise ValueError("Cada matriz de covarianza debe ser simétrica")
+        try:
+            np.linalg.cholesky(covariance)
+        except np.linalg.LinAlgError as exc:
+            raise ValueError("Cada matriz de covarianza debe ser definida positiva") from exc
+
+        frequencies_for_event = frequencies[event_index]
+        nuisance_design = np.column_stack(
+            (np.ones(n_bands), frequencies_for_event / 100.0)
+        )
+        if np.linalg.matrix_rank(nuisance_design) < 2:
+            raise ValueError(
+                "Cada evento debe tener al menos dos frecuencias centrales distintas"
+            )
+        basis = (frequencies_for_event / 100.0) ** (-7.0 / 3.0)
+        weighted_nuisance = np.linalg.solve(covariance, nuisance_design)
+        nuisance_information = nuisance_design.T @ weighted_nuisance
+        residual = residuals[event_index]
+
+        for beta_index, beta_value in enumerate(beta):
+            unexplained = residual - beta_value * basis
+            weighted_unexplained = np.linalg.solve(covariance, unexplained)
+            nuisance_score = nuisance_design.T @ weighted_unexplained
+            chi_squared = (
+                unexplained @ weighted_unexplained
+                - nuisance_score
+                @ np.linalg.solve(nuisance_information, nuisance_score)
+            )
+            if chi_squared < -1e-8:
+                raise RuntimeError("La proyección de nuisance produjo chi-cuadrado negativo")
+            log_likelihoods[event_index, beta_index] = -0.5 * max(
+                float(chi_squared), 0.0
+            )
+    return log_likelihoods
+
+
 def infer_shared_beta(
     beta_grid: np.ndarray,
     event_log_likelihoods: np.ndarray,
     credible_level: float = 0.95,
 ) -> SharedBetaInference:
-    """Infer one population-wide beta from per-event, nuisance-marginalized likelihoods.
+    """Infer one population-wide beta from supplied per-event likelihoods.
 
     ``event_log_likelihoods[i, j]`` must be the log likelihood for event ``i``
-    at ``beta_grid[j]``, after marginalizing that event's source parameters.
-    The alternative uses a uniform continuous prior over the supplied beta
-    interval; the null is the point hypothesis beta=0.
+    at ``beta_grid[j]``. This function does not profile or marginalize event
+    parameters; callers must account for source parameters before interpreting
+    the result physically. The alternative uses a uniform continuous prior
+    over the supplied beta interval; the null is the point hypothesis beta=0.
     """
     beta = np.asarray(beta_grid, dtype=float)
     log_likelihoods = np.asarray(event_log_likelihoods, dtype=float)

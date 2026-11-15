@@ -459,15 +459,23 @@ likelihoods por evento (suma de log-likelihoods). La hipótesis nula es
 Las métricas principales serán el factor de Bayes y el intervalo posterior de
 `beta`; accuracy queda como métrica secundaria de los controles de inyección.
 
-El primer componente implementado es
-[`infer_shared_beta`](../../src/application/population_ppe_inference.py), que
-combina una matriz evento × beta de log-likelihoods ya marginalizadas. Sus
-pruebas confirman la acumulación de evidencia y la contracción del posterior
-en un caso sintético. **Todavía no** calcula likelihoods desde strain ni
-marginaliza parámetros fuente; no es un resultado físico ni VQC. La siguiente
-fase debe implementar esa likelihood a partir de residuos de fase multibanda,
-validarla con inyecciones y ruido off-source disjunto, y solo después comparar
-VQC con matched filtering y baselines clásicos. El test permanece cerrado.
+El agregador
+[`infer_shared_beta`](../../src/application/population_ppe_inference.py)
+combina una matriz evento × beta de log-likelihoods. La función
+[`phase_residual_log_likelihoods`](../../src/application/population_ppe_inference.py)
+construye likelihoods de una ley ppE -1PN sobre residuos de fase multibanda y
+perfila por mínimos cuadrados generalizados el offset de fase y el término
+lineal en frecuencia (tiempo de coalescencia). Las pruebas sintéticas verifican
+la acumulación poblacional, la recuperación de un beta inyectado y la
+invariancia ante esos dos offsets.
+
+Esto **no** equivale a marginalizar masas, spins u otros parámetros fuente y
+**todavía no** extrae residuos desde strain. Por tanto, no es un resultado
+físico, una mejora demostrada sobre datos observacionales ni un resultado VQC.
+Para responder la hipótesis física hace falta integrar o perfilar sobre la
+incertidumbre de parámetros fuente con una metodología declarada, validar con
+inyecciones y ruido off-source disjunto, y después comparar VQC con matched
+filtering y baselines clásicos. El test permanece cerrado.
 
 El control ppE corregido se reproduce en WSL (ruido sintético con escala
 absoluta de PSD de una muestra local; no se consulta test):

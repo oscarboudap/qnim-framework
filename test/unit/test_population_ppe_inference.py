@@ -1,7 +1,10 @@
 import numpy as np
 import pytest
 
-from src.application.population_ppe_inference import infer_shared_beta
+from src.application.population_ppe_inference import (
+    infer_shared_beta,
+    phase_residual_log_likelihoods,
+)
 
 
 def test_shared_beta_evidence_accumulates_and_posterior_narrows():
@@ -45,3 +48,46 @@ def test_shared_beta_rejects_malformed_likelihood_inputs():
         infer_shared_beta(beta_grid, np.zeros((2, 4)))
     with pytest.raises(ValueError, match="finitos"):
         infer_shared_beta(beta_grid, np.full((2, 5), np.nan))
+
+
+def test_phase_likelihood_profiles_out_event_phase_and_time_offsets():
+    beta_grid = np.linspace(-0.004, 0.004, 161)
+    frequencies = np.array([25.0, 40.0, 60.0, 90.0, 140.0, 220.0, 350.0, 500.0])
+    basis = (frequencies / 100.0) ** (-7.0 / 3.0)
+    rng = np.random.default_rng(17)
+    beta_true = 0.0015
+    phase_residuals = np.stack([
+        beta_true * basis
+        + rng.uniform(-0.2, 0.2)
+        + rng.uniform(-0.1, 0.1) * frequencies / 100.0
+        + rng.normal(0.0, 0.01, len(frequencies))
+        for _ in range(24)
+    ])
+    covariance = np.eye(len(frequencies)) * 0.01**2
+
+    log_likelihoods = phase_residual_log_likelihoods(
+        beta_grid, phase_residuals, frequencies, covariance
+    )
+    shifted_log_likelihoods = phase_residual_log_likelihoods(
+        beta_grid,
+        phase_residuals
+        + rng.uniform(-0.3, 0.3, (24, 1))
+        + rng.uniform(-0.1, 0.1, (24, 1)) * frequencies / 100.0,
+        frequencies,
+        covariance,
+    )
+    population = infer_shared_beta(beta_grid, log_likelihoods)
+
+    np.testing.assert_allclose(shifted_log_likelihoods, log_likelihoods, atol=1e-8)
+    assert population.credible_interval[0] < beta_true < population.credible_interval[1]
+    assert population.log_bayes_factor_10 > 0.0
+
+
+def test_phase_likelihood_rejects_degenerate_frequencies():
+    with pytest.raises(ValueError, match="dos frecuencias"):
+        phase_residual_log_likelihoods(
+            np.array([-0.1, 0.0, 0.1]),
+            np.zeros((1, 3)),
+            np.array([100.0, 100.0, 100.0]),
+            np.eye(3),
+        )
