@@ -444,6 +444,31 @@ El diagnóstico anterior del dataset histórico se reproduce desde Windows con:
   --output results\scaling_study\final_test_physical128.json
 ```
 
+## Reformulación poblacional en curso
+
+La pregunta de trabajo pasa de clasificar eventos aislados a contrastar una
+deformación ppE compartida por una población:
+
+> ¿Existe evidencia de un coeficiente ppE -1PN común distinto de cero tras
+> marginalizar los parámetros de fuente de cada evento, y cómo cambia la
+> sensibilidad al añadir bandas de fase y eventos?
+
+Para eventos independientes, la likelihood poblacional es el producto de las
+likelihoods por evento (suma de log-likelihoods). La hipótesis nula es
+`beta = 0`; la alternativa integra `beta` sobre un prior continuo predeclarado.
+Las métricas principales serán el factor de Bayes y el intervalo posterior de
+`beta`; accuracy queda como métrica secundaria de los controles de inyección.
+
+El primer componente implementado es
+[`infer_shared_beta`](../../src/application/population_ppe_inference.py), que
+combina una matriz evento × beta de log-likelihoods ya marginalizadas. Sus
+pruebas confirman la acumulación de evidencia y la contracción del posterior
+en un caso sintético. **Todavía no** calcula likelihoods desde strain ni
+marginaliza parámetros fuente; no es un resultado físico ni VQC. La siguiente
+fase debe implementar esa likelihood a partir de residuos de fase multibanda,
+validarla con inyecciones y ruido off-source disjunto, y solo después comparar
+VQC con matched filtering y baselines clásicos. El test permanece cerrado.
+
 El control ppE corregido se reproduce en WSL (ruido sintético con escala
 absoluta de PSD de una muestra local; no se consulta test):
 
