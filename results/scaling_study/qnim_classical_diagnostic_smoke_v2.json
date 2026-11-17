@@ -1,0 +1,1284 @@
+{
+  "task": "13-class LIGO-PCA classical baseline screen",
+  "waveform_source": "PyCBC",
+  "strict_physics": true,
+  "fallback_allowed": false,
+  "approximant": "IMRPhenomPv2",
+  "detector_noise_included": false,
+  "snr": null,
+  "scientific_scope_warning": "This generator uses whitened PyCBC waveforms but does not inject detector noise; a positive result is a screening signal, not evidence of separability in real detector data.",
+  "dataset_configuration": {
+    "train_per_class": 6,
+    "validation_per_class": 2,
+    "test_per_class": 2,
+    "components": 12,
+    "pca_fit_components": 64
+  },
+  "pre_registered_protocol": {
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "permutations": 3,
+    "default_permutations": 999,
+    "permutation_model_refits": 9,
+    "permutation_model_refits_total": 36,
+    "eligibility_split": "validation_only",
+    "final_test_requires_explicit_flag": true,
+    "seed_consistency": "Every seed's validation balanced accuracy must exceed chance.",
+    "significance_threshold": 0.05,
+    "multiple_comparison_correction": "Bonferroni over four baselines",
+    "test_evaluation_requested": false
+  },
+  "randomness": {
+    "data_generation_and_pca": "NumPy default_rng(seed); PCA random_state=seed.",
+    "models": "Each model receives its dataset seed as random_state where supported.",
+    "permutations": "Each seed/model/iteration uses an independent NumPy SeedSequence([dataset_seed, model_index, permutation_iteration]).",
+    "model_index_order": [
+      "logistic_regression",
+      "random_forest",
+      "svm_rbf",
+      "mlp"
+    ]
+  },
+  "software_versions": {
+    "python": "3.12.3",
+    "platform": "Linux-6.18.58.1-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "numpy": "2.2.6",
+    "scipy": "1.15.3",
+    "scikit_learn": "1.7.2",
+    "PyCBC": "2.9.0",
+    "LALSuite": "8.0.1"
+  },
+  "datasets": [
+    {
+      "seed": 42,
+      "class_names": [
+        "GR",
+        "standard-siren",
+        "qnm-21",
+        "qnm-33",
+        "pn-deformation",
+        "extra-dimensions",
+        "scalar-tensor",
+        "graviton-mass",
+        "chern-simons",
+        "liv-alpha2",
+        "liv-alpha4",
+        "loop-quantum-gravity",
+        "gup"
+      ],
+      "train_shape": [
+        78,
+        12
+      ],
+      "validation_shape": [
+        26,
+        12
+      ],
+      "train_sha256": "b3902feebbdcdd47a6ed5a287f2c7a5b691372b7613d20c4f2e9c0bd14a99d79",
+      "validation_sha256": "aea5daaffc69f7d284d59009241517ec362d94abddaf1d5d76fd4446eff6d188",
+      "train_class_counts": [
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "validation_class_counts": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "pca_fit_split": "train_only",
+      "scaler_fit_split": "train_only",
+      "pca_explained_variance_retained": 0.9999840895764406
+    },
+    {
+      "seed": 43,
+      "class_names": [
+        "GR",
+        "standard-siren",
+        "qnm-21",
+        "qnm-33",
+        "pn-deformation",
+        "extra-dimensions",
+        "scalar-tensor",
+        "graviton-mass",
+        "chern-simons",
+        "liv-alpha2",
+        "liv-alpha4",
+        "loop-quantum-gravity",
+        "gup"
+      ],
+      "train_shape": [
+        78,
+        12
+      ],
+      "validation_shape": [
+        26,
+        12
+      ],
+      "train_sha256": "f22eaa6487bb44d6657e8509e46233a985ec6729d9a36169f5e7f16b8ac6e219",
+      "validation_sha256": "02c18f012562c2ce751a62d8cad5f2b6f1cea99e439628a0ada9d24a9c7f9fbc",
+      "train_class_counts": [
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "validation_class_counts": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "pca_fit_split": "train_only",
+      "scaler_fit_split": "train_only",
+      "pca_explained_variance_retained": 0.9999792416049813
+    },
+    {
+      "seed": 44,
+      "class_names": [
+        "GR",
+        "standard-siren",
+        "qnm-21",
+        "qnm-33",
+        "pn-deformation",
+        "extra-dimensions",
+        "scalar-tensor",
+        "graviton-mass",
+        "chern-simons",
+        "liv-alpha2",
+        "liv-alpha4",
+        "loop-quantum-gravity",
+        "gup"
+      ],
+      "train_shape": [
+        78,
+        12
+      ],
+      "validation_shape": [
+        26,
+        12
+      ],
+      "train_sha256": "da5fb7be04496ab37879b9ac2cc20bccfb02e3e0e9ff0d97c605d4539858b834",
+      "validation_sha256": "fa74c9ee583dea545ce66114c21ed3be8a74242b93610f6effb114f22afffb24",
+      "train_class_counts": [
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "validation_class_counts": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "pca_fit_split": "train_only",
+      "scaler_fit_split": "train_only",
+      "pca_explained_variance_retained": 0.9999819866563788
+    }
+  ],
+  "n_classes": 13,
+  "chance_balanced_accuracy": 0.07692307692307693,
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "validation": {
+    "statistic": "Mean of per-seed validation balanced accuracies.",
+    "permutation_test": "Independently permute each seed's training labels, refit, and evaluate on unchanged validation labels; aggregate with the same mean-per-seed balanced accuracy statistic.",
+    "multiple_comparison_correction": "Bonferroni over 4 baselines; family-wise alpha=0.05.",
+    "models": {
+      "logistic_regression": {
+        "mean_balanced_accuracy": 0.16666666666666666,
+        "mean_accuracy": 0.16666666666666666,
+        "per_seed": [
+          {
+            "seed": 42,
+            "balanced_accuracy": 0.15384615384615385,
+            "accuracy": 0.15384615384615385
+          },
+          {
+            "seed": 43,
+            "balanced_accuracy": 0.19230769230769232,
+            "accuracy": 0.19230769230769232
+          },
+          {
+            "seed": 44,
+            "balanced_accuracy": 0.15384615384615385,
+            "accuracy": 0.15384615384615385
+          }
+        ],
+        "pooled_confusion_matrix": [
+          [
+            0,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            2,
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0,
+            2,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            0
+          ],
+          [
+            1,
+            0,
+            3,
+            0,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            1,
+            1,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            2,
+            0,
+            1,
+            0,
+            0,
+            0,
+            1,
+            2,
+            0
+          ],
+          [
+            2,
+            0,
+            2,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            0
+          ],
+          [
+            0,
+            1,
+            1,
+            2,
+            0,
+            0,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            4,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            1,
+            2,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            1,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2
+          ],
+          [
+            0,
+            1,
+            2,
+            0,
+            2,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            3,
+            0,
+            1
+          ]
+        ],
+        "training_label_permutation": {
+          "iterations": 3,
+          "observed_mean_balanced_accuracy": 0.16666666666666666,
+          "null_mean_balanced_accuracy": 0.07692307692307693,
+          "exceedances_at_or_above_observed": 0,
+          "p_value": 0.25,
+          "bonferroni_adjusted_p_value": 1.0,
+          "permutation_statistics": [
+            {
+              "iteration": 0,
+              "balanced_accuracy_by_seed": [
+                0.07692307692307693,
+                0.11538461538461539,
+                0.0
+              ],
+              "mean_balanced_accuracy": 0.06410256410256411
+            },
+            {
+              "iteration": 1,
+              "balanced_accuracy_by_seed": [
+                0.0,
+                0.038461538461538464,
+                0.11538461538461539
+              ],
+              "mean_balanced_accuracy": 0.05128205128205129
+            },
+            {
+              "iteration": 2,
+              "balanced_accuracy_by_seed": [
+                0.11538461538461539,
+                0.23076923076923078,
+                0.0
+              ],
+              "mean_balanced_accuracy": 0.11538461538461538
+            }
+          ]
+        }
+      },
+      "random_forest": {
+        "mean_balanced_accuracy": 0.28205128205128205,
+        "mean_accuracy": 0.28205128205128205,
+        "per_seed": [
+          {
+            "seed": 42,
+            "balanced_accuracy": 0.38461538461538464,
+            "accuracy": 0.38461538461538464
+          },
+          {
+            "seed": 43,
+            "balanced_accuracy": 0.2692307692307692,
+            "accuracy": 0.2692307692307692
+          },
+          {
+            "seed": 44,
+            "balanced_accuracy": 0.19230769230769232,
+            "accuracy": 0.19230769230769232
+          }
+        ],
+        "pooled_confusion_matrix": [
+          [
+            2,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0,
+            3,
+            0,
+            0,
+            1,
+            0,
+            0,
+            1,
+            0
+          ],
+          [
+            1,
+            1,
+            3,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          [
+            1,
+            0,
+            1,
+            2,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            2,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            2,
+            0
+          ],
+          [
+            2,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            2,
+            0
+          ],
+          [
+            1,
+            2,
+            2,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0,
+            1,
+            0,
+            0,
+            1,
+            2,
+            0,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            5,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            1,
+            2,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            3
+          ],
+          [
+            1,
+            1,
+            0,
+            0,
+            1,
+            0,
+            1,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            3,
+            0,
+            3
+          ]
+        ],
+        "training_label_permutation": {
+          "iterations": 3,
+          "observed_mean_balanced_accuracy": 0.28205128205128205,
+          "null_mean_balanced_accuracy": 0.10256410256410257,
+          "exceedances_at_or_above_observed": 0,
+          "p_value": 0.25,
+          "bonferroni_adjusted_p_value": 1.0,
+          "permutation_statistics": [
+            {
+              "iteration": 0,
+              "balanced_accuracy_by_seed": [
+                0.11538461538461539,
+                0.07692307692307693,
+                0.11538461538461539
+              ],
+              "mean_balanced_accuracy": 0.10256410256410257
+            },
+            {
+              "iteration": 1,
+              "balanced_accuracy_by_seed": [
+                0.07692307692307693,
+                0.07692307692307693,
+                0.11538461538461539
+              ],
+              "mean_balanced_accuracy": 0.08974358974358976
+            },
+            {
+              "iteration": 2,
+              "balanced_accuracy_by_seed": [
+                0.07692307692307693,
+                0.11538461538461539,
+                0.15384615384615385
+              ],
+              "mean_balanced_accuracy": 0.11538461538461538
+            }
+          ]
+        }
+      },
+      "svm_rbf": {
+        "mean_balanced_accuracy": 0.25641025641025644,
+        "mean_accuracy": 0.25641025641025644,
+        "per_seed": [
+          {
+            "seed": 42,
+            "balanced_accuracy": 0.4230769230769231,
+            "accuracy": 0.4230769230769231
+          },
+          {
+            "seed": 43,
+            "balanced_accuracy": 0.19230769230769232,
+            "accuracy": 0.19230769230769232
+          },
+          {
+            "seed": 44,
+            "balanced_accuracy": 0.15384615384615385,
+            "accuracy": 0.15384615384615385
+          }
+        ],
+        "pooled_confusion_matrix": [
+          [
+            1,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            2,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            0,
+            0,
+            0,
+            2,
+            0,
+            0,
+            0,
+            1,
+            0,
+            2,
+            0
+          ],
+          [
+            1,
+            0,
+            3,
+            0,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            2,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            2,
+            0
+          ],
+          [
+            2,
+            0,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            0
+          ],
+          [
+            0,
+            2,
+            0,
+            0,
+            1,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            3,
+            0,
+            0,
+            0,
+            2,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            5,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            1,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            2,
+            0,
+            0,
+            1,
+            0,
+            0,
+            1
+          ],
+          [
+            1,
+            2,
+            0,
+            0,
+            2,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            3,
+            0,
+            3
+          ]
+        ],
+        "training_label_permutation": {
+          "iterations": 3,
+          "observed_mean_balanced_accuracy": 0.25641025641025644,
+          "null_mean_balanced_accuracy": 0.025641025641025644,
+          "exceedances_at_or_above_observed": 0,
+          "p_value": 0.25,
+          "bonferroni_adjusted_p_value": 1.0,
+          "permutation_statistics": [
+            {
+              "iteration": 0,
+              "balanced_accuracy_by_seed": [
+                0.07692307692307693,
+                0.11538461538461539,
+                0.0
+              ],
+              "mean_balanced_accuracy": 0.06410256410256411
+            },
+            {
+              "iteration": 1,
+              "balanced_accuracy_by_seed": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "mean_balanced_accuracy": 0.0
+            },
+            {
+              "iteration": 2,
+              "balanced_accuracy_by_seed": [
+                0.038461538461538464,
+                0.0,
+                0.0
+              ],
+              "mean_balanced_accuracy": 0.012820512820512822
+            }
+          ]
+        }
+      },
+      "mlp": {
+        "mean_balanced_accuracy": 0.21794871794871795,
+        "mean_accuracy": 0.21794871794871795,
+        "per_seed": [
+          {
+            "seed": 42,
+            "balanced_accuracy": 0.2692307692307692,
+            "accuracy": 0.2692307692307692
+          },
+          {
+            "seed": 43,
+            "balanced_accuracy": 0.19230769230769232,
+            "accuracy": 0.19230769230769232
+          },
+          {
+            "seed": 44,
+            "balanced_accuracy": 0.19230769230769232,
+            "accuracy": 0.19230769230769232
+          }
+        ],
+        "pooled_confusion_matrix": [
+          [
+            0,
+            1,
+            1,
+            0,
+            0,
+            2,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            2,
+            0,
+            0,
+            0,
+            1,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0
+          ],
+          [
+            1,
+            0,
+            3,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            2,
+            0,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0,
+            0,
+            3,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          [
+            2,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            1,
+            0,
+            0,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            1,
+            0,
+            2,
+            0,
+            0,
+            1,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            5,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            1,
+            1,
+            0,
+            2,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            2,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1
+          ],
+          [
+            1,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            1,
+            2,
+            0,
+            2
+          ]
+        ],
+        "training_label_permutation": {
+          "iterations": 3,
+          "observed_mean_balanced_accuracy": 0.21794871794871795,
+          "null_mean_balanced_accuracy": 0.03418803418803419,
+          "exceedances_at_or_above_observed": 0,
+          "p_value": 0.25,
+          "bonferroni_adjusted_p_value": 1.0,
+          "permutation_statistics": [
+            {
+              "iteration": 0,
+              "balanced_accuracy_by_seed": [
+                0.038461538461538464,
+                0.0,
+                0.0
+              ],
+              "mean_balanced_accuracy": 0.012820512820512822
+            },
+            {
+              "iteration": 1,
+              "balanced_accuracy_by_seed": [
+                0.0,
+                0.0,
+                0.11538461538461539
+              ],
+              "mean_balanced_accuracy": 0.038461538461538464
+            },
+            {
+              "iteration": 2,
+              "balanced_accuracy_by_seed": [
+                0.11538461538461539,
+                0.0,
+                0.038461538461538464
+              ],
+              "mean_balanced_accuracy": 0.05128205128205129
+            }
+          ]
+        }
+      }
+    }
+  },
+  "final_test": {
+    "evaluated": false,
+    "status": "locked_not_evaluated",
+    "models": {}
+  },
+  "decision": {
+    "eligible_for_qnim_training": false,
+    "qualifying_baselines": [],
+    "criterion": "Mean validation balanced accuracy is above chance, every seed's validation balanced accuracy is above chance, and the training-label permutation p-value is <= 0.05 after Bonferroni correction over the four baselines.",
+    "uses_final_test": false
+  }
+}
