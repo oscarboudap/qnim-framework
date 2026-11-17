@@ -1,0 +1,557 @@
+{
+  "study": "H1 O3b off-source strain injections with phase-only source marginalization",
+  "noise_data": "local GWOSC O3b H1 strain; train calibration and disjoint validation windows only",
+  "test_windows_loaded": false,
+  "waveform_approximant": "IMRPhenomD, nonspinning",
+  "source_prior": {
+    "type": "uniform discrete prior over the following (m1,m2) bank in solar masses",
+    "bank": [
+      [
+        20.0,
+        10.0
+      ],
+      [
+        30.0,
+        10.0
+      ],
+      [
+        30.0,
+        20.0
+      ],
+      [
+        40.0,
+        10.0
+      ],
+      [
+        40.0,
+        20.0
+      ],
+      [
+        40.0,
+        30.0
+      ],
+      [
+        60.0,
+        20.0
+      ],
+      [
+        60.0,
+        40.0
+      ]
+    ],
+    "distance_mpc_for_bank_waveforms": 300.0,
+    "spins_included": false,
+    "amplitude_phase_time_treatment": "phase-only data likelihood; constant and linear-frequency phase terms profiled"
+  },
+  "phase_bands_hz": [
+    [
+      20.0,
+      30.0
+    ],
+    [
+      30.0,
+      40.0
+    ],
+    [
+      40.0,
+      55.0
+    ],
+    [
+      55.0,
+      75.0
+    ],
+    [
+      75.0,
+      105.0
+    ],
+    [
+      105.0,
+      150.0
+    ]
+  ],
+  "phase_covariance_estimation": {
+    "method": "Ledoit-Wolf shrinkage covariance of train-only GR injection phase residuals",
+    "calibration_events": 32,
+    "calibration_target_snr": 20.0,
+    "validation_covariance_scaling": "(20/target_snr)^2",
+    "matrix_rad2": [
+      [
+        1.609947606622718,
+        0.0,
+        0.0,
+        -0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.609947606622718,
+        0.0,
+        0.0,
+        -0.0,
+        -0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.609947606622718,
+        0.0,
+        0.0,
+        -0.0
+      ],
+      [
+        -0.0,
+        0.0,
+        0.0,
+        1.609947606622718,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        -0.0,
+        0.0,
+        0.0,
+        1.609947606622718,
+        0.0
+      ],
+      [
+        0.0,
+        -0.0,
+        -0.0,
+        0.0,
+        0.0,
+        1.609947606622718
+      ]
+    ]
+  },
+  "beta_prior_range": [
+    -0.01,
+    0.01
+  ],
+  "seed": 20261115,
+  "validation_events_per_hypothesis": 20,
+  "bootstrap_replicates": 500,
+  "results_by_injected_beta": {
+    "0.0": {
+      "n_events": 20,
+      "injected_beta": 0.0,
+      "posterior_mean": -0.0007850972860081792,
+      "credible_interval_95": [
+        -0.00961975946720802,
+        0.009331498879661851
+      ],
+      "log_bayes_factor_10": 0.002250704586687746,
+      "bootstrap_detection_stability": {
+        "bootstrap_replicates": 500,
+        "fraction_with_log_bf10_gt_log10_and_interval_excluding_zero": 0.0,
+        "wilson_95": [
+          4.336808689942018e-19,
+          0.007624340461552241
+        ]
+      },
+      "events": [
+        {
+          "event_index": 0,
+          "gps_start": 1256695804.0,
+          "target_snr": 18.68903679285841,
+          "injected_source_bank_index": 3
+        },
+        {
+          "event_index": 4,
+          "gps_start": 1256695964.0,
+          "target_snr": 22.200492610040932,
+          "injected_source_bank_index": 6
+        },
+        {
+          "event_index": 12,
+          "gps_start": 1256696284.0,
+          "target_snr": 13.849156214695792,
+          "injected_source_bank_index": 2
+        },
+        {
+          "event_index": 15,
+          "gps_start": 1256696404.0,
+          "target_snr": 15.017758646845085,
+          "injected_source_bank_index": 3
+        },
+        {
+          "event_index": 16,
+          "gps_start": 1256696444.0,
+          "target_snr": 13.251364910087414,
+          "injected_source_bank_index": 7
+        },
+        {
+          "event_index": 19,
+          "gps_start": 1256696564.0,
+          "target_snr": 11.65621020965499,
+          "injected_source_bank_index": 0
+        },
+        {
+          "event_index": 27,
+          "gps_start": 1256696884.0,
+          "target_snr": 11.114964462886684,
+          "injected_source_bank_index": 7
+        },
+        {
+          "event_index": 28,
+          "gps_start": 1256696924.0,
+          "target_snr": 19.765722000035304,
+          "injected_source_bank_index": 6
+        },
+        {
+          "event_index": 29,
+          "gps_start": 1256696964.0,
+          "target_snr": 28.2781627622559,
+          "injected_source_bank_index": 6
+        },
+        {
+          "event_index": 30,
+          "gps_start": 1256697196.0,
+          "target_snr": 23.788992259020088,
+          "injected_source_bank_index": 5
+        },
+        {
+          "event_index": 32,
+          "gps_start": 1256697266.0,
+          "target_snr": 14.805953768809324,
+          "injected_source_bank_index": 3
+        },
+        {
+          "event_index": 34,
+          "gps_start": 1256697336.0,
+          "target_snr": 13.951923266855026,
+          "injected_source_bank_index": 5
+        },
+        {
+          "event_index": 36,
+          "gps_start": 1256697406.0,
+          "target_snr": 19.34579502008556,
+          "injected_source_bank_index": 6
+        },
+        {
+          "event_index": 41,
+          "gps_start": 1256697581.0,
+          "target_snr": 20.537369847558793,
+          "injected_source_bank_index": 2
+        },
+        {
+          "event_index": 45,
+          "gps_start": 1256697721.0,
+          "target_snr": 24.192475623998764,
+          "injected_source_bank_index": 5
+        },
+        {
+          "event_index": 50,
+          "gps_start": 1256697896.0,
+          "target_snr": 29.55798700603267,
+          "injected_source_bank_index": 6
+        },
+        {
+          "event_index": 56,
+          "gps_start": 1256698106.0,
+          "target_snr": 22.992830861869173,
+          "injected_source_bank_index": 3
+        },
+        {
+          "event_index": 57,
+          "gps_start": 1256698141.0,
+          "target_snr": 29.7691302850638,
+          "injected_source_bank_index": 2
+        },
+        {
+          "event_index": 58,
+          "gps_start": 1256698176.0,
+          "target_snr": 27.066589196368582,
+          "injected_source_bank_index": 7
+        },
+        {
+          "event_index": 59,
+          "gps_start": 1256698211.0,
+          "target_snr": 19.10327568969219,
+          "injected_source_bank_index": 7
+        }
+      ]
+    },
+    "0.001": {
+      "n_events": 20,
+      "injected_beta": 0.001,
+      "posterior_mean": -0.0001470675139973272,
+      "credible_interval_95": [
+        -0.009538628270739024,
+        0.009444677313640798
+      ],
+      "log_bayes_factor_10": -0.007921885806810858,
+      "bootstrap_detection_stability": {
+        "bootstrap_replicates": 500,
+        "fraction_with_log_bf10_gt_log10_and_interval_excluding_zero": 0.0,
+        "wilson_95": [
+          4.336808689942018e-19,
+          0.007624340461552241
+        ]
+      },
+      "events": [
+        {
+          "event_index": 2,
+          "gps_start": 1256695884.0,
+          "target_snr": 14.5170386596419,
+          "injected_source_bank_index": 3
+        },
+        {
+          "event_index": 3,
+          "gps_start": 1256695924.0,
+          "target_snr": 8.953909341750435,
+          "injected_source_bank_index": 0
+        },
+        {
+          "event_index": 5,
+          "gps_start": 1256696004.0,
+          "target_snr": 12.279179829060606,
+          "injected_source_bank_index": 3
+        },
+        {
+          "event_index": 6,
+          "gps_start": 1256696044.0,
+          "target_snr": 12.0896290127242,
+          "injected_source_bank_index": 1
+        },
+        {
+          "event_index": 10,
+          "gps_start": 1256696204.0,
+          "target_snr": 18.535463926104406,
+          "injected_source_bank_index": 6
+        },
+        {
+          "event_index": 11,
+          "gps_start": 1256696244.0,
+          "target_snr": 12.218740434872954,
+          "injected_source_bank_index": 2
+        },
+        {
+          "event_index": 14,
+          "gps_start": 1256696364.0,
+          "target_snr": 17.324077982584527,
+          "injected_source_bank_index": 6
+        },
+        {
+          "event_index": 17,
+          "gps_start": 1256696484.0,
+          "target_snr": 26.302544530182768,
+          "injected_source_bank_index": 0
+        },
+        {
+          "event_index": 21,
+          "gps_start": 1256696644.0,
+          "target_snr": 22.332149459803034,
+          "injected_source_bank_index": 3
+        },
+        {
+          "event_index": 23,
+          "gps_start": 1256696724.0,
+          "target_snr": 29.72612460429157,
+          "injected_source_bank_index": 1
+        },
+        {
+          "event_index": 24,
+          "gps_start": 1256696764.0,
+          "target_snr": 8.721952487876406,
+          "injected_source_bank_index": 1
+        },
+        {
+          "event_index": 31,
+          "gps_start": 1256697231.0,
+          "target_snr": 12.445274572007591,
+          "injected_source_bank_index": 6
+        },
+        {
+          "event_index": 35,
+          "gps_start": 1256697371.0,
+          "target_snr": 19.75447994956003,
+          "injected_source_bank_index": 7
+        },
+        {
+          "event_index": 37,
+          "gps_start": 1256697441.0,
+          "target_snr": 10.512484472626108,
+          "injected_source_bank_index": 3
+        },
+        {
+          "event_index": 38,
+          "gps_start": 1256697476.0,
+          "target_snr": 24.651573335091726,
+          "injected_source_bank_index": 2
+        },
+        {
+          "event_index": 42,
+          "gps_start": 1256697616.0,
+          "target_snr": 15.42053514958388,
+          "injected_source_bank_index": 4
+        },
+        {
+          "event_index": 46,
+          "gps_start": 1256697756.0,
+          "target_snr": 13.884882926174791,
+          "injected_source_bank_index": 3
+        },
+        {
+          "event_index": 49,
+          "gps_start": 1256697861.0,
+          "target_snr": 22.521549414402376,
+          "injected_source_bank_index": 6
+        },
+        {
+          "event_index": 52,
+          "gps_start": 1256697966.0,
+          "target_snr": 17.497114099486307,
+          "injected_source_bank_index": 5
+        },
+        {
+          "event_index": 53,
+          "gps_start": 1256698001.0,
+          "target_snr": 16.517081480464313,
+          "injected_source_bank_index": 3
+        }
+      ]
+    },
+    "0.005": {
+      "n_events": 20,
+      "injected_beta": 0.005,
+      "posterior_mean": -5.2378832876446256e-05,
+      "credible_interval_95": [
+        -0.00952744250796984,
+        0.00946168722338938
+      ],
+      "log_bayes_factor_10": -0.005686376948037752,
+      "bootstrap_detection_stability": {
+        "bootstrap_replicates": 500,
+        "fraction_with_log_bf10_gt_log10_and_interval_excluding_zero": 0.0,
+        "wilson_95": [
+          4.336808689942018e-19,
+          0.007624340461552241
+        ]
+      },
+      "events": [
+        {
+          "event_index": 1,
+          "gps_start": 1256695844.0,
+          "target_snr": 21.842097173668687,
+          "injected_source_bank_index": 3
+        },
+        {
+          "event_index": 7,
+          "gps_start": 1256696084.0,
+          "target_snr": 12.008180838740834,
+          "injected_source_bank_index": 2
+        },
+        {
+          "event_index": 8,
+          "gps_start": 1256696124.0,
+          "target_snr": 19.020704731963214,
+          "injected_source_bank_index": 7
+        },
+        {
+          "event_index": 9,
+          "gps_start": 1256696164.0,
+          "target_snr": 27.38879921089417,
+          "injected_source_bank_index": 0
+        },
+        {
+          "event_index": 13,
+          "gps_start": 1256696324.0,
+          "target_snr": 21.87821582508872,
+          "injected_source_bank_index": 5
+        },
+        {
+          "event_index": 18,
+          "gps_start": 1256696524.0,
+          "target_snr": 29.253748036679916,
+          "injected_source_bank_index": 1
+        },
+        {
+          "event_index": 20,
+          "gps_start": 1256696604.0,
+          "target_snr": 18.171511364592895,
+          "injected_source_bank_index": 1
+        },
+        {
+          "event_index": 22,
+          "gps_start": 1256696684.0,
+          "target_snr": 10.233762169264178,
+          "injected_source_bank_index": 3
+        },
+        {
+          "event_index": 25,
+          "gps_start": 1256696804.0,
+          "target_snr": 22.63437489979344,
+          "injected_source_bank_index": 6
+        },
+        {
+          "event_index": 26,
+          "gps_start": 1256696844.0,
+          "target_snr": 12.818948846605668,
+          "injected_source_bank_index": 4
+        },
+        {
+          "event_index": 33,
+          "gps_start": 1256697301.0,
+          "target_snr": 11.281417203692548,
+          "injected_source_bank_index": 4
+        },
+        {
+          "event_index": 39,
+          "gps_start": 1256697511.0,
+          "target_snr": 22.80528164181252,
+          "injected_source_bank_index": 7
+        },
+        {
+          "event_index": 40,
+          "gps_start": 1256697546.0,
+          "target_snr": 15.107892186827451,
+          "injected_source_bank_index": 6
+        },
+        {
+          "event_index": 43,
+          "gps_start": 1256697651.0,
+          "target_snr": 26.170490622512954,
+          "injected_source_bank_index": 5
+        },
+        {
+          "event_index": 44,
+          "gps_start": 1256697686.0,
+          "target_snr": 27.0828145583649,
+          "injected_source_bank_index": 7
+        },
+        {
+          "event_index": 47,
+          "gps_start": 1256697791.0,
+          "target_snr": 8.718189296573305,
+          "injected_source_bank_index": 1
+        },
+        {
+          "event_index": 48,
+          "gps_start": 1256697826.0,
+          "target_snr": 27.671351267631902,
+          "injected_source_bank_index": 4
+        },
+        {
+          "event_index": 51,
+          "gps_start": 1256697931.0,
+          "target_snr": 15.162165760666575,
+          "injected_source_bank_index": 6
+        },
+        {
+          "event_index": 54,
+          "gps_start": 1256698036.0,
+          "target_snr": 15.445799543903199,
+          "injected_source_bank_index": 1
+        },
+        {
+          "event_index": 55,
+          "gps_start": 1256698071.0,
+          "target_snr": 15.661262106445973,
+          "injected_source_bank_index": 3
+        }
+      ]
+    }
+  }
+}

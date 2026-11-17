@@ -37,7 +37,8 @@ def _chirp_mass(m1: float, m2: float) -> float:
 
 def _generate_base_waveform(m1, m2, distance_mpc, duration=4.0,
                               sample_rate=4096, f_lower=20.0,
-                              approximant="IMRPhenomD"):
+                              approximant="IMRPhenomD",
+                              strict_physics=False):
     try:
         from pycbc.waveform import get_td_waveform
         hp, _ = get_td_waveform(
@@ -58,6 +59,10 @@ def _generate_base_waveform(m1, m2, distance_mpc, duration=4.0,
         )
         return strain, 1.0 / sample_rate
     except Exception as exc:
+        if strict_physics:
+            raise RuntimeError(
+                "PyCBC waveform generation failed; strict_physics=True forbids fallback"
+            ) from exc
         warnings.warn(f"PyCBC falló ({exc}); usando chirp sinusoidal de fallback.", stacklevel=3)
         return _fallback_chirp(m1, m2, distance_mpc, duration, sample_rate, f_lower)
 
@@ -91,7 +96,7 @@ class PhysicsSSTGAdapter:
     def __init__(self, n_features=12, waveform_duration=4.0, sample_rate=4096,
                  f_lower=20.0, approximant="IMRPhenomD",
                  m_range=(10.0, 80.0), d_range=(100.0, 1000.0),
-                 max_classes=None):
+                 max_classes=None, strict_physics=False):
         assert n_features % 2 == 0
         self.n_features  = n_features
         self.n_bands     = n_features // 2
@@ -101,6 +106,7 @@ class PhysicsSSTGAdapter:
         self.approximant = approximant
         self.m_range     = m_range
         self.d_range     = d_range
+        self.strict_physics = strict_physics
         n_cls = len(self.THEORY_CLASSES)
         self.n_classes   = min(max_classes, n_cls) if max_classes else n_cls
         self.theory_names = self.THEORY_CLASSES[:self.n_classes]
@@ -115,7 +121,7 @@ class PhysicsSSTGAdapter:
         if base_waveform is None:
             strain, dt = _generate_base_waveform(
                 m1, m2, d, self.duration, self.sample_rate,
-                self.f_lower, self.approximant,
+                self.f_lower, self.approximant, self.strict_physics,
             )
         else:
             strain = np.asarray(base_waveform, dtype=float)

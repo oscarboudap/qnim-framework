@@ -40,6 +40,26 @@ def test_base_waveform_window_keeps_the_merger_peak(monkeypatch):
     assert np.max(np.abs(window)) == pytest.approx(1.0)
 
 
+def test_strict_physics_rejects_pycbc_failure_without_fallback(monkeypatch):
+    def fail_generation(**kwargs):
+        raise ValueError("invalid approximant")
+
+    monkeypatch.setattr(pycbc_waveform, "get_td_waveform", fail_generation)
+    monkeypatch.setattr(
+        physics_sstg_adapter,
+        "_fallback_chirp",
+        lambda *args: (_ for _ in ()).throw(AssertionError("fallback was called")),
+    )
+
+    with pytest.raises(RuntimeError, match="strict_physics=True"):
+        physics_sstg_adapter._generate_base_waveform(
+            30.0, 20.0, 300.0, strict_physics=True
+        )
+
+    adapter = physics_sstg_adapter.PhysicsSSTGAdapter(strict_physics=True)
+    assert adapter.strict_physics is True
+
+
 def test_extra_dimension_and_lqg_labels_use_their_own_injectors(monkeypatch):
     sample_rate = 128
     duration = 1.0

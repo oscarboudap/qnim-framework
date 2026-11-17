@@ -337,9 +337,11 @@ Para validar la reformulación:
 5. Abrir test una sola vez después de congelar pipeline e hipótesis; solo
    entonces evaluar IBM con backend, shots y mitigación registrados.
 
-No se envió un trabajo remoto a IBM Quantum en esta sesión porque
-`qiskit_ibm_runtime` no está instalado en el entorno activo. El resultado de
-hardware citado arriba procede del TFM, no de una nueva ejecución.
+No se envió un trabajo remoto a IBM Quantum: aunque el SDK está instalado en
+el entorno usado para el experimento, no hay `IBM_QUANTUM_TOKEN` ni una cuenta
+guardada y el descubrimiento de backends devolvió `AccountNotFoundError`. El
+circuito Aer verificado es simulación local; el resultado de hardware citado
+arriba procede del TFM, no de una nueva ejecución.
 La regeneración sí se ejecutó en WSL Ubuntu 24.04, con PyCBC 2.9.0 y LALSuite
 8.0.1. El primer intento detectó incompatibilidad entre PyCBC y Astropy 8; al
 fijar Astropy 6.1.7, NumPy 2.2.6 y setuptools 80.9.0, se verificó la
@@ -463,19 +465,22 @@ El agregador
 [`infer_shared_beta`](../../src/application/population_ppe_inference.py)
 combina una matriz evento × beta de log-likelihoods. La función
 [`phase_residual_log_likelihoods`](../../src/application/population_ppe_inference.py)
-construye likelihoods de una ley ppE -1PN sobre residuos de fase multibanda y
-perfila por mínimos cuadrados generalizados el offset de fase y el término
-lineal en frecuencia (tiempo de coalescencia). Las pruebas sintéticas verifican
-la acumulación poblacional, la recuperación de un beta inyectado y la
-invariancia ante esos dos offsets.
+construye likelihoods de una ley ppE -1PN sobre residuos de fase extraídos de
+strain multibanda y perfila por mínimos cuadrados generalizados el offset de
+fase y el término lineal en frecuencia (tiempo de coalescencia). La función
+[`marginalize_source_parameter_log_likelihoods`](../../src/application/population_ppe_inference.py)
+integra una likelihood sobre un banco discreto de hipótesis de fuente con
+prior explícito. El ejecutable físico actual usa ocho pares de masas
+no-espinantes; no integra todavía sobre espines, distancia, inclinación,
+localización ni calibración.
 
-Esto **no** equivale a marginalizar masas, spins u otros parámetros fuente y
-**todavía no** extrae residuos desde strain. Por tanto, no es un resultado
-físico, una mejora demostrada sobre datos observacionales ni un resultado VQC.
-Para responder la hipótesis física hace falta integrar o perfilar sobre la
-incertidumbre de parámetros fuente con una metodología declarada, validar con
-inyecciones y ruido off-source disjunto, y después comparar VQC con matched
-filtering y baselines clásicos. El test permanece cerrado.
+Esta extensión sí se ha ejercitado con inyecciones en ventanas H1 O3b
+off-source, con calibración de covarianza en ventanas train disjuntas de
+validation. Sigue siendo un control de inyección en ruido de detector, no una
+detección de física nueva: el experimento no lee el test y el resultado de
+validation no muestra evidencia para las amplitudes probadas. Los tests
+unitarios verifican además la acumulación poblacional, la recuperación en
+ruido sintético y la invariancia ante los dos offsets.
 
 El control ppE corregido se reproduce en WSL (ruido sintético con escala
 absoluta de PSD de una muestra local; no se consulta test):
@@ -548,13 +553,12 @@ proyección condicionada al modelo de error especificado, **no** una predicción
 para O3b ni una garantía de mejora con más qubits. La cobertura observada de los
 intervalos fue 93,1–99,8 % entre las celdillas.
 
-El experimento es deliberadamente sintético: no genera las fases a partir del
-strain, no estima la covarianza desde datos, no marginaliza masas/spins y
-supone errores independientes y una ley ppE exacta. La mejora con eventos y
-bandas queda demostrada únicamente dentro de esos supuestos. Para trasladar
-esta curva a física real hace falta extraer residuos de fase por evento,
-propagar incertidumbre de parámetros fuente, medir covarianzas con ruido
-off-source independiente y repetir las inyecciones sin abrir el test.
+Este estudio de escalado es deliberadamente sintético: no genera las fases a
+partir del strain y supone errores independientes con sigma = 1/SNR. La mejora
+con eventos y bandas queda demostrada únicamente dentro de esos supuestos. La
+prueba con strain de abajo mide covarianzas entre 0,17 y 1,13 rad a SNR 20,
+mucho mayores que 1/SNR = 0,05 rad en ese SNR. Por tanto, la curva sintética
+anterior es optimista y no se debe transferir a O3b.
 
 Resultados completos y comando reproducible:
 
@@ -575,7 +579,65 @@ fuente y beta exactos de validación dio 58,0 %, pero no es desplegable. No se
 leyó test. Véase
 [`ppe_pipeline_calibrated_nominal_20261115.json`](./ppe_pipeline_calibrated_nominal_20261115.json).
 
-No se ejecutó IBM Quantum: en el entorno de ejecución faltan `qiskit` y
-`qiskit-ibm-runtime`. En cualquier caso, el escalado anterior mide información
-estadística al aumentar eventos/bandas, no rendimiento de un circuito ni una
-relación causal entre qubits y precisión.
+### Inyecciones de población en strain H1 O3b
+
+Se ejecutó `scripts/run_strain_population_ppe.py` con ventanas de 16 s a
+4.096 Hz: 32 ventanas train para calibrar la covarianza de fase por plantilla y
+150 ventanas validation (50 por cada beta inyectado: 0, 0,001 y 0,005). El
+ruido es strain off-source H1 de O3b; se inyectaron señales IMRPhenomD
+no-espinantes a SNR uniforme entre 8 y 30. El banco fuente tiene ocho pares
+discretos `(m1,m2)` con prior uniforme. Para cada evento se extrajeron seis
+fases de banda (20–150 Hz), se marginalizó sobre el banco y se perfilaron fase
+constante y tiempo. La covarianza Ledoit-Wolf se estimó solo con train y se
+reescaló con el SNR objetivo. No se cargó ninguna ventana de test.
+
+| beta inyectado | Eventos | Media posterior beta | IC creíble 95 % | log(BF10) | Estabilidad bootstrap (500; IC Wilson 95 %) |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 50 | 0,00251 | [-0,00705; 0,00948] | -0,258 | 0,2 % (0,04–1,12 %) |
+| 0,001 | 50 | 0,00396 | [-0,00689; 0,00975] | 0,142 | 0 % (0–0,76 %) |
+| 0,005 | 50 | 0,00366 | [-0,00708; 0,00973] | 0,069 | 0 % (0–0,76 %) |
+
+Los intervalos Wilson describen la proporción de réplicas bootstrap que
+cumplieron el criterio; no son una estimación de potencia en nuevos datos
+independientes.
+
+El criterio bootstrap fue `log(BF10) > log(10)` y un IC del 95 % que excluya
+cero. Ninguna de las dos inyecciones ppE superó ese criterio, y los tres
+intervalos incluyen cero. Los factores de Bayes están cerca de uno: este
+pipeline de fase no separa GR de las señales ppE probadas con 50 eventos en
+esta configuración. No es evidencia de que GR sea correcta; es una prueba de
+que la sensibilidad demostrada por el Monte Carlo idealizado no sobrevive a
+esta estimación de ruido de strain y al marginalizado de masas.
+
+El posterior es prácticamente no informativo y su media no debe leerse como
+una estimación precisa de beta. La incertidumbre de fase calibrada varía entre
+0,17 y 1,13 rad a SNR 20, frente a los 0,05 rad asumidos por la proyección
+sintética. Además, el prior de fuente es solo una cuadrícula discreta de masas
+sin espín y la covarianza depende de 32 ventanas train. Es un resultado
+negativo de validación útil, no el experimento astrofísico completo. Aún falta
+integrar fuentes con espín y parámetros extrínsecos, estimar el modelo de
+ruido en más segmentos y demostrar cobertura/potencia con múltiples
+realizaciones independientes.
+
+Resultados y comando reproducible:
+
+[`strain_population_ppe_h1_16s_150events_20261115.json`](./strain_population_ppe_h1_16s_150events_20261115.json)
+
+```bash
+~/.venvs/qnim-framework/bin/python scripts/run_strain_population_ppe.py \
+  --calibration-events 32 --events-per-hypothesis 50 \
+  --bootstrap-replicates 500 --seed 20261115 \
+  --output results/scaling_study/strain_population_ppe_h1_16s_150events_20261115.json
+```
+
+### Quantum execution
+
+Se instalaron las versiones Qiskit fijadas por `requirements.txt` y se verificó
+un circuito Bell de cuatro qubits en Aer (1.024 shots: 506 `0000`, 518 `0011`).
+Eso solo comprueba el simulador local; no es entrenamiento VQC ni hardware IBM.
+El intento de descubrir un backend remoto terminó en `AccountNotFoundError`:
+no hay `IBM_QUANTUM_TOKEN` ni una cuenta guardada en este entorno. No se envió
+ningún job a IBM Quantum. Para hacerlo falta configurar la credencial local en
+`.env` (sin compartirla en el chat) y elegir un backend operativo. El escalado
+estadístico anterior tampoco establece una relación entre número de qubits y
+precisión física.

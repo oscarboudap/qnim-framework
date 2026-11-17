@@ -122,6 +122,52 @@ def phase_residual_log_likelihoods(
     return -0.5 * np.maximum(chi_squared, 0.0)
 
 
+def marginalize_source_parameter_log_likelihoods(
+    source_log_likelihoods: np.ndarray,
+    source_log_prior_weights: np.ndarray | None = None,
+) -> np.ndarray:
+    """Marginalize discrete source hypotheses for each event and beta value.
+
+    ``source_log_likelihoods`` has shape ``(events, source hypotheses, beta)``.
+    Prior weights may be shared across events or specified per event; they are
+    normalized internally. The result has shape ``(events, beta)``.
+    """
+    log_likelihoods = np.asarray(source_log_likelihoods, dtype=float)
+    if (
+        log_likelihoods.ndim != 3
+        or min(log_likelihoods.shape) < 1
+        or not np.isfinite(log_likelihoods).all()
+    ):
+        raise ValueError(
+            "source_log_likelihoods debe ser un array finito "
+            "(eventos, hipótesis de fuente, beta)"
+        )
+
+    n_events, n_sources, _ = log_likelihoods.shape
+    if source_log_prior_weights is None:
+        normalized_log_prior = np.full(
+            (n_events, n_sources), -np.log(n_sources), dtype=float
+        )
+    else:
+        log_prior = np.asarray(source_log_prior_weights, dtype=float)
+        if log_prior.ndim == 1 and log_prior.shape == (n_sources,):
+            log_prior = np.broadcast_to(log_prior, (n_events, n_sources))
+        if log_prior.shape != (n_events, n_sources):
+            raise ValueError(
+                "source_log_prior_weights debe ser hipótesis o eventos x hipótesis"
+            )
+        if np.isnan(log_prior).any() or np.isposinf(log_prior).any():
+            raise ValueError("Los pesos log-prior deben ser finitos o -inf")
+        normalization = logsumexp(log_prior, axis=1, keepdims=True)
+        if not np.isfinite(normalization).all():
+            raise ValueError("Cada evento debe tener al menos una hipótesis con prior positivo")
+        normalized_log_prior = log_prior - normalization
+
+    return logsumexp(
+        log_likelihoods + normalized_log_prior[..., np.newaxis], axis=1
+    )
+
+
 def infer_shared_beta(
     beta_grid: np.ndarray,
     event_log_likelihoods: np.ndarray,

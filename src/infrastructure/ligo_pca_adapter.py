@@ -135,7 +135,8 @@ class GWDataset:
 
 def _generate_base_waveform(m1, m2, distance_mpc, duration=4.0,
                               sample_rate=4096, f_lower=20.0,
-                              approximant="IMRPhenomD"):
+                              approximant="IMRPhenomD",
+                              strict_physics=False):
     try:
         from pycbc.waveform import get_td_waveform
         hp, _ = get_td_waveform(
@@ -148,6 +149,10 @@ def _generate_base_waveform(m1, m2, distance_mpc, duration=4.0,
                  np.pad(strain, (n_target - len(strain), 0))
         return strain, 1.0 / sample_rate
     except Exception as exc:
+        if strict_physics:
+            raise RuntimeError(
+                "PyCBC waveform generation failed; strict_physics=True forbids fallback"
+            ) from exc
         warnings.warn(f"PyCBC falló ({exc}); usando fallback sinusoidal.", stacklevel=3)
         return _fallback_chirp(m1, m2, distance_mpc, duration, sample_rate, f_lower)
 
@@ -206,7 +211,8 @@ class LIGOPCAAdapter:
                  approximant: str = "IMRPhenomD",
                  m_range: Tuple[float, float] = (10.0, 80.0),
                  d_range: Tuple[float, float] = (100.0, 1000.0),
-                 max_classes: Optional[int] = None):
+                 max_classes: Optional[int] = None,
+                 strict_physics: bool = False):
 
         if n_components < 1:
             raise ValueError("n_components debe ser positivo")
@@ -223,6 +229,7 @@ class LIGOPCAAdapter:
         self.approximant = approximant
         self.m_range = m_range
         self.d_range = d_range
+        self.strict_physics = strict_physics
         n_cls = len(self.THEORY_CLASSES)
         self.n_classes = min(max_classes, n_cls) if max_classes else n_cls
         self.theory_names = self.THEORY_CLASSES[:self.n_classes]
@@ -247,7 +254,7 @@ class LIGOPCAAdapter:
 
         strain, _ = _generate_base_waveform(
             m1, m2, d, self.duration, self.sample_rate,
-            self.f_lower, self.approximant,
+            self.f_lower, self.approximant, self.strict_physics,
         )
 
         # Aplicar inyector beyond-GR en dominio frecuencial
@@ -420,7 +427,7 @@ class LIGOPCAAdapter:
             )
             print(f"     Features: {self.n_components} PCA (blanqueado PSD O3)")
             print(f"     Varianza explicada (PC1-{self.n_components}): "
-                  f"{var_exp[-1]*100:.1f}%")
+                  f"{var_exp[:self.n_components].sum()*100:.1f}%")
             print(f"     Clases: {self.n_classes}")
 
         return GWDataset(

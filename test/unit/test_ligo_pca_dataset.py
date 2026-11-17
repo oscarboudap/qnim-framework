@@ -4,6 +4,7 @@ from pathlib import Path
 from types import ModuleType
 
 import numpy as np
+import pytest
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
 
@@ -63,6 +64,30 @@ def test_ligo_dataset_splits_before_train_only_pca(monkeypatch):
     )
     assert dataset.metadata["n_test_per_class"] == n_test
     assert len(dataset.metadata["pca_analysis"]["class_fisher_scores"]) == 6
+
+
+def test_strict_physics_rejects_pycbc_failure_without_fallback(monkeypatch):
+    adapter_type = _load_ligo_adapter(monkeypatch)
+    adapter_module = sys.modules["src.infrastructure.ligo_pca_adapter"]
+    import pycbc.waveform as pycbc_waveform
+
+    def fail_generation(**kwargs):
+        raise ValueError("invalid approximant")
+
+    monkeypatch.setattr(pycbc_waveform, "get_td_waveform", fail_generation)
+    monkeypatch.setattr(
+        adapter_module,
+        "_fallback_chirp",
+        lambda *args: (_ for _ in ()).throw(AssertionError("fallback was called")),
+    )
+
+    with pytest.raises(RuntimeError, match="strict_physics=True"):
+        adapter_module._generate_base_waveform(
+            30.0, 20.0, 300.0, strict_physics=True
+        )
+
+    adapter = adapter_type(strict_physics=True)
+    assert adapter.strict_physics is True
 
 
 def test_legacy_pca_adapter_dispatches_add_and_lqg_to_physical_injectors(monkeypatch):

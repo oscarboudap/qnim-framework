@@ -10,3 +10,4 @@ venv/
 .vscode/
 node_modules/
 data/o3b/events/*.hdf5
+.github

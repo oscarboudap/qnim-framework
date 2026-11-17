@@ -3,6 +3,7 @@ import pytest
 
 from src.application.population_ppe_inference import (
     infer_shared_beta,
+    marginalize_source_parameter_log_likelihoods,
     phase_residual_log_likelihoods,
 )
 
@@ -115,3 +116,21 @@ def test_phase_likelihood_accepts_event_specific_frequencies_and_covariances():
 
     assert log_likelihoods.shape == (2, beta_grid.size)
     assert inference.credible_interval[0] < beta_true < inference.credible_interval[1]
+
+
+def test_source_parameter_likelihoods_are_marginalized_with_prior_weights():
+    source_log_likelihoods = np.array([
+        [[-2.0, -1.0], [-4.0, -3.0]],
+        [[-1.0, -3.0], [-2.0, -1.0]],
+    ])
+    log_prior = np.log(np.array([0.75, 0.25]))
+
+    marginalized = marginalize_source_parameter_log_likelihoods(
+        source_log_likelihoods, log_prior
+    )
+    expected = np.logaddexp(
+        source_log_likelihoods[:, 0, :] + np.log(0.75),
+        source_log_likelihoods[:, 1, :] + np.log(0.25),
+    )
+
+    np.testing.assert_allclose(marginalized, expected)
