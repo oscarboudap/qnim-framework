@@ -49,10 +49,33 @@ The current LIGO-PCA generator does not inject detector noise or model SNR.
 Consequently, a positive report is only a screening signal for the generated
 waveforms, not evidence of separability in real detector data.
 
+## QNIM Q1 simulator experiment
+
+The classical pilot is frozen as `CLASSICAL_REFERENCE_V1`; its manifest pins
+the source report by SHA-256. Q1 regenerates each strict-PyCBC dataset and stops
+unless its train and validation hashes exactly match that reference. It uses
+the same 12 PCA components, three seeds, 12-qubit ZZFeatureMap and
+EfficientSU2 (two repetitions, linear entanglement), and the existing 12-qubit
+marginal/MLP readout. The current circuit has 72 ansatz parameters and 429
+readout parameters. Only train data is passed to the optimizer; validation is
+evaluated after training, and the final test is not read or evaluated.
+
+Run Q1 in the configured Python environment:
+
+```bash
+python scripts/run_qnim_q1.py
+```
+
+Defaults are 100 optimizer iterations and 512 shots. The JSON is written
+incrementally, records the three validation results separately, and refuses to
+overwrite an existing result file. A completed result is evidence about the
+synthetic dataset only, not about real LIGO observations or quantum advantage.
+
 ## Estructura mínima
 
 - [scripts/generate_results.py](scripts/generate_results.py): entrypoint principal.
 - [scripts/diagnose_qnim_classical_baselines.py](scripts/diagnose_qnim_classical_baselines.py): strict-PyCBC classical data screen.
+- [scripts/run_qnim_q1.py](scripts/run_qnim_q1.py): frozen-reference QNIM simulator experiment.
 - [src](src): lógica de aplicación e infraestructura.
 - [config](config): configuración y perfiles.
 - [requirements.txt](requirements.txt): dependencias mínimas.
