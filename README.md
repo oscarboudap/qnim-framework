@@ -71,11 +71,62 @@ incrementally, records the three validation results separately, and refuses to
 overwrite an existing result file. A completed result is evidence about the
 synthetic dataset only, not about real LIGO observations or quantum advantage.
 
+## QNIM Q1.1 diagnostic
+
+Q1.1 keeps the Q1 architecture and dataset fixed, pins the seed-42
+train/validation split to `CLASSICAL_REFERENCE_V1`, and varies only parameter
+initialization seeds (42, 43, 44) while holding optimizer, batch, and training
+sampler randomness fixed at 42. It records train and
+validation cross-entropy, balanced accuracy, per-class recall, prediction
+counts, confusion matrices, and parameter snapshots. Validation is observed
+only after each optimizer step and never updates parameters; the final test
+remains locked.
+
+The four comparisons are: A, the instrumented current QNIM run; B, a refit of
+the classical MLP checked against the frozen seed-42 score; C, a frozen random
+ansatz with a trainable readout; and D, the trainable QNIM ansatz. A and D use
+the same execution, avoiding a duplicate fit. Diagnostic measurements use
+separate deterministic simulator seeds so they do not consume the optimizer's
+sampler sequence.
+
+```bash
+python scripts/run_qnim_q1_1.py
+```
+
+The default run evaluates all 3,250 train and validation examples after every
+QNIM iteration and trains each frozen-ansatz readout for 1,500 iterations;
+this is an intentionally expensive diagnostic and is not launched
+automatically. The JSON is written atomically after the baseline and each
+condition/initialization seed. `--resume` verifies the reference hashes,
+protocol, configuration, and dependency versions, then skips completed runs;
+an interrupted seed is restarted. Existing output is never overwritten without
+`--resume`.
+
+Run the reduced integration smoke (one initialization seed, one QNIM
+iteration, eight shots, two readout iterations) against the frozen
+`qnim_classical_diagnostic_smoke_v2.json` split:
+
+```bash
+python scripts/run_qnim_q1_1.py --smoke
+```
+
+This smoke exercises A–D on the small strict-PyCBC split and is not scientific
+evidence. Before the full run, time one diagnostic evaluation over the complete
+3,250-example seed-42 train/validation split:
+
+```bash
+python scripts/run_qnim_q1_1.py --benchmark-diagnostic-iteration
+```
+
+The benchmark writes `results/scaling_study/qnim_q1_1_diagnostic_cost_v1.json`
+and leaves the final test locked.
+
 ## Estructura mínima
 
 - [scripts/generate_results.py](scripts/generate_results.py): entrypoint principal.
 - [scripts/diagnose_qnim_classical_baselines.py](scripts/diagnose_qnim_classical_baselines.py): strict-PyCBC classical data screen.
 - [scripts/run_qnim_q1.py](scripts/run_qnim_q1.py): frozen-reference QNIM simulator experiment.
+- [scripts/run_qnim_q1_1.py](scripts/run_qnim_q1_1.py): instrumented Q1.1 diagnostics and ablations.
 - [src](src): lógica de aplicación e infraestructura.
 - [config](config): configuración y perfiles.
 - [requirements.txt](requirements.txt): dependencias mínimas.

@@ -431,6 +431,7 @@ def _fit_readout_mlp_classically(
     l2: float = 1e-4,
     momentum: float = 0.9,
     seed: int = 0,
+    diagnostic_callback: Optional[Callable] = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Ajusta la capa de lectura MLP (W1, b1, W2, b2) con descenso de
@@ -485,7 +486,7 @@ def _fit_readout_mlp_classically(
     vW1 = np.zeros_like(W1); vb1 = np.zeros_like(b1)
     vW2 = np.zeros_like(W2); vb2 = np.zeros_like(b2)
 
-    for _ in range(n_iters):
+    for iteration in range(n_iters):
         # ── Forward ──
         Z1 = qubit_probs_train @ W1.T + b1          # (n, H)
         A1 = np.maximum(0.0, Z1)                     # (n, H)
@@ -508,19 +509,19 @@ def _fit_readout_mlp_classically(
         vb1 = momentum * vb1 - lr * db1; b1 = b1 + vb1
         vW2 = momentum * vW2 - lr * dW2; W2 = W2 + vW2
         vb2 = momentum * vb2 - lr * db2; b2 = b2 + vb2
+        if diagnostic_callback is not None:
+            diagnostic_callback(
+                iteration + 1, W1.copy(), b1.copy(), W2.copy(), b2.copy()
+            )
 
     return W1, b1, W2, b2
 
 
-def _predict_via_circuit(
+def _measure_qubit_marginals_via_circuit(
     combined_run,
     x_params,
     ansatz_params,
     theta: np.ndarray,
-    W1: np.ndarray,
-    b1: np.ndarray,
-    W2: np.ndarray,
-    b2: np.ndarray,
     X_cheb: np.ndarray,
     n_qubits: int,
     shots: int = 512,
@@ -529,15 +530,11 @@ def _predict_via_circuit(
     simulator_seed: Optional[int] = None,
 ) -> np.ndarray:
     """
-    Ejecuta el circuito combinado (feature_map + ansatz) sobre X_cheb
-    (ya preprocesado con chebyshev_preprocess) y decodifica las
-    predicciones con la capa de lectura MLP entrenable (W1,b1,W2,b2).
+    Ejecuta el circuito sobre las entradas ya preprocesadas y devuelve
+    las marginales medidas por qubit.
 
-    Compartida por _evaluate_real_predictions y estimate_accuracy_vs_snr.
-
-    Returns:
-        np.ndarray de enteros, forma (len(X_cheb),) -- clase predicha
-        por muestra.
+    La creación de un sampler local permite aislar las mediciones de
+    diagnóstico de la secuencia aleatoria que usa el optimizador.
     """
     from qiskit.primitives import StatevectorSampler
 
@@ -562,7 +559,7 @@ def _predict_via_circuit(
             sampler = AerSamplerV2.from_backend(noisy_backend)
         else:
             sampler = StatevectorSampler(seed=simulator_seed)
-    y_pred = np.zeros(len(X_cheb), dtype=int)
+    qubit_marginals = np.zeros((len(X_cheb), n_qubits), dtype=float)
 
     for start in range(0, len(X_cheb), batch_size):
         chunk = X_cheb[start:start + batch_size]
@@ -574,11 +571,49 @@ def _predict_via_circuit(
         batch_result = job.result()
         for i in range(len(chunk)):
             counts = batch_result[i].data.meas.get_counts()
-            qubit_probs = _qubit_marginal_probs(counts, n_qubits)
-            class_probs = _readout_mlp_probs(qubit_probs, W1, b1, W2, b2)
-            y_pred[start + i] = int(np.argmax(class_probs))
+            qubit_marginals[start + i] = _qubit_marginal_probs(counts, n_qubits)
 
-    return y_pred
+    return qubit_marginals
+
+
+def _predict_via_circuit(
+    combined_run,
+    x_params,
+    ansatz_params,
+    theta: np.ndarray,
+    W1: np.ndarray,
+    b1: np.ndarray,
+    W2: np.ndarray,
+    b2: np.ndarray,
+    X_cheb: np.ndarray,
+    n_qubits: int,
+    shots: int = 512,
+    batch_size: int = 32,
+    sampler=None,
+    simulator_seed: Optional[int] = None,
+    return_probabilities: bool = False,
+) -> np.ndarray:
+    """Ejecuta el VQC y devuelve clases predichas o probabilidades por clase."""
+    qubit_marginals = _measure_qubit_marginals_via_circuit(
+        combined_run,
+        x_params,
+        ansatz_params,
+        theta,
+        X_cheb,
+        n_qubits,
+        shots=shots,
+        batch_size=batch_size,
+        sampler=sampler,
+        simulator_seed=simulator_seed,
+    )
+    probabilities = np.asarray([
+        _readout_mlp_probs(qubit_probs, W1, b1, W2, b2)
+        for qubit_probs in qubit_marginals
+    ])
+
+    if return_probabilities:
+        return probabilities
+    return np.argmax(probabilities, axis=1)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -882,6 +917,26 @@ def _make_vqc_loss_fn(
             """Cross-entropy media sobre el batch fijo de la iteración actual."""
             return evaluate_batch(theta, _batch_state["idx"])
 
+        def measure_quantum_features(
+            X_eval: np.ndarray,
+            ansatz_weights: np.ndarray,
+            shots_override: Optional[int] = None,
+            simulator_seed: Optional[int] = None,
+        ) -> np.ndarray:
+            X_eval_proc = _prepare_feature_matrix(X_eval, n_features)
+            X_eval_cheb = chebyshev_preprocess(X_eval_proc, stats=train_stats)
+            return _measure_qubit_marginals_via_circuit(
+                combined_run,
+                x_params,
+                ansatz_params,
+                ansatz_weights,
+                X_eval_cheb,
+                n_qubits,
+                shots=shots_override or shots,
+                batch_size=batch_size_local,
+                simulator_seed=simulator_seed,
+            )
+
         _reference_size = min(max(128, 10 * n_classes), len(X_cheb))
         _reference_idx = np.random.default_rng(random_seed + 2024).choice(
             len(X_cheb), _reference_size, replace=False
@@ -936,6 +991,7 @@ def _make_vqc_loss_fn(
         vqc_loss.refresh_batch = _refresh_batch
         vqc_loss.evaluate_reference = _evaluate_reference
         vqc_loss.evaluate_batch = evaluate_batch
+        vqc_loss.measure_quantum_features = measure_quantum_features
         vqc_loss.last_execution = _execution_state
         vqc_loss.warm_start_readout = warm_start_readout
         vqc_loss.n_ansatz_params = n_ansatz_params
@@ -1139,6 +1195,8 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         optimizer_name: str = "QNSPSA-EML-Feynman",
         shots: int = 512,
         n_feynman_params: Optional[int] = None,
+        diagnostic_callback: Optional[Callable] = None,
+        initialization_seed: Optional[int] = None,
     ) -> Dict[str, object]:
         """
         Entrena el VQC con QNSPSA-EML-Feynman.
@@ -1150,6 +1208,9 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         Returns:
             Dict con 'weights', 'training_loss', 'validation_accuracy'
             (heurística — ver train_and_evaluate para la accuracy real), etc.
+
+        `initialization_seed` controla solo la inicialización de parámetros;
+        el muestreo y el optimizador continúan usando `self.random_seed`.
         """
         try:
             t0 = time.time()
@@ -1215,7 +1276,9 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 random_seed=self.random_seed,
             )
 
-            rng = np.random.default_rng(self.random_seed)
+            rng = np.random.default_rng(
+                self.random_seed if initialization_seed is None else initialization_seed
+            )
 
             # n_ansatz_params queda en None si el loss_fn no soporta la
             # arquitectura ansatz+lectura (modo fallback / Qiskit no
@@ -1295,6 +1358,8 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                             f"Reajuste periódico de la capa de lectura "
                             f"falló en iter {iter_}: {e}"
                         )
+                if diagnostic_callback is not None:
+                    diagnostic_callback(iter_, theta.copy(), float(loss))
 
             logger.info(
                 f"Iniciando QNSPSA-EML-Feynman: "
@@ -1333,6 +1398,10 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 "n_circuit_evaluations": result.n_evals,
                 "speedup_vs_spsa": result.speedup_vs_spsa,
                 "converged": result.converged,
+                "termination_reason": (
+                    "patience_exhausted"
+                    if result.converged else "max_iterations_reached"
+                ),
                 "loss_history": result.loss_history,
                 "gradient_variance_history": result.gradient_variance_history,
             }

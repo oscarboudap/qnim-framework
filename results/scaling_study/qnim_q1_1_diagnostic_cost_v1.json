@@ -1,0 +1,55 @@
+{
+  "experiment_id": "QNIM_Q1_1_DIAGNOSTIC_COST_V1",
+  "status": "completed",
+  "classical_reference_id": "CLASSICAL_REFERENCE_V1",
+  "classical_reference_sha256": "6E1A0DAB205FAF76D2C624E045FBE573072BB2319C0D01BD4D0438F78D8507BF",
+  "dataset_seed": 42,
+  "dataset_hashes": {
+    "train_sha256": "55d9b752487c04e5d41c59b1a66bef485e78b37f6c6db55e30fc28daa7488d98",
+    "validation_sha256": "39d1775c38738ef8da51273f86e5ad3be8acc40253aeb53140680823db93e4aa"
+  },
+  "n_train_examples": 2600,
+  "n_validation_examples": 650,
+  "n_diagnostic_examples": 3250,
+  "shots": 512,
+  "batch_size": 64,
+  "architecture": {
+    "n_qubits": 12,
+    "n_features": 12,
+    "feature_map": "ZZFeatureMap",
+    "feature_map_reps": 2,
+    "feature_map_parameters": 12,
+    "ansatz": "EfficientSU2",
+    "ansatz_reps": 2,
+    "ansatz_parameters": 72,
+    "entanglement": "linear",
+    "readout": "12 qubit marginals -> one-hidden-layer MLP -> 13 classes",
+    "readout_hidden_size": 16,
+    "readout_parameters": 429,
+    "total_trainable_parameters": 501
+  },
+  "diagnostic_evaluation_seconds": 123.14922134501103,
+  "elapsed_seconds": 123.14922679799201,
+  "metric_snapshot": {
+    "train": {
+      "cross_entropy": 2.5649493574615363,
+      "balanced_accuracy": 0.07692307692307693
+    },
+    "validation": {
+      "cross_entropy": 2.5649493574615363,
+      "balanced_accuracy": 0.07692307692307693
+    }
+  },
+  "software_versions": {
+    "python": "3.12.3",
+    "numpy": "2.2.6",
+    "scikit_learn": "1.7.2",
+    "qiskit": "2.3.1",
+    "qiskit_aer": "0.17.2"
+  },
+  "final_test": {
+    "evaluated": false,
+    "status": "locked_not_evaluated",
+    "models": {}
+  }
+}
