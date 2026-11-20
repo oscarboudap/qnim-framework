@@ -1,0 +1,560 @@
+{
+  "schema_version": 1,
+  "experiment_id": "QNIM_QUANTUM_PCA_SCALING_V1",
+  "status": "prepared",
+  "protocol_sha256": "87581f0b3d0a435ecfd44be59145a13bf824977c732f03d401f30520eb335d8e",
+  "protocol_file": "protocol.json",
+  "dataset_id": "QNIM_Q1_6_DATASET_V2_PCA64",
+  "dataset_manifest_sha256": "53a153278ce83722a61a02cd8bff6749c599209fc11202b5e64ed5ee23c05bfd",
+  "dataset_manifest_file": "dataset_manifest.json",
+  "dataset_integrity": {
+    "dataset_id": "QNIM_Q1_6_DATASET_V2_PCA64",
+    "dataset_manifest_sha256": "53a153278ce83722a61a02cd8bff6749c599209fc11202b5e64ed5ee23c05bfd",
+    "verified_file_sha256": {
+      "X_train_scaled64.npy": "6fb936d7836789e9ca59941e47a2cdff701acd5d057f4258db82b134237e5dad",
+      "X_val_scaled64.npy": "f717042628bd35f7a8dad9457996f0d9b3d9d22a08803319c874390714af2783",
+      "y_train.npy": "9e4cc1a458f2f7825f69718bdd4a78bc5e56acc21d6396b14a2e302a477f01d6",
+      "y_val.npy": "81c6b2e663a9d65c96c699cd88253efb5003b9893ae19d21c7fa2b5d12719ead",
+      "pca_state.npz": "183108741f6b991242621a1d8c05ca481c851da459645c7a99a69433ab7e99ff"
+    },
+    "train_shape": [
+      2600,
+      64
+    ],
+    "validation_shape": [
+      650,
+      64
+    ],
+    "train_label_shape": [
+      2600
+    ],
+    "validation_label_shape": [
+      650
+    ],
+    "train_class_counts": [
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200
+    ],
+    "validation_class_counts": [
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50
+    ],
+    "pca_state": {
+      "mean_shape": [
+        16384
+      ],
+      "components_shape": [
+        64,
+        16384
+      ],
+      "n_samples_seen": 2600,
+      "n_features_in": 16384,
+      "n_components": 64
+    },
+    "only_train_validation_loaded": true,
+    "test_access": false
+  },
+  "checkpoint_directories": {
+    "16": "checkpoints\\q16",
+    "20": "checkpoints\\q20"
+  },
+  "configurations": {
+    "16": {
+      "status": "not_started",
+      "attempts": [],
+      "result_directory": "q16",
+      "last_dry_run_utc": "2026-11-20T15:36:14.022388+00:00",
+      "dry_run_configuration": {
+        "configuration": {
+          "name": "reference",
+          "n_qubits": 16,
+          "n_pca_components": 16,
+          "expected_ansatz_parameters": 96,
+          "expected_readout_parameters": 733,
+          "expected_total_trainable_parameters": 829,
+          "expected_measurement_features": 31
+        },
+        "n_qubits": 16,
+        "n_pca_components": 16,
+        "selected_pca_columns": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "n_feature_map_parameters": 16,
+        "ansatz_parameter_count": 96,
+        "ansatz_parameter_formula_check": {
+          "expected": 96,
+          "observed": 96,
+          "matches": true
+        },
+        "classical_readout_parameter_count": 733,
+        "classical_readout_parameter_count_formula": "(31*16+16)+(16*13+13)",
+        "total_trainable_parameter_count": 829,
+        "measurement_features": {
+          "expected": 31,
+          "observed_decoder_shape": [
+            31
+          ],
+          "observables": [
+            "P(q0=0)",
+            "P(q1=0)",
+            "P(q2=0)",
+            "P(q3=0)",
+            "P(q4=0)",
+            "P(q5=0)",
+            "P(q6=0)",
+            "P(q7=0)",
+            "P(q8=0)",
+            "P(q9=0)",
+            "P(q10=0)",
+            "P(q11=0)",
+            "P(q12=0)",
+            "P(q13=0)",
+            "P(q14=0)",
+            "P(q15=0)",
+            "<Z0 Z1>",
+            "<Z1 Z2>",
+            "<Z2 Z3>",
+            "<Z3 Z4>",
+            "<Z4 Z5>",
+            "<Z5 Z6>",
+            "<Z6 Z7>",
+            "<Z7 Z8>",
+            "<Z8 Z9>",
+            "<Z9 Z10>",
+            "<Z10 Z11>",
+            "<Z11 Z12>",
+            "<Z12 Z13>",
+            "<Z13 Z14>",
+            "<Z14 Z15>"
+          ],
+          "ordering": "all P(q_i=0) in ascending qubit order, then adjacent ZZ in ascending pair order",
+          "bitstring_convention": "Qiskit little-endian: bitstring[-1] is qubit 0; marginal is P(bit=0)",
+          "measured_qubits": 16,
+          "qubit_to_classical_bit": [
+            {
+              "qubit": 0,
+              "classical_bit": 0
+            },
+            {
+              "qubit": 1,
+              "classical_bit": 1
+            },
+            {
+              "qubit": 2,
+              "classical_bit": 2
+            },
+            {
+              "qubit": 3,
+              "classical_bit": 3
+            },
+            {
+              "qubit": 4,
+              "classical_bit": 4
+            },
+            {
+              "qubit": 5,
+              "classical_bit": 5
+            },
+            {
+              "qubit": 6,
+              "classical_bit": 6
+            },
+            {
+              "qubit": 7,
+              "classical_bit": 7
+            },
+            {
+              "qubit": 8,
+              "classical_bit": 8
+            },
+            {
+              "qubit": 9,
+              "classical_bit": 9
+            },
+            {
+              "qubit": 10,
+              "classical_bit": 10
+            },
+            {
+              "qubit": 11,
+              "classical_bit": 11
+            },
+            {
+              "qubit": 12,
+              "classical_bit": 12
+            },
+            {
+              "qubit": 13,
+              "classical_bit": 13
+            },
+            {
+              "qubit": 14,
+              "classical_bit": 14
+            },
+            {
+              "qubit": 15,
+              "classical_bit": 15
+            }
+          ],
+          "feature_producer": "_measure_qubit_marginals_via_circuit -> _qubit_readout_features -> classical MLP"
+        },
+        "circuit": {
+          "feature_map": "ZZFeatureMap",
+          "feature_map_reps": 2,
+          "feature_map_entanglement": "linear",
+          "ansatz": "EfficientSU2",
+          "ansatz_reps": 2,
+          "ansatz_entanglement": "linear",
+          "ansatz_rotation_gates": [
+            "ry",
+            "rz"
+          ],
+          "num_qubits": 16,
+          "num_clbits": 16,
+          "num_parameters_including_data": 112,
+          "depth_with_measurements": 66,
+          "operation_counts_with_measurements": {
+            "cx": 90,
+            "p": 62,
+            "ry": 48,
+            "rz": 48,
+            "h": 32,
+            "measure": 16,
+            "barrier": 1
+          },
+          "measurement_register": "meas"
+        },
+        "readout": {
+          "mode": "marginals_zz_neighbors",
+          "hidden_size": 16,
+          "output_classes": 13,
+          "activation": "ReLU hidden layer; softmax output"
+        },
+        "shot_configuration": {
+          "training": 512,
+          "reference": 512,
+          "warm_start_and_refit": 512,
+          "diagnostic": 512,
+          "final_evaluation": 512
+        },
+        "simulator": {
+          "provider": "Qiskit Aer",
+          "backend_name": "aer_simulator_matrix_product_state",
+          "method": "matrix_product_state",
+          "device": "CPU",
+          "seed_simulator": 42,
+          "sampler": "SamplerV2",
+          "local": true,
+          "hardware_execution": false
+        },
+        "software_versions": {
+          "python": "3.12.0",
+          "numpy": "2.2.6",
+          "qiskit": "2.3.1",
+          "qiskit_aer": "0.17.2",
+          "scikit_learn": "1.7.2"
+        },
+        "resource_estimate": {
+          "current_process_rss_bytes": 134836224,
+          "dense_statevector_bytes_per_circuit": 1048576,
+          "batch_size": 32,
+          "batch_statevector_envelope_bytes": 67108864,
+          "qnspsa_dense_matrix_envelope_bytes": 10995856,
+          "estimated_peak_rss_bytes": 212940944,
+          "estimated_peak_rss_mib": 203.07630920410156,
+          "estimator_note": "Heuristic upper envelope using two dense-equivalent simulator buffers per batch circuit plus two dense QNSPSA parameter matrices; MPS use depends on entanglement and Aer scheduling, so actual peak can differ."
+        }
+      }
+    },
+    "20": {
+      "status": "not_started",
+      "attempts": [],
+      "result_directory": "q20",
+      "last_dry_run_utc": "2026-11-20T15:36:19.030625+00:00",
+      "dry_run_configuration": {
+        "configuration": {
+          "name": "expanded",
+          "n_qubits": 20,
+          "n_pca_components": 20,
+          "expected_ansatz_parameters": 120,
+          "expected_readout_parameters": 861,
+          "expected_total_trainable_parameters": 981,
+          "expected_measurement_features": 39
+        },
+        "n_qubits": 20,
+        "n_pca_components": 20,
+        "selected_pca_columns": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "n_feature_map_parameters": 20,
+        "ansatz_parameter_count": 120,
+        "ansatz_parameter_formula_check": {
+          "expected": 120,
+          "observed": 120,
+          "matches": true
+        },
+        "classical_readout_parameter_count": 861,
+        "classical_readout_parameter_count_formula": "(39*16+16)+(16*13+13)",
+        "total_trainable_parameter_count": 981,
+        "measurement_features": {
+          "expected": 39,
+          "observed_decoder_shape": [
+            39
+          ],
+          "observables": [
+            "P(q0=0)",
+            "P(q1=0)",
+            "P(q2=0)",
+            "P(q3=0)",
+            "P(q4=0)",
+            "P(q5=0)",
+            "P(q6=0)",
+            "P(q7=0)",
+            "P(q8=0)",
+            "P(q9=0)",
+            "P(q10=0)",
+            "P(q11=0)",
+            "P(q12=0)",
+            "P(q13=0)",
+            "P(q14=0)",
+            "P(q15=0)",
+            "P(q16=0)",
+            "P(q17=0)",
+            "P(q18=0)",
+            "P(q19=0)",
+            "<Z0 Z1>",
+            "<Z1 Z2>",
+            "<Z2 Z3>",
+            "<Z3 Z4>",
+            "<Z4 Z5>",
+            "<Z5 Z6>",
+            "<Z6 Z7>",
+            "<Z7 Z8>",
+            "<Z8 Z9>",
+            "<Z9 Z10>",
+            "<Z10 Z11>",
+            "<Z11 Z12>",
+            "<Z12 Z13>",
+            "<Z13 Z14>",
+            "<Z14 Z15>",
+            "<Z15 Z16>",
+            "<Z16 Z17>",
+            "<Z17 Z18>",
+            "<Z18 Z19>"
+          ],
+          "ordering": "all P(q_i=0) in ascending qubit order, then adjacent ZZ in ascending pair order",
+          "bitstring_convention": "Qiskit little-endian: bitstring[-1] is qubit 0; marginal is P(bit=0)",
+          "measured_qubits": 20,
+          "qubit_to_classical_bit": [
+            {
+              "qubit": 0,
+              "classical_bit": 0
+            },
+            {
+              "qubit": 1,
+              "classical_bit": 1
+            },
+            {
+              "qubit": 2,
+              "classical_bit": 2
+            },
+            {
+              "qubit": 3,
+              "classical_bit": 3
+            },
+            {
+              "qubit": 4,
+              "classical_bit": 4
+            },
+            {
+              "qubit": 5,
+              "classical_bit": 5
+            },
+            {
+              "qubit": 6,
+              "classical_bit": 6
+            },
+            {
+              "qubit": 7,
+              "classical_bit": 7
+            },
+            {
+              "qubit": 8,
+              "classical_bit": 8
+            },
+            {
+              "qubit": 9,
+              "classical_bit": 9
+            },
+            {
+              "qubit": 10,
+              "classical_bit": 10
+            },
+            {
+              "qubit": 11,
+              "classical_bit": 11
+            },
+            {
+              "qubit": 12,
+              "classical_bit": 12
+            },
+            {
+              "qubit": 13,
+              "classical_bit": 13
+            },
+            {
+              "qubit": 14,
+              "classical_bit": 14
+            },
+            {
+              "qubit": 15,
+              "classical_bit": 15
+            },
+            {
+              "qubit": 16,
+              "classical_bit": 16
+            },
+            {
+              "qubit": 17,
+              "classical_bit": 17
+            },
+            {
+              "qubit": 18,
+              "classical_bit": 18
+            },
+            {
+              "qubit": 19,
+              "classical_bit": 19
+            }
+          ],
+          "feature_producer": "_measure_qubit_marginals_via_circuit -> _qubit_readout_features -> classical MLP"
+        },
+        "circuit": {
+          "feature_map": "ZZFeatureMap",
+          "feature_map_reps": 2,
+          "feature_map_entanglement": "linear",
+          "ansatz": "EfficientSU2",
+          "ansatz_reps": 2,
+          "ansatz_entanglement": "linear",
+          "ansatz_rotation_gates": [
+            "ry",
+            "rz"
+          ],
+          "num_qubits": 20,
+          "num_clbits": 20,
+          "num_parameters_including_data": 140,
+          "depth_with_measurements": 78,
+          "operation_counts_with_measurements": {
+            "cx": 114,
+            "p": 78,
+            "ry": 60,
+            "rz": 60,
+            "h": 40,
+            "measure": 20,
+            "barrier": 1
+          },
+          "measurement_register": "meas"
+        },
+        "readout": {
+          "mode": "marginals_zz_neighbors",
+          "hidden_size": 16,
+          "output_classes": 13,
+          "activation": "ReLU hidden layer; softmax output"
+        },
+        "shot_configuration": {
+          "training": 512,
+          "reference": 512,
+          "warm_start_and_refit": 512,
+          "diagnostic": 512,
+          "final_evaluation": 512
+        },
+        "simulator": {
+          "provider": "Qiskit Aer",
+          "backend_name": "aer_simulator_matrix_product_state",
+          "method": "matrix_product_state",
+          "device": "CPU",
+          "seed_simulator": 42,
+          "sampler": "SamplerV2",
+          "local": true,
+          "hardware_execution": false
+        },
+        "software_versions": {
+          "python": "3.12.0",
+          "numpy": "2.2.6",
+          "qiskit": "2.3.1",
+          "qiskit_aer": "0.17.2",
+          "scikit_learn": "1.7.2"
+        },
+        "resource_estimate": {
+          "current_process_rss_bytes": 135041024,
+          "dense_statevector_bytes_per_circuit": 16777216,
+          "batch_size": 32,
+          "batch_statevector_envelope_bytes": 1073741824,
+          "qnspsa_dense_matrix_envelope_bytes": 15397776,
+          "estimated_peak_rss_bytes": 1224180624,
+          "estimated_peak_rss_mib": 1167.4696197509766,
+          "estimator_note": "Heuristic upper envelope using two dense-equivalent simulator buffers per batch circuit plus two dense QNSPSA parameter matrices; MPS use depends on entanglement and Aer scheduling, so actual peak can differ."
+        }
+      }
+    }
+  },
+  "test_access": false,
+  "updated_at_utc": "2026-11-20T15:36:19.030625+00:00",
+  "attempt_policy": "Each fresh execution gets a unique attempt directory. --new-attempt restarts from seed 42; optimizer state is not restored."
+}

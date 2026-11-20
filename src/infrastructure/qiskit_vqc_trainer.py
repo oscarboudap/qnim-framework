@@ -287,6 +287,22 @@ def _prepare_feature_matrix(X: np.ndarray, n_features: int) -> np.ndarray:
     return X
 
 
+def _transform_feature_matrix(
+    X: np.ndarray,
+    n_features: int,
+    preprocessing: str,
+    train_stats: Optional[tuple[np.ndarray, np.ndarray]] = None,
+) -> np.ndarray:
+    X_processed = _prepare_feature_matrix(X, n_features)
+    if preprocessing == "identity":
+        return X_processed
+    if preprocessing == "chebyshev":
+        if train_stats is None:
+            raise ValueError("Chebyshev preprocessing requires train-only statistics")
+        return chebyshev_preprocess(X_processed, stats=train_stats)
+    raise ValueError("preprocessing must be 'chebyshev' or 'identity'")
+
+
 def _stratified_indices(y: np.ndarray, max_samples: int, seed: int = 123) -> np.ndarray:
     y = np.asarray(y)
     if y.ndim != 1 or y.size == 0:
@@ -360,21 +376,73 @@ def _qubit_marginal_probs(counts: dict, n_qubits: int) -> np.ndarray:
 #  (reemplaza la lectura lineal softmax(W·x+b) de v5-v7)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _n_readout_params(n_qubits: int, n_classes: int, hidden_size: int) -> int:
+def _readout_feature_count(n_qubits: int, readout_mode: str) -> int:
+    if readout_mode == "marginals":
+        return n_qubits
+    if readout_mode == "marginals_zz":
+        return n_qubits + n_qubits * (n_qubits - 1) // 2
+    if readout_mode == "marginals_zz_neighbors":
+        return n_qubits + max(n_qubits - 1, 0)
+    raise ValueError(
+        "readout_mode must be 'marginals', 'marginals_zz', or "
+        "'marginals_zz_neighbors'"
+    )
+
+
+def _qubit_readout_features(
+    counts: dict, n_qubits: int, readout_mode: str = "marginals"
+) -> np.ndarray:
+    marginals = _qubit_marginal_probs(counts, n_qubits)
+    if readout_mode == "marginals":
+        return marginals
+    if readout_mode not in {"marginals_zz", "marginals_zz_neighbors"}:
+        _readout_feature_count(n_qubits, readout_mode)
+
+    from itertools import combinations
+
+    total = sum(counts.values())
+    if total <= 0:
+        raise ValueError("Counts must contain at least one measurement")
+    pairs = (
+        list(combinations(range(n_qubits), 2))
+        if readout_mode == "marginals_zz"
+        else list(zip(range(n_qubits - 1), range(1, n_qubits)))
+    )
+    zz = np.zeros(len(pairs), dtype=float)
+    for bitstring, count in counts.items():
+        bits = bitstring[-n_qubits:].rjust(n_qubits, "0")
+        z_values = np.fromiter(
+            (1.0 - 2.0 * int(bits[-(qubit + 1)]) for qubit in range(n_qubits)),
+            dtype=float,
+            count=n_qubits,
+        )
+        zz += count * np.fromiter(
+            (z_values[left] * z_values[right] for left, right in pairs),
+            dtype=float,
+            count=len(pairs),
+        )
+    return np.concatenate((marginals, zz / total))
+
+
+def _n_readout_params(n_features: int, n_classes: int, hidden_size: int) -> int:
     """
     Tamaño de la capa de lectura entrenable (MLP de 1 capa oculta):
-        W1: (hidden_size, n_qubits)   b1: (hidden_size,)
+        W1: (hidden_size, n_features) b1: (hidden_size,)
         W2: (n_classes, hidden_size)  b2: (n_classes,)
     Estos parámetros se concatenan DESPUÉS de los del ansatz en el
     vector theta total:
         theta = [ansatz_weights | W1.flatten() | b1 | W2.flatten() | b2]
     """
-    return (n_qubits * hidden_size + hidden_size
+    return (n_features * hidden_size + hidden_size
             + hidden_size * n_classes + n_classes)
 
 
 def _split_readout_mlp(
-    theta: np.ndarray, n_ansatz_params: int, n_qubits: int, n_classes: int, hidden_size: int
+    theta: np.ndarray,
+    n_ansatz_params: int,
+    n_features: int,
+    n_classes: int,
+    hidden_size: int,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Extrae (W1, b1, W2, b2) de la capa de lectura MLP desde la cola de
@@ -382,7 +450,7 @@ def _split_readout_mlp(
     rellena con ceros en vez de fallar.
     """
     rest = theta[n_ansatz_params:]
-    n_w1 = hidden_size * n_qubits
+    n_w1 = hidden_size * n_features
     n_b1 = hidden_size
     n_w2 = n_classes * hidden_size
     n_b2 = n_classes
@@ -391,7 +459,7 @@ def _split_readout_mlp(
         rest = np.pad(rest, (0, needed - len(rest)))
 
     idx = 0
-    W1 = rest[idx:idx + n_w1].reshape(hidden_size, n_qubits); idx += n_w1
+    W1 = rest[idx:idx + n_w1].reshape(hidden_size, n_features); idx += n_w1
     b1 = rest[idx:idx + n_b1]; idx += n_b1
     W2 = rest[idx:idx + n_w2].reshape(n_classes, hidden_size); idx += n_w2
     b2 = rest[idx:idx + n_b2]
@@ -422,7 +490,7 @@ def _readout_mlp_probs(
 
 
 def _fit_readout_mlp_classically(
-    qubit_probs_train: np.ndarray,
+    readout_features_train: np.ndarray,
     y_train: np.ndarray,
     n_classes: int,
     hidden_size: int = 16,
@@ -472,13 +540,13 @@ def _fit_readout_mlp_classically(
         (W1, b1, W2, b2)
     """
     rng = np.random.default_rng(seed)
-    n_samples, n_qubits = qubit_probs_train.shape
+    n_samples, n_features = readout_features_train.shape
     y_onehot = np.zeros((n_samples, n_classes))
     y_onehot[np.arange(n_samples), y_train] = 1.0
 
     # Inicialización tipo He (apropiada para ReLU); entradas qubit_probs
     # están acotadas en [0,1], por lo que escalas pequeñas son estables.
-    W1 = rng.normal(0, np.sqrt(2.0 / n_qubits), (hidden_size, n_qubits))
+    W1 = rng.normal(0, np.sqrt(2.0 / n_features), (hidden_size, n_features))
     b1 = np.zeros(hidden_size)
     W2 = rng.normal(0, np.sqrt(2.0 / hidden_size), (n_classes, hidden_size))
     b2 = np.zeros(n_classes)
@@ -488,7 +556,7 @@ def _fit_readout_mlp_classically(
 
     for iteration in range(n_iters):
         # ── Forward ──
-        Z1 = qubit_probs_train @ W1.T + b1          # (n, H)
+        Z1 = readout_features_train @ W1.T + b1     # (n, H)
         A1 = np.maximum(0.0, Z1)                     # (n, H)
         Z2 = A1 @ W2.T + b2                           # (n, C)
         Z2 = Z2 - Z2.max(axis=1, keepdims=True)
@@ -501,7 +569,7 @@ def _fit_readout_mlp_classically(
         db2 = dZ2.sum(axis=0)                          # (C,)
         dA1 = dZ2 @ W2                                  # (n, H)
         dZ1 = dA1 * (Z1 > 0).astype(float)              # derivada ReLU
-        dW1 = dZ1.T @ qubit_probs_train + l2 * W1       # (H, n_qubits)
+        dW1 = dZ1.T @ readout_features_train + l2 * W1  # (H, n_features)
         db1 = dZ1.sum(axis=0)                           # (H,)
 
         # ── Actualización con momento (heavy-ball) ──
@@ -528,6 +596,7 @@ def _measure_qubit_marginals_via_circuit(
     batch_size: int = 32,
     sampler=None,
     simulator_seed: Optional[int] = None,
+    readout_mode: str = "marginals",
 ) -> np.ndarray:
     """
     Ejecuta el circuito sobre las entradas ya preprocesadas y devuelve
@@ -559,7 +628,10 @@ def _measure_qubit_marginals_via_circuit(
             sampler = AerSamplerV2.from_backend(noisy_backend)
         else:
             sampler = StatevectorSampler(seed=simulator_seed)
-    qubit_marginals = np.zeros((len(X_cheb), n_qubits), dtype=float)
+    features = np.zeros(
+        (len(X_cheb), _readout_feature_count(n_qubits, readout_mode)),
+        dtype=float,
+    )
 
     for start in range(0, len(X_cheb), batch_size):
         chunk = X_cheb[start:start + batch_size]
@@ -571,9 +643,123 @@ def _measure_qubit_marginals_via_circuit(
         batch_result = job.result()
         for i in range(len(chunk)):
             counts = batch_result[i].data.meas.get_counts()
-            qubit_marginals[start + i] = _qubit_marginal_probs(counts, n_qubits)
+            features[start + i] = _qubit_readout_features(
+                counts, n_qubits, readout_mode
+            )
 
-    return qubit_marginals
+    return features
+
+
+def _measure_qubit_marginals_exact(
+    circuit,
+    x_params,
+    ansatz_params,
+    theta: np.ndarray,
+    X_cheb: np.ndarray,
+    n_qubits: int,
+    readout_mode: str = "marginals",
+) -> np.ndarray:
+    """Return exact marginals with the ZZ pairs selected by readout_mode."""
+    from itertools import combinations
+
+    from qiskit.quantum_info import Statevector
+
+    n_readout_features = _readout_feature_count(n_qubits, readout_mode)
+    if readout_mode == "marginals_zz":
+        pairs = list(combinations(range(n_qubits), 2))
+    elif readout_mode == "marginals_zz_neighbors":
+        pairs = list(zip(range(n_qubits - 1), range(1, n_qubits)))
+    else:
+        pairs = []
+    basis_indices = np.arange(1 << n_qubits, dtype=np.int64)
+    bits = (
+        (basis_indices[:, np.newaxis] >> np.arange(n_qubits, dtype=np.int64))
+        & 1
+    )
+    z_eigenvalues = 1.0 - 2.0 * bits
+    zz_eigenvalues = (
+        z_eigenvalues[:, [left for left, _ in pairs]]
+        * z_eigenvalues[:, [right for _, right in pairs]]
+    ) if pairs else None
+    readout_features = np.empty((len(X_cheb), n_readout_features), dtype=float)
+    for row, sample_features in enumerate(X_cheb):
+        state = Statevector.from_instruction(
+            _bind_sample(circuit, x_params, ansatz_params, sample_features, theta)
+        )
+        marginals = [
+            state.probabilities(qargs=[qubit])[0]
+            for qubit in range(n_qubits)
+        ]
+        if readout_mode in {"marginals_zz", "marginals_zz_neighbors"}:
+            zz = (
+                state.probabilities() @ zz_eigenvalues
+                if pairs
+                else np.empty(0, dtype=float)
+            )
+            readout_features[row] = np.concatenate((marginals, zz))
+        else:
+            readout_features[row] = marginals
+    return readout_features
+
+
+def _measure_qubit_observables_exact(
+    circuit,
+    x_params,
+    ansatz_params,
+    theta: np.ndarray,
+    X_cheb: np.ndarray,
+    n_qubits: int,
+) -> dict[str, np.ndarray]:
+    """Return exact P(0) marginals, ZZ pairs, and per-qubit XYZ expectations."""
+    from itertools import combinations
+
+    from qiskit.quantum_info import Statevector
+
+    basis_indices = np.arange(1 << n_qubits, dtype=np.int64)
+    bits = (
+        (basis_indices[:, np.newaxis] >> np.arange(n_qubits, dtype=np.int64))
+        & 1
+    )
+    z_eigenvalues = 1.0 - 2.0 * bits
+    pairs = list(combinations(range(n_qubits), 2))
+    zz_eigenvalues = (
+        z_eigenvalues[:, [left for left, _ in pairs]]
+        * z_eigenvalues[:, [right for _, right in pairs]]
+    )
+    zero_indices = [
+        basis_indices[(basis_indices & (1 << qubit)) == 0]
+        for qubit in range(n_qubits)
+    ]
+
+    marginals = np.empty((len(X_cheb), n_qubits), dtype=float)
+    pair_expectations = np.empty((len(X_cheb), len(pairs)), dtype=float)
+    local_expectations = np.empty((len(X_cheb), 3 * n_qubits), dtype=float)
+    for row, features in enumerate(X_cheb):
+        state = Statevector.from_instruction(
+            _bind_sample(circuit, x_params, ansatz_params, features, theta)
+        )
+        probabilities = state.probabilities()
+        marginals[row] = [
+            state.probabilities(qargs=[qubit])[0]
+            for qubit in range(n_qubits)
+        ]
+        z_expectations = probabilities @ z_eigenvalues
+        pair_expectations[row] = probabilities @ zz_eigenvalues
+        for qubit, indices in enumerate(zero_indices):
+            overlap = np.vdot(
+                state.data[indices],
+                state.data[indices | (1 << qubit)],
+            )
+            local_expectations[row, 3 * qubit:3 * qubit + 3] = (
+                2.0 * overlap.real,
+                2.0 * overlap.imag,
+                z_expectations[qubit],
+            )
+    return {
+        "p0": marginals,
+        "zz": pair_expectations,
+        "xyz": local_expectations,
+    }
 
 
 def _predict_via_circuit(
@@ -592,6 +778,7 @@ def _predict_via_circuit(
     sampler=None,
     simulator_seed: Optional[int] = None,
     return_probabilities: bool = False,
+    readout_mode: str = "marginals",
 ) -> np.ndarray:
     """Ejecuta el VQC y devuelve clases predichas o probabilidades por clase."""
     qubit_marginals = _measure_qubit_marginals_via_circuit(
@@ -605,6 +792,7 @@ def _predict_via_circuit(
         batch_size=batch_size,
         sampler=sampler,
         simulator_seed=simulator_seed,
+        readout_mode=readout_mode,
     )
     probabilities = np.asarray([
         _readout_mlp_probs(qubit_probs, W1, b1, W2, b2)
@@ -720,6 +908,9 @@ def _make_vqc_loss_fn(
     reference_shots: Optional[int] = None,
     readout_hidden_size: int = 16,
     random_seed: int = 42,
+    readout_mode: str = "marginals",
+    input_preprocessing: str = "chebyshev",
+    sampler_backend=None,
 ) -> Callable[[np.ndarray], float]:
     """
     Crea la función de coste para el VQC según el modo.
@@ -752,6 +943,7 @@ def _make_vqc_loss_fn(
     try:
         if n_features is None:
             n_features = n_qubits
+        readout_feature_count = _readout_feature_count(n_qubits, readout_mode)
         from qiskit.primitives import StatevectorSampler
         from qiskit import transpile as _transpile
         try:
@@ -777,15 +969,31 @@ def _make_vqc_loss_fn(
                 f"Feature map + ansatz transpilado para {ibm_backend.name}: "
                 f"{combined_run.num_parameters} parámetros ISA"
             )
+        elif sampler_backend is not None:
+            combined_run = _transpile(
+                combined_with_meas,
+                backend=sampler_backend,
+                optimization_level=1,
+            )
         else:
             combined_run = combined_with_meas
 
         n_ansatz_params = len(ansatz_params)
         hidden_size = readout_hidden_size
 
+        if input_preprocessing not in {"chebyshev", "identity"}:
+            raise ValueError(
+                "input_preprocessing must be 'chebyshev' or 'identity'"
+            )
         X_train_proc = _prepare_feature_matrix(X_train, n_features)
-        train_stats = compute_chebyshev_stats(X_train_proc)
-        X_cheb = chebyshev_preprocess(X_train_proc, stats=train_stats)
+        train_stats = (
+            compute_chebyshev_stats(X_train_proc)
+            if input_preprocessing == "chebyshev"
+            else None
+        )
+        X_cheb = _transform_feature_matrix(
+            X_train_proc, n_features, input_preprocessing, train_stats
+        )
         y_onehot = np.zeros((len(y_train), n_classes))
         y_onehot[np.arange(len(y_train)), y_train] = 1.0
 
@@ -822,6 +1030,15 @@ def _make_vqc_loss_fn(
         # externa (refresh_batch), no en cada llamada a loss_fn.
         _batch_state: dict = {}
         _batch_rng = np.random.default_rng(random_seed)
+        _batch_history: list[np.ndarray] = []
+        _execution_telemetry = {
+            "n_objective_function_calls": 0,
+            "n_circuit_executions": 0,
+            "n_shots_total": 0,
+            "n_training_examples_evaluated": 0,
+            "n_readout_refits": 0,
+            "n_readout_initializations": 0,
+        }
 
         def _draw_batch_size() -> int:
             batch = hardware_batch_size if remote_hardware else batch_size_local
@@ -831,6 +1048,7 @@ def _make_vqc_loss_fn(
             _batch_state["idx"] = _batch_rng.choice(
                 len(X_cheb), _draw_batch_size(), replace=False
             )
+            _batch_history.append(_batch_state["idx"].copy())
 
         _refresh_batch()
 
@@ -863,6 +1081,7 @@ def _make_vqc_loss_fn(
             shots_override: Optional[int] = None,
         ) -> float:
             """Evaluate one caller-selected batch without resampling it."""
+            _execution_telemetry["n_objective_function_calls"] += 1
             idx = np.asarray(indices, dtype=int)
             if idx.ndim != 1 or idx.size == 0:
                 raise ValueError("indices debe ser un vector 1D no vacío")
@@ -873,7 +1092,9 @@ def _make_vqc_loss_fn(
             batch_size = len(idx)
             _shots = shots_override or (hardware_shots if remote_hardware else shots)
 
-            W1, b1, W2, b2 = _split_readout_mlp(theta, n_ansatz_params, n_qubits, n_classes, hidden_size)
+            W1, b1, W2, b2 = _split_readout_mlp(
+                theta, n_ansatz_params, readout_feature_count, n_classes, hidden_size
+            )
             job = None
             execution = {"job_ids": [], "shots": 0, "pubs": 0, "qpu_seconds": None}
 
@@ -886,13 +1107,27 @@ def _make_vqc_loss_fn(
                 execution = _execution_metadata(job, len(pubs), _shots)
                 _execution_state["last"] = execution
                 batch_result = job.result()
+                if len(batch_result) != len(pubs):
+                    raise RuntimeError(
+                        "Sampler result count does not match submitted circuits"
+                    )
+                completed_pubs = len(batch_result)
+                _execution_telemetry["n_circuit_executions"] += completed_pubs
+                _execution_telemetry["n_shots_total"] += completed_pubs * _shots
+                _execution_telemetry[
+                    "n_training_examples_evaluated"
+                ] += completed_pubs
 
                 total_loss = 0.0
                 for i, yi in enumerate(y_batch):
                     try:
                         counts = batch_result[i].data.meas.get_counts()
-                        qubit_probs = _qubit_marginal_probs(counts, n_qubits)
-                        class_probs = _readout_mlp_probs(qubit_probs, W1, b1, W2, b2)
+                        readout_features = _qubit_readout_features(
+                            counts, n_qubits, readout_mode
+                        )
+                        class_probs = _readout_mlp_probs(
+                            readout_features, W1, b1, W2, b2
+                        )
                         class_probs = np.clip(class_probs, 1e-10, 1.0)
                         total_loss -= float(np.dot(yi, np.log(class_probs)))
                     except Exception as e_inner:
@@ -923,8 +1158,9 @@ def _make_vqc_loss_fn(
             shots_override: Optional[int] = None,
             simulator_seed: Optional[int] = None,
         ) -> np.ndarray:
-            X_eval_proc = _prepare_feature_matrix(X_eval, n_features)
-            X_eval_cheb = chebyshev_preprocess(X_eval_proc, stats=train_stats)
+            X_eval_cheb = _transform_feature_matrix(
+                X_eval, n_features, input_preprocessing, train_stats
+            )
             return _measure_qubit_marginals_via_circuit(
                 combined_run,
                 x_params,
@@ -935,6 +1171,40 @@ def _make_vqc_loss_fn(
                 shots=shots_override or shots,
                 batch_size=batch_size_local,
                 simulator_seed=simulator_seed,
+                readout_mode=readout_mode,
+            )
+
+        def measure_quantum_features_exact(
+            X_eval: np.ndarray,
+            ansatz_weights: np.ndarray,
+        ) -> np.ndarray:
+            X_eval_cheb = _transform_feature_matrix(
+                X_eval, n_features, input_preprocessing, train_stats
+            )
+            return _measure_qubit_marginals_exact(
+                combined,
+                x_params,
+                ansatz_params,
+                ansatz_weights,
+                X_eval_cheb,
+                n_qubits,
+                readout_mode=readout_mode,
+            )
+
+        def measure_quantum_observables_exact(
+            X_eval: np.ndarray,
+            ansatz_weights: np.ndarray,
+        ) -> dict[str, np.ndarray]:
+            X_eval_cheb = _transform_feature_matrix(
+                X_eval, n_features, input_preprocessing, train_stats
+            )
+            return _measure_qubit_observables_exact(
+                combined,
+                x_params,
+                ansatz_params,
+                ansatz_weights,
+                X_eval_cheb,
+                n_qubits,
             )
 
         _reference_size = min(max(128, 10 * n_classes), len(X_cheb))
@@ -978,24 +1248,42 @@ def _make_vqc_loss_fn(
             ]
             job = sampler.run(pubs, shots=shots)
             batch_result = job.result()
+            if len(batch_result) != len(pubs):
+                raise RuntimeError(
+                    "Sampler result count does not match readout-fit circuits"
+                )
+            completed_pubs = len(batch_result)
+            _execution_telemetry["n_circuit_executions"] += completed_pubs
+            _execution_telemetry["n_shots_total"] += completed_pubs * shots
+            _execution_telemetry["n_training_examples_evaluated"] += completed_pubs
+            vqc_loss.last_readout_indices = warm_idx.copy()
 
-            qubit_probs_warm = np.zeros((n_warm, n_qubits))
+            readout_features_warm = np.zeros((n_warm, readout_feature_count))
             for i in range(n_warm):
                 counts = batch_result[i].data.meas.get_counts()
-                qubit_probs_warm[i] = _qubit_marginal_probs(counts, n_qubits)
+                readout_features_warm[i] = _qubit_readout_features(
+                    counts, n_qubits, readout_mode
+                )
 
             return _fit_readout_mlp_classically(
-                qubit_probs_warm, y_warm, n_classes, hidden_size=hidden_size
+                readout_features_warm, y_warm, n_classes, hidden_size=hidden_size
             )
 
         vqc_loss.refresh_batch = _refresh_batch
         vqc_loss.evaluate_reference = _evaluate_reference
         vqc_loss.evaluate_batch = evaluate_batch
         vqc_loss.measure_quantum_features = measure_quantum_features
+        vqc_loss.measure_quantum_features_exact = measure_quantum_features_exact
+        vqc_loss.measure_quantum_observables_exact = measure_quantum_observables_exact
         vqc_loss.last_execution = _execution_state
         vqc_loss.warm_start_readout = warm_start_readout
+        vqc_loss.execution_telemetry = _execution_telemetry
+        vqc_loss.batch_history = _batch_history
+        vqc_loss.current_batch_indices = lambda: _batch_state["idx"].copy()
+        vqc_loss.last_readout_indices = np.array([], dtype=int)
         vqc_loss.n_ansatz_params = n_ansatz_params
         vqc_loss.hidden_size = hidden_size
+        vqc_loss.readout_feature_count = readout_feature_count
         return vqc_loss
 
     except ImportError as e:
@@ -1042,7 +1330,9 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         reference_shots: Optional[int] = None,
         readout_refit_every: int = 10,
         readout_hidden_size: int = 16,
+        readout_mode: str = "marginals",
     ):
+        _readout_feature_count(1, readout_mode)
         self.temp_dir = Path(temp_dir or tempfile.gettempdir()) / "qnim_qiskit"
         self.temp_dir.mkdir(parents=True, exist_ok=True)
         self.use_real_hardware = bool(use_real_hardware)
@@ -1071,6 +1361,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         self.reference_shots = reference_shots
         self.readout_refit_every = readout_refit_every
         self.readout_hidden_size = readout_hidden_size
+        self.readout_mode = readout_mode
         self.last_ibm_validation = None
         self.last_hardware_spsa = None
 
@@ -1141,6 +1432,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 entanglement=self.entanglement,
                 reference_shots=self.reference_shots,
                 readout_hidden_size=self.readout_hidden_size,
+                readout_mode=self.readout_mode,
             )
             if not hasattr(loss_fn, "evaluate_batch"):
                 raise RuntimeError("La pérdida no admite evaluación de minibatch explícito")
@@ -1197,6 +1489,12 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         n_feynman_params: Optional[int] = None,
         diagnostic_callback: Optional[Callable] = None,
         initialization_seed: Optional[int] = None,
+        initial_parameters: Optional[np.ndarray] = None,
+        freeze_ansatz: bool = False,
+        sampler_override=None,
+        input_preprocessing: str = "chebyshev",
+        sampler_backend_override=None,
+        post_refit_callback: Optional[Callable] = None,
     ) -> Dict[str, object]:
         """
         Entrena el VQC con QNSPSA-EML-Feynman.
@@ -1247,7 +1545,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             else:
                 _ibm_backend = None
 
-            backend_sampler = None
+            backend_sampler = sampler_override
             _transpile_target = None
             remote_hardware = False
             if self.noise_aware_training and _ibm_backend is not None:
@@ -1263,6 +1561,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 shots=shots,
                 mode="sim",
                 backend_sampler=backend_sampler,
+                sampler_backend=sampler_backend_override,
                 ibm_backend=_transpile_target,
                 remote_hardware=remote_hardware,
                 batch_size_local=self.training_batch_size,
@@ -1274,6 +1573,8 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 reference_shots=self.reference_shots,
                 readout_hidden_size=self.readout_hidden_size,
                 random_seed=self.random_seed,
+                readout_mode=self.readout_mode,
+                input_preprocessing=input_preprocessing,
             )
 
             rng = np.random.default_rng(
@@ -1285,33 +1586,75 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             # disponible) -- usado más abajo tanto para construir x0
             # como para el reajuste periódico dentro del callback.
             n_ansatz_params: Optional[int] = None
+            readout_initialization = "not_applicable"
 
             if hasattr(loss_fn, "n_ansatz_params") and hasattr(loss_fn, "warm_start_readout"):
                 n_ansatz_params = loss_fn.n_ansatz_params
-                ansatz_init = rng.normal(0.0, 0.01, n_ansatz_params)
-                try:
-                    W1_0, b1_0, W2_0, b2_0 = loss_fn.warm_start_readout(ansatz_init)
-                    x0 = np.concatenate([ansatz_init, _flatten_readout_mlp(W1_0, b1_0, W2_0, b2_0)])
-                    logger.info(
-                        "Capa de lectura (MLP) inicializada con warm-start "
-                        "clásico (backprop manual sobre marginales medidas "
-                        "con el ansatz inicial) -- ver FIX v6/v8."
+                readout_feature_count = getattr(
+                    loss_fn,
+                    "readout_feature_count",
+                    _readout_feature_count(num_qubits, self.readout_mode),
+                )
+                if initial_parameters is not None:
+                    readout_initialization = "provided_parameters"
+                    x0 = np.asarray(initial_parameters, dtype=float).copy()
+                    expected_size = n_ansatz_params + _n_readout_params(
+                        readout_feature_count,
+                        n_classes,
+                        self.readout_hidden_size,
                     )
-                except Exception as e:
-                    logger.warning(
-                        f"Warm-start de la capa de lectura falló ({e}); "
-                        f"usando inicialización aleatoria (MENOS fiable, "
-                        f"riesgo de colapso a predicción constante)."
-                    )
-                    n_readout_params = _n_readout_params(num_qubits, n_classes, self.readout_hidden_size)
-                    x0 = np.concatenate([ansatz_init, rng.normal(0.0, 0.1, n_readout_params)])
+                    if x0.shape != (expected_size,) or not np.isfinite(x0).all():
+                        raise ValueError(
+                            "initial_parameters must be a finite vector matching "
+                            "the ansatz and readout parameter count"
+                        )
+                else:
+                    ansatz_init = rng.normal(0.0, 0.01, n_ansatz_params)
+                    try:
+                        W1_0, b1_0, W2_0, b2_0 = loss_fn.warm_start_readout(ansatz_init)
+                        flattened_readout = _flatten_readout_mlp(
+                            W1_0, b1_0, W2_0, b2_0
+                        )
+                        x0 = np.concatenate([ansatz_init, flattened_readout])
+                        loss_fn.execution_telemetry[
+                            "n_readout_initializations"
+                        ] += 1
+                        readout_initialization = "quantum_measurement_warm_start"
+                        logger.info(
+                            "Capa de lectura (MLP) inicializada con warm-start "
+                            "clásico (backprop manual sobre marginales medidas "
+                            "con el ansatz inicial) -- ver FIX v6/v8."
+                        )
+                    except Exception as e:
+                        readout_initialization = "random_fallback"
+                        logger.warning(
+                            f"Warm-start de la capa de lectura falló ({e}); "
+                            f"usando inicialización aleatoria (MENOS fiable, "
+                            f"riesgo de colapso a predicción constante)."
+                        )
+                        n_readout_params = _n_readout_params(
+                            readout_feature_count,
+                            n_classes,
+                            self.readout_hidden_size,
+                        )
+                        x0 = np.concatenate([
+                            ansatz_init,
+                            rng.normal(0.0, 0.1, n_readout_params),
+                        ])
                 n_params = len(x0)
             else:
+                if initial_parameters is not None or freeze_ansatz:
+                    raise ValueError(
+                        "initial_parameters and freeze_ansatz require a Qiskit ansatz/readout"
+                    )
                 # Modo fallback / Qiskit no disponible: arquitectura
                 # sintética de 64 parámetros (make_synthetic_loss_fn),
                 # sin capa de lectura real -- comportamiento legacy.
                 n_params = 64
                 x0 = rng.normal(0.0, 0.01, n_params)
+
+            if freeze_ansatz and n_ansatz_params is None:
+                raise ValueError("freeze_ansatz requires a parameterized Qiskit ansatz")
 
             cfg_opt = QNSPSAConfig(
                 maxiter=max_iterations,
@@ -1320,8 +1663,10 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 lambda_eml=0.01,
                 patience=self.patience,
                 n_feynman_params=(
+                    0 if freeze_ansatz else (
                     n_feynman_params if n_feynman_params is not None
                     else min(4, num_qubits)
+                    )
                 ),
                 seed=self.random_seed,
             )
@@ -1329,10 +1674,16 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             optimizer = QNSPSAEMLFeynman(config=cfg_opt)
 
             loss_history = []
+            readout_refit_history = []
 
             def callback(iter_, theta, loss):
                 loss_history.append(float(loss))
                 logger.info(f"  iter={iter_:3d}  loss={loss:.4f}")
+                if (
+                    diagnostic_callback is not None
+                    and post_refit_callback is not None
+                ):
+                    diagnostic_callback(iter_, theta.copy(), float(loss))
 
                 # ── Reajuste periódico de la capa de lectura (v7/v8) ──
                 # Mutación EN SITIO de `theta` (no reasignación) -- ver
@@ -1348,17 +1699,36 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                         ansatz_now = theta[:n_ansatz_params]
                         W1_r, b1_r, W2_r, b2_r = loss_fn.warm_start_readout(ansatz_now)
                         theta[n_ansatz_params:] = _flatten_readout_mlp(W1_r, b1_r, W2_r, b2_r)
+                        loss_fn.execution_telemetry[
+                            "n_readout_refits"
+                        ] += 1
+                        readout_refit_history.append(
+                            {
+                                "iteration": int(iter_),
+                                "training_indices": loss_fn.last_readout_indices.tolist(),
+                                "n_training_examples": int(
+                                    len(loss_fn.last_readout_indices)
+                                ),
+                            }
+                        )
                         logger.info(
                             f"  iter={iter_:3d}  capa de lectura (MLP) "
                             f"reajustada clásicamente (cada "
                             f"{self.readout_refit_every} iteraciones)"
                         )
                     except Exception as e:
-                        logger.debug(
-                            f"Reajuste periódico de la capa de lectura "
-                            f"falló en iter {iter_}: {e}"
+                        raise RuntimeError(
+                            f"Readout refit failed at iteration {iter_}"
+                        ) from e
+                    if post_refit_callback is not None:
+                        post_refit_loss = loss_fn(theta)
+                        post_refit_callback(
+                            iter_, theta.copy(), float(post_refit_loss)
                         )
-                if diagnostic_callback is not None:
+                if (
+                    diagnostic_callback is not None
+                    and post_refit_callback is None
+                ):
                     diagnostic_callback(iter_, theta.copy(), float(loss))
 
             logger.info(
@@ -1373,7 +1743,17 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 f"remote_hardware=no (preentrenamiento local; SPSA acotado se aplica después)"
             )
 
-            result: QNSPSAResult = optimizer.minimize(loss_fn, x0, callback=callback)
+            if freeze_ansatz:
+                active_mask = np.ones(n_params, dtype=bool)
+                active_mask[:n_ansatz_params] = False
+                result: QNSPSAResult = optimizer.minimize(
+                    loss_fn,
+                    x0,
+                    callback=callback,
+                    active_mask=active_mask,
+                )
+            else:
+                result = optimizer.minimize(loss_fn, x0, callback=callback)
 
             elapsed = time.time() - t0
 
@@ -1396,6 +1776,52 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 "iterations": result.n_iter,
                 "execution_time_seconds": elapsed,
                 "n_circuit_evaluations": result.n_evals,
+                "n_optimizer_objective_function_calls": (
+                    getattr(result, "n_objective_function_calls", result.n_evals)
+                ),
+                "n_objective_function_calls": int(
+                    getattr(
+                        loss_fn,
+                        "execution_telemetry",
+                        {},
+                    ).get("n_objective_function_calls", result.n_evals)
+                ),
+                "n_circuit_executions": int(
+                    getattr(
+                        loss_fn,
+                        "execution_telemetry",
+                        {},
+                    ).get("n_circuit_executions", 0)
+                ),
+                "n_shots_total": int(
+                    getattr(loss_fn, "execution_telemetry", {}).get(
+                        "n_shots_total", 0
+                    )
+                ),
+                "n_training_examples_evaluated": int(
+                    getattr(loss_fn, "execution_telemetry", {}).get(
+                        "n_training_examples_evaluated", 0
+                    )
+                ),
+                "n_readout_refits": int(
+                    getattr(loss_fn, "execution_telemetry", {}).get(
+                        "n_readout_refits", 0
+                    )
+                ),
+                "n_readout_initializations": int(
+                    getattr(loss_fn, "execution_telemetry", {}).get(
+                        "n_readout_initializations", 0
+                    )
+                ),
+                "readout_initialization": readout_initialization,
+                "execution_accounting_measured": hasattr(
+                    loss_fn, "execution_telemetry"
+                ),
+                "optimizer_batch_indices": [
+                    indices.tolist()
+                    for indices in getattr(loss_fn, "batch_history", [])
+                ],
+                "readout_refit_history": readout_refit_history,
                 "speedup_vs_spsa": result.speedup_vs_spsa,
                 "converged": result.converged,
                 "termination_reason": (
@@ -1404,6 +1830,9 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 ),
                 "loss_history": result.loss_history,
                 "gradient_variance_history": result.gradient_variance_history,
+                "optimizer_step_history": getattr(
+                    result, "optimizer_step_history", []
+                ),
             }
 
         except Exception as e:
@@ -1444,7 +1873,11 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
 
             n_ansatz_params = len(ansatz_params)
             W1, b1, W2, b2 = _split_readout_mlp(
-                weights, n_ansatz_params, n_qubits, n_classes, self.readout_hidden_size
+                weights,
+                n_ansatz_params,
+                _readout_feature_count(n_qubits, self.readout_mode),
+                n_classes,
+                self.readout_hidden_size,
             )
 
             X_train_proc = _prepare_feature_matrix(X_train, n_features)
@@ -1456,6 +1889,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 combined_run, x_params, ansatz_params, weights, W1, b1, W2, b2,
                 X_cheb, n_qubits, shots=shots, batch_size=batch_size,
                 simulator_seed=self.random_seed,
+                readout_mode=self.readout_mode,
             )
 
             accuracy = float(np.mean(y_pred == y_val))
@@ -1682,11 +2116,18 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
 
             n_ansatz_params = len(ansatz_params)
             W1, b1, W2, b2 = _split_readout_mlp(
-                weights, n_ansatz_params, n_qubits, dataset.n_classes, self.readout_hidden_size
+                weights,
+                n_ansatz_params,
+                _readout_feature_count(n_qubits, self.readout_mode),
+                dataset.n_classes,
+                self.readout_hidden_size,
             )
 
             scale_factors = [1, 3, 5] if use_zne else [1]
             sampler = SamplerV2(mode=backend)
+            readout_feature_count = _readout_feature_count(
+                n_qubits, self.readout_mode
+            )
 
             pubs = []
             for scale in scale_factors:
@@ -1705,16 +2146,23 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             )
             batch_result = job.result()
 
-            qubit_probs_by_scale = np.zeros((len(scale_factors), n_hw, n_qubits))
+            readout_features_by_scale = np.zeros(
+                (len(scale_factors), n_hw, readout_feature_count)
+            )
             pub_idx = 0
             for s_idx in range(len(scale_factors)):
                 for i in range(n_hw):
                     counts = batch_result[pub_idx].data.meas.get_counts()
-                    qubit_probs_by_scale[s_idx, i] = _qubit_marginal_probs(counts, n_qubits)
+                    readout_features_by_scale[s_idx, i] = _qubit_readout_features(
+                        counts, n_qubits, self.readout_mode
+                    )
                     pub_idx += 1
 
             class_probs_no_zne = np.array([
-                _readout_mlp_probs(qubit_probs_by_scale[0, i], W1, b1, W2, b2) for i in range(n_hw)
+                _readout_mlp_probs(
+                    readout_features_by_scale[0, i], W1, b1, W2, b2
+                )
+                for i in range(n_hw)
             ])
             preds_no_zne = np.argmax(class_probs_no_zne, axis=1)
             acc_no_zne = float(balanced_accuracy_score(y_hw, preds_no_zne))
@@ -1724,15 +2172,20 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             )
 
             if use_zne:
-                extrapolated_qubit_probs = _richardson_extrapolate(scale_factors, qubit_probs_by_scale)
+                extrapolated_features = _richardson_extrapolate(
+                    scale_factors, readout_features_by_scale
+                )
                 class_probs_zne = np.array([
-                    _readout_mlp_probs(extrapolated_qubit_probs[i], W1, b1, W2, b2) for i in range(n_hw)
+                    _readout_mlp_probs(
+                        extrapolated_features[i], W1, b1, W2, b2
+                    )
+                    for i in range(n_hw)
                 ])
                 preds_zne = np.argmax(class_probs_zne, axis=1)
                 acc_zne = float(balanced_accuracy_score(y_hw, preds_zne))
                 logger.info(
                     f"IBM hardware (ZNE real, Richardson sobre escalas "
-                    f"{scale_factors}, aplicado a las marginales por qubit "
+                    f"{scale_factors}, aplicado a las features medidas "
                     f"antes de la capa de lectura): preds={list(preds_zne)}, "
                     f"y_true={list(y_hw)}, acc={acc_zne:.3f}"
                 )
@@ -1826,7 +2279,11 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
 
             n_ansatz_params = len(ansatz_params)
             W1, b1, W2, b2 = _split_readout_mlp(
-                weights, n_ansatz_params, num_qubits, n_classes, self.readout_hidden_size
+                weights,
+                n_ansatz_params,
+                _readout_feature_count(num_qubits, self.readout_mode),
+                n_classes,
+                self.readout_hidden_size,
             )
 
             X_train_proc = _prepare_feature_matrix(X_train, n_features) if X_train is not None else None
@@ -1852,6 +2309,7 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                     combined_run, x_params, ansatz_params, weights, W1, b1, W2, b2,
                     X_noisy_cheb, num_qubits, shots=512, batch_size=32,
                     sampler=sampler,
+                    readout_mode=self.readout_mode,
                 )
                 acc = float(np.mean(y_pred == y_true))
                 results[snr] = round(acc, 3)

@@ -32,7 +32,7 @@ MODEL_NAMES = (
 )
 
 
-def _make_model(name, seed):
+def _make_model(name, seed, probability=False, mlp_max_iter=500):
     if name == "logistic_regression":
         return make_pipeline(
             StandardScaler(),
@@ -52,14 +52,19 @@ def _make_model(name, seed):
     if name == "svm_rbf":
         return make_pipeline(
             StandardScaler(),
-            SVC(kernel="rbf", class_weight="balanced"),
+            SVC(
+                kernel="rbf",
+                class_weight="balanced",
+                probability=probability,
+                random_state=seed,
+            ),
         )
     if name == "mlp":
         return make_pipeline(
             StandardScaler(),
             MLPClassifier(
                 hidden_layer_sizes=(64,),
-                max_iter=500,
+                max_iter=mlp_max_iter,
                 random_state=seed,
             ),
         )

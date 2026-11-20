@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "experiment_id": "QNIM_SCALING_NEIGHBOR_PILOT_V1",
+  "status": "completed",
+  "protocol_sha256": "4e6b8915a61bc0b92fa4a6940bd9214b1be99dce761366d1bc56f9eb8fd2e7ea",
+  "dataset_manifest_sha256": "b70eafec3a32acc56c15af9cad0c51998cb93f733d70d307f806ab57f1e87ed9",
+  "dataset_manifest_file": "dataset_manifest.json",
+  "dataset_integrity": {
+    "full_split_hashes": {
+      "train_sha256": "08c1d2d69925aa08b3265e661d405c75ecafba16af16c5b8bf974b7f11c8e275",
+      "validation_sha256": "1de635e0042ddf55c593ec26e27b2bb458b389dea14b32df054c62b4560b24c1"
+    },
+    "first_12_component_hashes": {
+      "train_sha256": "55d9b752487c04e5d41c59b1a66bef485e78b37f6c6db55e30fc28daa7488d98",
+      "validation_sha256": "39d1775c38738ef8da51273f86e5ad3be8acc40253aeb53140680823db93e4aa"
+    },
+    "dataset_manifest_sha256": "b70eafec3a32acc56c15af9cad0c51998cb93f733d70d307f806ab57f1e87ed9",
+    "dataset_manifest": "qnim_neighbor_readout_pilot_v1_dataset_manifest.json",
+    "class_names": [
+      "GR",
+      "standard-siren",
+      "qnm-21",
+      "qnm-33",
+      "pn-deformation",
+      "extra-dimensions",
+      "scalar-tensor",
+      "graviton-mass",
+      "chern-simons",
+      "liv-alpha2",
+      "liv-alpha4",
+      "loop-quantum-gravity",
+      "gup"
+    ],
+    "shapes": {
+      "X_train": [
+        2600,
+        16
+      ],
+      "y_train": [
+        2600
+      ],
+      "X_val": [
+        650,
+        16
+      ],
+      "y_val": [
+        650
+      ]
+    }
+  },
+  "run_filter": {
+    "arm": "full_system",
+    "n_qubits": 4,
+    "initialization_seed": 43
+  },
+  "active_run": null,
+  "patience_note": "patience=20 equals max_iterations=20; do not treat it as a substantial runtime reduction.",
+  "created_at_utc": "2026-11-20T13:01:36.085542+00:00",
+  "updated_at_utc": "2026-11-20T13:04:50.130832+00:00",
+  "results_file_sha256": "f3a8a279c16814b3af68d8545b81505252bbb2eaadf8dff15557d3e996bf30ee"
+}

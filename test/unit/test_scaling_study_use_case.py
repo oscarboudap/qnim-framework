@@ -95,7 +95,10 @@ def test_scaling_study_requires_independent_test_files(tmp_path):
         study._load_dataset()
 
 
-def test_scaling_study_passes_training_seed_to_trainer(tmp_path, monkeypatch):
+@pytest.mark.parametrize("readout_mode", ["marginals_zz", "marginals_zz_neighbors"])
+def test_scaling_study_passes_training_seed_to_trainer(
+    tmp_path, monkeypatch, readout_mode
+):
     import importlib
     from pathlib import Path
 
@@ -112,7 +115,17 @@ def test_scaling_study_passes_training_seed_to_trainer(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, "src.infrastructure", package)
     monkeypatch.setitem(sys.modules, "src.infrastructure.qiskit_vqc_trainer", trainer_module)
 
-    study = RunScalingStudyUseCase(dataset_dir=tmp_path, seed=19)
+    study = RunScalingStudyUseCase(
+        dataset_dir=tmp_path, seed=19, readout_mode=readout_mode
+    )
     study._build_trainer({"id": "n12_d12"})
 
     assert captured["random_seed"] == 19
+    assert captured["readout_mode"] == readout_mode
+
+
+def test_scaling_study_rejects_unknown_readout_mode(tmp_path):
+    with pytest.raises(ValueError, match="readout_mode"):
+        RunScalingStudyUseCase(
+            dataset_dir=tmp_path, readout_mode="all_observables"
+        )

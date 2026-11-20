@@ -1,0 +1,367 @@
+{
+  "schema_version": 1,
+  "audit_id": "QNIM_PRE_PCA_DIMENSIONALITY_AUDIT_V1",
+  "created_at": "2026-11-20",
+  "status": "complete_with_raw_feature_data_unavailable",
+  "scope": {
+    "audit_only": true,
+    "model_training_performed": false,
+    "dataset_regenerated": false,
+    "final_test_loaded_or_inspected": false,
+    "historical_artifacts_modified": false,
+    "audited_cache": "results/scaling_study/qnim_q1_6_dataset_v1",
+    "splits_loaded": [
+      "train",
+      "validation"
+    ]
+  },
+  "evidence_classification": {
+    "verified_from_source": [
+      "n_pca_fit is used as the PCA component-count argument, not as a training-sample count.",
+      "The exact array passed to PCA.fit is X_train_raw, created by stacking all retained training waveforms.",
+      "The PCA fitting call receives a (2600, 16384) array under the recorded Q1.6 protocol.",
+      "The pre-PCA vector is a single whitened time-domain plus-polarization series; it is not a concatenation of channels or a spectrogram.",
+      "The scaler is fit on all 2600 training rows after PCA and is only transformed on validation."
+    ],
+    "derived_from_metadata": [
+      "The Q1.6 cache contains 2600 training and 650 validation examples with 16 post-PCA columns.",
+      "The generation metadata records n_components=16 and n_pca_fit=64.",
+      "The first 12 train and validation component hashes match the frozen historical Q1 hashes."
+    ],
+    "assumptions": [
+      "Pre-PCA storage estimates use float64, consistent with NumPy FFT processing and the persisted post-PCA array dtype; no raw pre-PCA dtype was saved.",
+      "The 2599 centered-rank value is an algebraic upper bound, not an observed numerical rank."
+    ],
+    "unknown": [
+      "The effective numerical rank and singular spectrum of the original 2600 by 16384 training matrix.",
+      "Whether the first 64 principal directions are stable under train-only resampling.",
+      "Whether the thesis's reported feature matrix and training population match any Q1.6 source data."
+    ]
+  },
+  "source_pipeline": {
+    "adapter": "src/infrastructure/ligo_pca_adapter.py:LIGOPCAAdapter._generate_one",
+    "dataset_runner": "scripts/run_qnim_q1_6_scaling_pilot.py:_generate_train_validation",
+    "waveform_source": "PyCBC get_td_waveform",
+    "approximant": "IMRPhenomPv2",
+    "strict_physics": true,
+    "fallback_allowed": false,
+    "detector_noise_included": false,
+    "waveform_inputs": {
+      "mass1_msun": "Uniform(10, 80)",
+      "mass2_msun": "Uniform(10, mass1)",
+      "distance_mpc": "Uniform(100, 1000)",
+      "sample_rate_hz": 4096,
+      "duration_seconds": 4.0,
+      "lower_frequency_hz": 20.0,
+      "pycbc_polarization_used": "plus (hp)"
+    },
+    "class_and_split_sizes": {
+      "classes": 13,
+      "train_per_class": 200,
+      "validation_per_class": 50,
+      "train_samples": 2600,
+      "validation_samples": 650,
+      "post_validation_draws_per_class_discarded": 100
+    },
+    "sample_selection": {
+      "training_examples_per_class": 200,
+      "class_stratified": true,
+      "selection_order": "The generator retains the first 200 seeded draws per class for train, the next 50 for validation, and discards the following 100 draws per class.",
+      "dataset_seed": 42
+    },
+    "pre_pca_feature_layout": {
+      "numpy_stack_output": "one row per event, one column per time sample",
+      "channels": [
+        "single PyCBC plus-polarization strain channel (hp)"
+      ],
+      "feature_blocks": [
+        {
+          "name": "whitened_time_samples",
+          "columns": "0 through 16383",
+          "meaning": "Consecutive samples of the same 4-second whitened time series at 4096 Hz."
+        }
+      ],
+      "stft_or_spectrogram": false,
+      "concatenated_channels": false,
+      "matched_filter_features": false
+    },
+    "transformations_in_execution_order": [
+      "Draw binary masses and distance from the adapter's seeded NumPy generator.",
+      "Generate the PyCBC plus-polarization time-domain waveform at 4096 Hz with the IMRPhenomPv2 approximant and 20 Hz lower cutoff.",
+      "Keep the last 16384 samples, or left-pad a shorter waveform to that length.",
+      "Apply the class-specific beyond-GR waveform injection. Most injectors modify the Fourier-domain strain; selected injectors construct a modified time-domain plus strain.",
+      "Return to time domain with irfft where the injection was performed in frequency space.",
+      "Whiten using the analytic aLIGO O3 PSD: rFFT, divide by sqrt(PSD times frequency-bin width), retain 20-1024 Hz, and inverse transform.",
+      "Normalize each whitened time series to unit L2 norm.",
+      "Treat the 16384 whitened time samples as the pre-PCA feature vector; no separate handcrafted feature extraction is applied.",
+      "Stack all retained train vectors into X_train_raw with shape (2600, 16384); stack validation separately as X_val_raw with shape (650, 16384).",
+      "Fit PCA only on X_train_raw, with n_components=64 and random_state=42. Here 64 is a component count, not a count of rows passed to fit.",
+      "Transform train and validation, retaining only the first 16 PCA scores.",
+      "Fit MinMaxScaler(feature_range=(-1, 1)) on training PCA scores only; transform validation with that scaler and clip both splits to [-1, 1]."
+    ]
+  },
+  "pre_pca_features": {
+    "features_per_event": 16384,
+    "train_shape": [
+      2600,
+      16384
+    ],
+    "validation_shape": [
+      650,
+      16384
+    ],
+    "combined_train_validation_shape": [
+      3250,
+      16384
+    ],
+    "shape_derivation": "LIGOPCAAdapter defaults duration=4.0 s and sample_rate=4096 Hz; _generate_base_waveform sets n_target=int(duration*sample_rate), and _whiten_strain returns irfft(..., n=n), preserving that length. The runtime adapter check yielded 16384 samples.",
+    "dtype_estimate": "float64",
+    "dtype_basis": "NumPy FFT pipeline and persisted PCA arrays are float64; pre-PCA arrays were not persisted for direct dtype inspection.",
+    "raw_pre_pca_features_persisted": false,
+    "event_parameters_persisted": false,
+    "reconstructible_from_existing_artifacts": false,
+    "regenerable_from_source_and_seed": "Potentially, by rerunning the PyCBC generator with the frozen source, dependency versions, and seed; not attempted in this audit."
+  },
+  "pca_audit": {
+    "fit_split": "train_only",
+    "fit_samples": 2600,
+    "input_feature_dimension": 16384,
+    "fit_input_variable": "X_train_raw",
+    "fit_input_shape": [
+      2600,
+      16384
+    ],
+    "n_pca_fit_semantics": "The value 64 is passed as PCA(n_components=n_fit); it is not the number of examples used in PCA.fit.",
+    "components_fitted_during_generation": 64,
+    "components_retained_and_available_in_cache": 16,
+    "fit_component_count_after_cap": "min(64, 2600 - 1, 16384) = 64",
+    "solver_requested": "auto (scikit-learn default)",
+    "solver_selected_for_recorded_shape": "randomized",
+    "solver_selection_basis": "In scikit-learn 1.7.2, max(shape)>500 and 64 < 0.8*min(shape), so PCA(svd_solver='auto') selects the randomized solver.",
+    "pca_random_state": 42,
+    "training_rows_per_class_used_by_pca": 200,
+    "class_stratification": "Yes; all 200 generated training rows for each of the 13 classes are stacked, in class blocks.",
+    "pca_object_persisted": false,
+    "pca_mean_and_components_persisted": false,
+    "scaler_object_persisted": false,
+    "standardization_before_pca": false,
+    "normalization_before_pca": "Per-event L2 normalization after PSD whitening; this is not feature-wise standardization.",
+    "scaling_after_pca": "Train-fitted MinMaxScaler to [-1, 1], then clipping.",
+    "scaler_fit_rows": 2600,
+    "scaler_fit_uses_same_training_rows_as_pca": true,
+    "validation_used_to_fit_any_transform": false,
+    "maximum_nonzero_component_count_mathematical_bound": 2599,
+    "bound_reason": "rank(centered X_train) <= min(2600 - 1, 16384); 2599 is an upper bound, not an observed rank.",
+    "observed_effective_numerical_rank": null,
+    "rank_lower_bound_indicated_by_persisted_variance": 16,
+    "rank_lower_bound_caveat": "The stored explained-variance ratios for PC1-PC16 are positive, but the original singular values and a tolerance-based rank diagnostic are unavailable.",
+    "numerical_stability_diagnostics": {
+      "full_singular_spectrum_available": false,
+      "condition_number_available": false,
+      "tolerance_based_rank_available": false,
+      "reason": "The original centered training matrix and fitted PCA object were not persisted."
+    }
+  },
+  "cached_data_integrity": {
+    "train_shape": [
+      2600,
+      16
+    ],
+    "validation_shape": [
+      650,
+      16
+    ],
+    "train_sha256": "08c1d2d69925aa08b3265e661d405c75ecafba16af16c5b8bf974b7f11c8e275",
+    "validation_sha256": "1de635e0042ddf55c593ec26e27b2bb458b389dea14b32df054c62b4560b24c1",
+    "train_hash_verified": true,
+    "validation_hash_verified": true,
+    "historical_q1_first_12_component_train_sha256": "55d9b752487c04e5d41c59b1a66bef485e78b37f6c6db55e30fc28daa7488d98",
+    "historical_q1_first_12_component_validation_sha256": "39d1775c38738ef8da51273f86e5ad3be8acc40253aeb53140680823db93e4aa",
+    "historical_prefix_hashes_verified": true,
+    "approved_dataset_manifest_sha256": "b70eafec3a32acc56c15af9cad0c51998cb93f733d70d307f806ab57f1e87ed9",
+    "independent_reproduction_of_full_16_component_transform": false,
+    "reproduction_limit": "The cache contains only scaled 16-component projections and labels; raw features, PCA mean/components, and scaler state are absent."
+  },
+  "variance_analysis": {
+    "full_curve_available": false,
+    "available_curve_scope": "PC1-PC16 only; these ratios were retained from the train-fitted 64-component PCA.",
+    "sum_of_available_explained_variance_ratio": 0.9999867349350179,
+    "sum_of_available_explained_variance_percent": 99.99867349350179,
+    "remaining_variance_percent_after_pc16": 0.00132650649821,
+    "component_ratios": [
+      {
+        "component": 1,
+        "explained_variance_ratio": 0.5052465397055615,
+        "cumulative_ratio": 0.5052465397055615
+      },
+      {
+        "component": 2,
+        "explained_variance_ratio": 0.46841582781252494,
+        "cumulative_ratio": 0.9736623675180864
+      },
+      {
+        "component": 3,
+        "explained_variance_ratio": 0.012958725217072973,
+        "cumulative_ratio": 0.9866210927351594
+      },
+      {
+        "component": 4,
+        "explained_variance_ratio": 0.00992536115766422,
+        "cumulative_ratio": 0.9965464538928236
+      },
+      {
+        "component": 5,
+        "explained_variance_ratio": 0.002018660950086024,
+        "cumulative_ratio": 0.9985651148429097
+      },
+      {
+        "component": 6,
+        "explained_variance_ratio": 0.0007223024437445886,
+        "cumulative_ratio": 0.9992874172866543
+      },
+      {
+        "component": 7,
+        "explained_variance_ratio": 0.0004830341106105397,
+        "cumulative_ratio": 0.9997704513972648
+      },
+      {
+        "component": 8,
+        "explained_variance_ratio": 0.00008395511209324847,
+        "cumulative_ratio": 0.9998544065093581
+      },
+      {
+        "component": 9,
+        "explained_variance_ratio": 0.00005155751784639373,
+        "cumulative_ratio": 0.9999059640272044
+      },
+      {
+        "component": 10,
+        "explained_variance_ratio": 0.00003814413991660852,
+        "cumulative_ratio": 0.9999441081671211
+      },
+      {
+        "component": 11,
+        "explained_variance_ratio": 0.000015406425542030285,
+        "cumulative_ratio": 0.9999595145926631
+      },
+      {
+        "component": 12,
+        "explained_variance_ratio": 0.00001220129456952008,
+        "cumulative_ratio": 0.9999717158872325
+      },
+      {
+        "component": 13,
+        "explained_variance_ratio": 0.000006930227405008006,
+        "cumulative_ratio": 0.9999786461146376
+      },
+      {
+        "component": 14,
+        "explained_variance_ratio": 0.000004096578227018003,
+        "cumulative_ratio": 0.9999827426928646
+      },
+      {
+        "component": 15,
+        "explained_variance_ratio": 0.000002378456027936556,
+        "cumulative_ratio": 0.9999851211488925
+      },
+      {
+        "component": 16,
+        "explained_variance_ratio": 0.000001613786125325941,
+        "cumulative_ratio": 0.9999867349350178
+      }
+    ],
+    "plot": "qnim_pre_pca_dimensionality_audit_v1.png",
+    "interpretation": "The plot is intentionally limited to the 16 persisted ratios. High cumulative variance does not establish that later low-variance components lack class-discriminative information."
+  },
+  "historical_reproducibility": {
+    "cached_train_and_validation_hashes_match_approved_manifest": true,
+    "first_12_component_hashes_match_historical_q1": true,
+    "historical_artifacts_modified": false,
+    "fresh_refit_equivalence_tested": false,
+    "sign_ambiguity_handling": "A future refit comparison must align each component sign (for example by the sign of the dot product between matched training-score vectors or component vectors) before comparing scores. Exact hashes without this alignment can reject equivalent PCA solutions."
+  },
+  "thesis_methodology_comparison": {
+    "source": "boullosa_dapena_oscar_deposito_ordinaria (1) (3).pdf, printed pages 21-22 and Appendix Table C.2 (printed page 115)",
+    "thesis_reported_12_component_cumulative_variance_percent": 95.2,
+    "thesis_representation_described": [
+      "Calibrated frequency-domain detector strain downloaded from GWOSC.",
+      "Noise PSD estimated using Welch on a 256-second off-source stretch.",
+      "Whitening and 20-1024 Hz bandpass.",
+      "STFT spectrogram using a 0.5-second Tukey window and 50% overlap.",
+      "Concatenation with matched-filter log-likelihood at the MAP estimate and its first-order phase-space gradient.",
+      "Feature dimension described as O(10^3); PCA fitted on training data."
+    ],
+    "q1_6_representation": [
+      "Synthetic PyCBC IMRPhenomPv2 plus-polarization waveforms with class-specific injections.",
+      "Analytic aLIGO O3 PSD whitening and per-event L2 normalization.",
+      "One 16384-sample time-domain vector per event; no STFT or matched-filter statistics.",
+      "No detector noise; 2600 synthetic training examples, balanced over 13 classes."
+    ],
+    "q1_6_first_12_component_cumulative_variance_percent": 99.99717158872325,
+    "difference_percentage_points": 4.79717158872325,
+    "comparison_conclusion": "The percentages are not directly comparable because the feature construction and data sources differ. The thesis section does not specify the training-example count, feature-wise standardization before PCA, or the exact PCA solver.",
+    "repository_code_caveat": "The LIGOPCAAdapter module docstring cites a 95.3% table and calls it inter-class variance, while the thesis's Table C.2 describes 95.2% cumulative explained variance. The Q1.6 PCA call is ordinary unsupervised PCA on X_train_raw; class labels are not passed to PCA.fit."
+  },
+  "scaling_feasibility": {
+    "20_components": {
+      "possible_from_original_representation": true,
+      "available_from_current_cache": false
+    },
+    "24_components": {
+      "possible_from_original_representation": true,
+      "available_from_current_cache": false
+    },
+    "32_components": {
+      "possible_from_original_representation": true,
+      "available_from_current_cache": false
+    },
+    "feasibility_basis": "Each target dimension is below the 16384 original features, the 2599 centered-training rank upper bound, and the existing 64-component PCA fit budget.",
+    "rank_condition": "These are structurally feasible, but the missing full training matrix means the actual numerical rank is not verified to be at least 32.",
+    "additional_waveform_preprocessing_required": false,
+    "required_pipeline_changes": [
+      "Create a separately versioned train/validation cache retaining at least 32 PCA scores; do not overwrite the historical 16-component cache.",
+      "Use the same frozen waveform protocol, class order, sample draws, and train-only PCA fit; set retained n_components to at least 32 (the existing n_pca_fit=64 budget is sufficient).",
+      "Persist the train-fitted PCA mean/components and scaler state, or persist the pre-PCA train/validation matrices, to make later projections and reproducibility audits possible.",
+      "Persist explained-variance ratios and numerical-rank diagnostics for every fitted component, not only the retained prefix.",
+      "Record new dataset hashes and a new immutable manifest; verify the first 12/16 components against historical data after sign alignment."
+    ]
+  },
+  "pca32_approach_comparison": {
+    "A_preserve_historical_fit": {
+      "proposal": "Preserve the exact historical 2600-row training sample, preprocessing, solver, seed, and PCA basis; retain components 1-32.",
+      "current_artifact_feasibility": "Cannot extend from the 16-column cache because raw features and the fitted PCA object (including components 17-64) were not saved.",
+      "reproduction_path": "Would require rerunning the frozen waveform generator or recovering an external copy of the raw training matrix, then refitting with the original settings and retaining 32.",
+      "tradeoff": "Best comparability to Q1.6 if the exact input matrix and software environment can be reproduced; bitwise identity is not guaranteed by the current artifacts."
+    },
+    "B_refit_on_all_2600_training_examples": {
+      "proposal": "Fit PCA on all 2600 training rows and retain 32, then transform validation without refitting.",
+      "current_artifact_feasibility": "Also requires the raw train/validation vectors or regeneration; the 16-dimensional cache is insufficient.",
+      "tradeoff": "Explicit and leakage-safe. If the raw matrix, preprocessing, solver, random state, and versions are identical to A, B is effectively the same refit and not a distinct statistical design. Changing any of these creates a new basis/condition."
+    },
+    "recommendation": "If PCA32 is later approved, use all 2600 historical training rows and the frozen Q1.6 preprocessing/seed/solver settings, retain 32, and treat this as a reproducibility refit of A. Verify sign-aligned train/validation prefixes before issuing a new immutable cache manifest. Neither approach was executed."
+  },
+  "memory_estimates": {
+    "assumed_dtype": "float64",
+    "train_matrix_bytes": 340787200,
+    "train_matrix_mib": 325.0,
+    "validation_matrix_bytes": 85196800,
+    "validation_matrix_mib": 81.25,
+    "combined_train_validation_bytes": 425984000,
+    "combined_train_validation_mib": 406.25,
+    "centered_pca_training_copy_mib": 325.0,
+    "64_component_basis_mib": 8.0,
+    "estimated_generation_and_fit_resident_floor_mib": 1137.5,
+    "estimate_caveat": "The floor accounts for the generator's retained waveform lists, stacked train/validation arrays, and one centered PCA training copy; randomized-SVD workspace, BLAS buffers, allocator overhead, and Python objects add to peak RSS. Reserve more than this estimate."
+  },
+  "recommendation": {
+    "next_dataset_retention_dimension": 32,
+    "next_experimental_pca_dimensions": [
+      20,
+      24,
+      32
+    ],
+    "sequence": "After producing and integrity-checking a separate 32-component train/validation cache, evaluate 20, 24, and 32 components as pre-registered conditions; retain 16 as the baseline.",
+    "do_not_infer": "Do not infer that components after 16 are useless from variance ratios alone, and do not treat the 2599 upper bound as the measured effective rank.",
+    "training_started": false
+  }
+}

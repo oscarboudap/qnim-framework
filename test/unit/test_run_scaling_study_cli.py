@@ -52,12 +52,17 @@ def test_cli_runs_requested_seeds_and_writes_aggregate(tmp_path, monkeypatch):
         "--output-dir", str(tmp_path / "results"),
         "--seeds", "11,22",
         "--metrics-seed", "4242",
+        "--readout-mode", "marginals_zz_neighbors",
     ])
 
     run_scaling_study.main()
 
     assert [run["seed"] for run in FakeStudy.seen] == [11, 22]
     assert all(run["metrics_seed"] == 4242 for run in FakeStudy.seen)
+    assert all(
+        run["readout_mode"] == "marginals_zz_neighbors"
+        for run in FakeStudy.seen
+    )
     assert all("seed_" in str(run["output_dir"]) for run in FakeStudy.seen)
     result_path = tmp_path / "results/summary/multi_seed_results.json"
     summary = json.loads(result_path.read_text(encoding="utf-8"))

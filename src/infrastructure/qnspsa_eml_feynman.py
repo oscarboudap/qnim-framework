@@ -118,11 +118,19 @@ class QNSPSAResult:
     optimal_params: np.ndarray
     loss_history: list[float] = field(default_factory=list)
     n_evals: int = 0
+    n_objective_function_calls: int = 0
+    n_circuit_executions: int = 0
+    n_shots_total: int = 0
+    n_training_examples_evaluated: int = 0
+    execution_accounting_measured: bool = False
     n_iter: int = 0
     converged: bool = False
     time_s: float = 0.0
     final_loss: float = float("inf")
     gradient_variance_history: list[float] = field(default_factory=list)
+    optimizer_step_history: list[dict[str, float | bool | int]] = field(
+        default_factory=list
+    )
 
     @property
     def speedup_vs_spsa(self) -> float:
@@ -185,6 +193,7 @@ class QNSPSAEMLFeynman:
         loss_fn: Callable[[np.ndarray], float],
         x0: np.ndarray,
         callback: Optional[Callable] = None,
+        active_mask: Optional[np.ndarray] = None,
     ) -> QNSPSAResult:
         """
         Minimiza loss_fn comenzando desde x0.
@@ -197,16 +206,73 @@ class QNSPSAEMLFeynman:
                      En modo fallback es una aproximación analítica.
             x0: parámetros iniciales (shape: (n_params,))
             callback: callback(iter, theta, loss) → None (opcional)
+            active_mask: parámetros optimizables; los parámetros inactivos
+                permanecen fijos en sus valores iniciales.
 
         Returns:
             QNSPSAResult con parámetros óptimos e historia completa.
         """
+        if active_mask is not None:
+            mask = np.asarray(active_mask, dtype=bool)
+            initial = np.asarray(x0, dtype=float)
+            if mask.shape != initial.shape:
+                raise ValueError("active_mask debe tener la misma forma que x0")
+            active_indices = np.flatnonzero(mask)
+            if active_indices.size == 0:
+                raise ValueError("active_mask debe habilitar al menos un parámetro")
+
+            def expand(active_params):
+                full_params = initial.copy()
+                full_params[active_indices] = active_params
+                return full_params
+
+            def reduced_loss(active_params):
+                return loss_fn(expand(active_params))
+
+            if hasattr(loss_fn, "refresh_batch"):
+                reduced_loss.refresh_batch = loss_fn.refresh_batch
+            if hasattr(loss_fn, "evaluate_reference"):
+                reduced_loss.evaluate_reference = (
+                    lambda active_params: loss_fn.evaluate_reference(
+                        expand(active_params)
+                    )
+                )
+            if hasattr(loss_fn, "execution_telemetry"):
+                reduced_loss.execution_telemetry = loss_fn.execution_telemetry
+
+            def reduced_callback(iteration, active_params, loss):
+                if callback is not None:
+                    full_params = expand(active_params)
+                    callback(iteration, full_params, loss)
+                    active_params[:] = full_params[active_indices]
+
+            reduced_result = self.minimize(
+                reduced_loss,
+                initial[active_indices],
+                callback=reduced_callback if callback is not None else None,
+            )
+            reduced_result.optimal_params = expand(reduced_result.optimal_params)
+            return reduced_result
+
         t0 = time.time()
         n = len(x0)
         theta = x0.copy().astype(float)
 
         has_batches = hasattr(loss_fn, "refresh_batch")
         has_reference = hasattr(loss_fn, "evaluate_reference")
+        execution_telemetry = getattr(loss_fn, "execution_telemetry", None)
+        execution_start = (
+            {
+                key: int(execution_telemetry.get(key, 0))
+                for key in (
+                    "n_circuit_executions",
+                    "n_shots_total",
+                    "n_training_examples_evaluated",
+                )
+            }
+            if isinstance(execution_telemetry, dict)
+            else None
+        )
 
         # Inicializar inversa del QGT: H^{-1}_0 = a0 · I
         a0 = self.cfg.lr * 0.1
@@ -277,17 +343,24 @@ class QNSPSAEMLFeynman:
 
             # ── PASO 7: Paso de gradiente natural ─────────────────────────
             natural_grad = self._H_inv @ g_total
+            previous_theta = theta.copy()
             theta_new = theta - a_t * natural_grad
+            proposed_step_norm = float(np.linalg.norm(theta_new - previous_theta))
 
             # ── PASO 8: Blocking step (mismo batch que current_loss) ─────
             new_loss = loss_fn(theta_new)
             n_evals += 1
+            blocking_loss_delta = float(new_loss - current_loss)
 
-            if new_loss <= current_loss + self.cfg.blocking_delta:
+            update_accepted = (
+                new_loss <= current_loss + self.cfg.blocking_delta
+            )
+            if update_accepted:
                 theta = theta_new
                 current_loss = new_loss
             # Si el blocking rechaza, θ se mantiene (theta no cambia)
 
+            parameter_step = theta - previous_theta
             result.loss_history.append(float(current_loss))
             result.gradient_variance_history.append(
                 float(np.var(g_hat))
@@ -306,6 +379,17 @@ class QNSPSAEMLFeynman:
                 n_evals += 1
             else:
                 ref_loss = current_loss
+
+            result.optimizer_step_history.append({
+                "iteration": t,
+                "minibatch_loss": float(current_loss),
+                "training_reference_loss": float(ref_loss),
+                "step_norm": float(np.linalg.norm(parameter_step)),
+                "proposed_step_norm": proposed_step_norm,
+                "blocking_loss_delta": blocking_loss_delta,
+                "gradient_variance": float(np.var(g_hat)),
+                "update_accepted": bool(update_accepted),
+            })
 
             if ref_loss < best_loss - self.cfg.min_improvement:
                 best_loss = ref_loss
@@ -338,6 +422,21 @@ class QNSPSAEMLFeynman:
         result.final_loss = float(best_loss)
         result.n_iter = t
         result.n_evals = n_evals
+        result.n_objective_function_calls = n_evals
+        if execution_start is not None:
+            result.n_circuit_executions = (
+                int(execution_telemetry["n_circuit_executions"])
+                - execution_start["n_circuit_executions"]
+            )
+            result.n_shots_total = (
+                int(execution_telemetry["n_shots_total"])
+                - execution_start["n_shots_total"]
+            )
+            result.n_training_examples_evaluated = (
+                int(execution_telemetry["n_training_examples_evaluated"])
+                - execution_start["n_training_examples_evaluated"]
+            )
+            result.execution_accounting_measured = True
         result.time_s = time.time() - t0
 
         logger.info(

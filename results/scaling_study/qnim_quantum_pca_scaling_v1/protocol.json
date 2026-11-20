@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "experiment_id": "QNIM_QUANTUM_PCA_SCALING_V1",
+  "status": "frozen",
+  "objective": "Compare the full-system QNIM at q16/PCA16 and q20/PCA20 without claiming quantum advantage.",
+  "dataset": {
+    "dataset_id": "QNIM_Q1_6_DATASET_V2_PCA64",
+    "relative_path": "qnim_q1_6_dataset_v2_pca64",
+    "dataset_manifest_sha256": "53a153278ce83722a61a02cd8bff6749c599209fc11202b5e64ed5ee23c05bfd",
+    "allowed_files": [
+      "X_train_scaled64.npy",
+      "X_val_scaled64.npy",
+      "y_train.npy",
+      "y_val.npy",
+      "pca_state.npz",
+      "dataset_manifest.json"
+    ],
+    "file_sha256": {
+      "X_train_scaled64.npy": "6fb936d7836789e9ca59941e47a2cdff701acd5d057f4258db82b134237e5dad",
+      "X_val_scaled64.npy": "f717042628bd35f7a8dad9457996f0d9b3d9d22a08803319c874390714af2783",
+      "y_train.npy": "9e4cc1a458f2f7825f69718bdd4a78bc5e56acc21d6396b14a2e302a477f01d6",
+      "y_val.npy": "81c6b2e663a9d65c96c699cd88253efb5003b9893ae19d21c7fa2b5d12719ead",
+      "pca_state.npz": "183108741f6b991242621a1d8c05ca481c851da459645c7a99a69433ab7e99ff"
+    },
+    "train_shape": [2600, 64],
+    "validation_shape": [650, 64],
+    "classes": 13,
+    "input": "Use the first q columns of the existing X_train_scaled64.npy and X_val_scaled64.npy.",
+    "additional_preprocessing": "none",
+    "pca_or_scaler_refit": false,
+    "test_access": false
+  },
+  "configurations": [
+    {
+      "name": "reference",
+      "n_qubits": 16,
+      "n_pca_components": 16,
+      "expected_ansatz_parameters": 96,
+      "expected_readout_parameters": 733,
+      "expected_total_trainable_parameters": 829,
+      "expected_measurement_features": 31
+    },
+    {
+      "name": "expanded",
+      "n_qubits": 20,
+      "n_pca_components": 20,
+      "expected_ansatz_parameters": 120,
+      "expected_readout_parameters": 861,
+      "expected_total_trainable_parameters": 981,
+      "expected_measurement_features": 39
+    }
+  ],
+  "architecture": {
+    "model_family": "quantum-centred variational quantum classifier",
+    "feature_map": {
+      "class": "ZZFeatureMap",
+      "feature_dimension": "n_qubits",
+      "reps": 2,
+      "entanglement": "linear",
+      "input_transform": "identity; use stored MinMax-scaled PCA scores directly"
+    },
+    "ansatz": {
+      "class": "EfficientSU2",
+      "reps": 2,
+      "entanglement": "linear",
+      "rotation_gates": ["ry", "rz"],
+      "trainable_parameter_count": "measured from the installed Qiskit circuit"
+    },
+    "readout": {
+      "mode": "marginals_zz_neighbors",
+      "measurement_features": "P(qubit_i=0) for i=0..q-1 followed by <Z_i Z_(i+1)> for i=0..q-2",
+      "feature_count": "2*n_qubits-1",
+      "bitstring_convention": "Qiskit little-endian; bitstring[-1] is qubit 0",
+      "classical_decoder": {
+        "type": "one-hidden-layer MLP",
+        "hidden_units": 16,
+        "output_units": 13,
+        "activation": "ReLU hidden layer and softmax output",
+        "parameter_count_formula": "(measurement_features*16+16)+(16*13+13)"
+      }
+    }
+  },
+  "training": {
+    "optimizer": "QNSPSA-EML-Feynman",
+    "max_iterations": 20,
+    "batch_size": 32,
+    "shots": 512,
+    "learning_rate": 0.03,
+    "initialization_seed": 42,
+    "training_random_seed": 42,
+    "qnspsa": {
+      "perturbation": 0.05,
+      "lambda_eml": 0.01,
+      "hessian_regularization": 0.0001,
+      "blocking_delta": 0.001,
+      "n_feynman_params": 4,
+      "n_gl_points": 8,
+      "patience": 20,
+      "min_improvement": 0.0005
+    },
+    "readout_initialization": "Train-only quantum-measurement warm start; up to 200 examples, random seed 49.",
+    "readout_refit_every": 10,
+    "progress_metrics": {
+      "record_every_iteration": true,
+      "fixed_train_diagnostic_samples_per_class": 5,
+      "fixed_validation_diagnostic_samples_per_class": 5,
+      "validation_role": "metrics only; never used for loss, gradient, optimizer, or parameter fitting",
+      "diagnostic_simulator_seed": 42042
+    },
+    "final_metrics": "Evaluate all train and validation examples using quantum measurement features and the trained classical readout."
+  },
+  "simulator": {
+    "provider": "Qiskit Aer",
+    "backend": "AerSimulator",
+    "method": "matrix_product_state",
+    "local": true,
+    "seed_simulator": 42,
+    "hardware_execution": false
+  },
+  "checkpoint_policy": {
+    "directories": {
+      "q16": "checkpoints/q16",
+      "q20": "checkpoints/q20"
+    },
+    "completed_configuration_overwrite": false,
+    "resume": "Skip completed configurations; preserve interrupted attempt traces and restart an incomplete configuration from the fixed initialization seed. QNSPSA internal metric/RNG state is not restored."
+  },
+  "controls": {
+    "same_train_validation_examples_labels_order_and_preprocessing": true,
+    "classical_svm_rerun": false,
+    "additional_seeds": false,
+    "ablations": false,
+    "quantum_advantage_claim": false,
+    "test_generated_loaded_or_evaluated": false
+  }
+}

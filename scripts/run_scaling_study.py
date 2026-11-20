@@ -19,6 +19,15 @@ def parse_args():
     parser.add_argument("--output-dir", default="results/scaling_study")
     parser.add_argument("--max-iter", type=int, default=60)
     parser.add_argument("--shots", type=int, default=512)
+    parser.add_argument(
+        "--readout-mode",
+        choices=("marginals", "marginals_zz", "marginals_zz_neighbors"),
+        default="marginals",
+        help=(
+            "Readout: qubit marginals, all pairwise ZZ correlators, or "
+            "nearest-neighbor ZZ correlators"
+        ),
+    )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
         "--seeds",
@@ -46,6 +55,7 @@ def main():
             output_dir=run_output,
             max_iterations=args.max_iter,
             shots=args.shots,
+            readout_mode=args.readout_mode,
             seed=seed,
             metrics_seed=args.metrics_seed,
             bootstrap_iterations=args.bootstrap_iterations,

@@ -1,0 +1,134 @@
+{
+  "experiment_id": "QNIM_SCALING_NEIGHBOR_PILOT_V1",
+  "status": "protocol_approved_not_executed",
+  "purpose": "Screen whether increasing QNIM qubits improves validation classification when the readout uses only local ZZ correlations, while separating growing and fixed PCA input dimensions.",
+  "preservation": {
+    "historical_q1_6_results_modified": false,
+    "historical_q1_6_runner_modified": false,
+    "existing_dataset_regenerated": false,
+    "final_test_access": false,
+    "ibm_hardware_execution": false
+  },
+  "data": {
+    "source": "results/scaling_study/qnim_q1_6_dataset_v1",
+    "splits_allowed": [
+      "train",
+      "validation"
+    ],
+    "split_policy": "Reuse the existing Q1.6 dataset and verify its train/validation hashes before execution; do not regenerate or repartition.",
+    "test_policy": "Do not load, inspect, or evaluate the test split."
+  },
+  "architecture": {
+    "feature_map": "ZZFeatureMap",
+    "feature_map_reps": 2,
+    "ansatz": "EfficientSU2",
+    "ansatz_reps": 2,
+    "entanglement": "linear",
+    "readout_mode": "marginals_zz_neighbors",
+    "readout_features": "2 * n_qubits - 1: one marginal per qubit and one ZZ correlator for each adjacent pair",
+    "readout_hidden_size": 16,
+    "class_count": 13
+  },
+  "configurations": [
+    {
+      "arm": "full_system",
+      "n_qubits": 4,
+      "pca_components": 4
+    },
+    {
+      "arm": "full_system",
+      "n_qubits": 8,
+      "pca_components": 8
+    },
+    {
+      "arm": "full_system",
+      "n_qubits": 12,
+      "pca_components": 12
+    },
+    {
+      "arm": "fixed_input_dimension",
+      "n_qubits": 8,
+      "pca_components": 4
+    },
+    {
+      "arm": "fixed_input_dimension",
+      "n_qubits": 12,
+      "pca_components": 4
+    }
+  ],
+  "fixed_input_encoding": {
+    "feature_map_qubits": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "additional_qubits": "Initialize in |0>; they receive no extra or fabricated input data and participate in the all-qubit EfficientSU2 ansatz and the marginal/adjacent-ZZ readout.",
+    "q4_policy": "The fixed-input q4 point is identical to full-system q4 and is counted once, not trained twice."
+  },
+  "training": {
+    "max_iterations": 20,
+    "batch_size": 32,
+    "shots": 512,
+    "initialization_seeds": [
+      42,
+      43,
+      44
+    ],
+    "training_random_seed": 42,
+    "patience": 20,
+    "learning_rate": 0.03,
+    "mode": "local_simulator",
+    "unique_qnim_fits": 15,
+    "budget_note": "Keep shots at 512 to avoid changing measurement noise as another experimental variable; reduce iteration and batch budgets consistently across configurations."
+  },
+  "classical_controls": {
+    "model": "PCA + StandardScaler + RBF SVC",
+    "input_dimensions": [
+      4,
+      8,
+      12
+    ],
+    "fit_scope": "train_only",
+    "validation_scope": "evaluation_only",
+    "parameters": {
+      "kernel": "rbf",
+      "C": 1.0,
+      "gamma": "scale",
+      "class_weight": "balanced",
+      "probability": true,
+      "random_state": "paired initialization seed",
+      "scaler": "StandardScaler fit on train only"
+    },
+    "fits": 9
+  },
+  "metrics": [
+    "balanced_accuracy",
+    "accuracy",
+    "macro_f1",
+    "cross_entropy",
+    "recall_per_class",
+    "confusion_matrix",
+    "train_validation_accuracy_gap",
+    "train_validation_balanced_accuracy_gap",
+    "trainable_quantum_parameters",
+    "trainable_classical_parameters",
+    "observable_count",
+    "training_and_evaluation_time",
+    "peak_memory"
+  ],
+  "analysis_limits": [
+    "Treat the three initialization seeds as a descriptive screening pilot, not definitive statistical evidence.",
+    "The number of QNIM classical readout parameters still grows with the number of neighboring-readout features; report it alongside quantum parameter counts.",
+    "Do not select models or configurations using test results."
+  ],
+  "execution_readiness": {
+    "ready_to_run": false,
+    "blockers": [
+      "The general scaling runner currently uses a fixed matrix that does not include q4/q8 and hardcodes batch size 64.",
+      "The general scaling runner does not produce the paired PCA+SVM controls required by this protocol.",
+      "A dedicated runner or a backward-compatible extension is required before execution."
+    ],
+    "required_output_directory": "results/scaling_study/qnim_neighbor_readout_pilot_v1"
+  }
+}

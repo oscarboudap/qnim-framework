@@ -54,7 +54,17 @@ class RunScalingStudyUseCase:
         bootstrap_iterations: int = 10000,
         permutation_iterations: int = 10000,
         experiments: tuple[dict, ...] = SCALING_MATRIX,
+        readout_mode: str = "marginals",
     ):
+        if readout_mode not in {
+            "marginals",
+            "marginals_zz",
+            "marginals_zz_neighbors",
+        }:
+            raise ValueError(
+                "readout_mode must be 'marginals', 'marginals_zz', or "
+                "'marginals_zz_neighbors'"
+            )
         self.dataset_dir = Path(dataset_dir)
         self.output_dir = Path(output_dir)
         self.max_iterations = max_iterations
@@ -64,6 +74,7 @@ class RunScalingStudyUseCase:
         self.bootstrap_iterations = bootstrap_iterations
         self.permutation_iterations = permutation_iterations
         self.experiments = experiments
+        self.readout_mode = readout_mode
 
     def _load_dataset(self) -> tuple[ScalingDataset, str]:
         arrays = {}
@@ -116,6 +127,7 @@ class RunScalingStudyUseCase:
             learning_rate=0.03,
             training_batch_size=64,
             random_seed=self.seed,
+            readout_mode=self.readout_mode,
         )
 
     @staticmethod
@@ -186,6 +198,7 @@ class RunScalingStudyUseCase:
                 "metrics_seed": self.metrics_seed,
                 "mode": "sim",
                 "backend": "local_simulator",
+                "readout_mode": self.readout_mode,
                 "shots": self.shots,
                 "job_ids": [],
                 "dataset_sha256": dataset_hash,
