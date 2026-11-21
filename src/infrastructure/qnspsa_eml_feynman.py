@@ -55,7 +55,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 import numpy as np
 
@@ -128,9 +128,7 @@ class QNSPSAResult:
     time_s: float = 0.0
     final_loss: float = float("inf")
     gradient_variance_history: list[float] = field(default_factory=list)
-    optimizer_step_history: list[dict[str, float | bool | int]] = field(
-        default_factory=list
-    )
+    optimizer_step_history: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def speedup_vs_spsa(self) -> float:
@@ -194,6 +192,8 @@ class QNSPSAEMLFeynman:
         x0: np.ndarray,
         callback: Optional[Callable] = None,
         active_mask: Optional[np.ndarray] = None,
+        checkpoint_candidate_callback: Optional[Callable] = None,
+        parameter_block_sizes: Optional[tuple[int, int]] = None,
     ) -> QNSPSAResult:
         """
         Minimiza loss_fn comenzando desde x0.
@@ -241,15 +241,40 @@ class QNSPSAEMLFeynman:
                 reduced_loss.execution_telemetry = loss_fn.execution_telemetry
 
             def reduced_callback(iteration, active_params, loss):
+                callback_result = None
                 if callback is not None:
                     full_params = expand(active_params)
-                    callback(iteration, full_params, loss)
+                    callback_result = callback(iteration, full_params, loss)
                     active_params[:] = full_params[active_indices]
+                return callback_result
+
+            reduced_candidate_callback = None
+            reduced_block_sizes = None
+            if checkpoint_candidate_callback is not None:
+                reduced_candidate_callback = (
+                    lambda iteration, phase, active_params, context: (
+                        checkpoint_candidate_callback(
+                            iteration, phase, expand(active_params), context
+                        )
+                    )
+                )
+            if parameter_block_sizes is not None:
+                quantum_size, classical_size = parameter_block_sizes
+                if quantum_size + classical_size != len(initial):
+                    raise ValueError(
+                        "parameter_block_sizes must sum to the full parameter count"
+                    )
+                reduced_block_sizes = (
+                    int(np.count_nonzero(mask[:quantum_size])),
+                    int(np.count_nonzero(mask[quantum_size:])),
+                )
 
             reduced_result = self.minimize(
                 reduced_loss,
                 initial[active_indices],
                 callback=reduced_callback if callback is not None else None,
+                checkpoint_candidate_callback=reduced_candidate_callback,
+                parameter_block_sizes=reduced_block_sizes,
             )
             reduced_result.optimal_params = expand(reduced_result.optimal_params)
             return reduced_result
@@ -257,6 +282,19 @@ class QNSPSAEMLFeynman:
         t0 = time.time()
         n = len(x0)
         theta = x0.copy().astype(float)
+        if parameter_block_sizes is not None:
+            if (
+                len(parameter_block_sizes) != 2
+                or any(size < 0 for size in parameter_block_sizes)
+                or sum(parameter_block_sizes) != n
+            ):
+                raise ValueError(
+                    "parameter_block_sizes must be non-negative and sum to x0 size"
+                )
+            quantum_block_size = int(parameter_block_sizes[0])
+        else:
+            quantum_block_size = None
+        initial_theta = theta.copy()
 
         has_batches = hasattr(loss_fn, "refresh_batch")
         has_reference = hasattr(loss_fn, "evaluate_reference")
@@ -284,6 +322,44 @@ class QNSPSAEMLFeynman:
         n_evals = 0
         patience_counter = 0
 
+        def evaluate_checkpoint_candidate(
+            iteration: int,
+            phase: str,
+            parameters: np.ndarray,
+            context: Optional[dict[str, Any]],
+        ) -> Optional[dict[str, Any]]:
+            nonlocal n_evals
+            if checkpoint_candidate_callback is None:
+                return None
+            candidate = checkpoint_candidate_callback(
+                iteration, phase, parameters.copy(), context
+            )
+            if not isinstance(candidate, dict) or "objective" not in candidate:
+                raise TypeError(
+                    "checkpoint_candidate_callback must return a dict with objective"
+                )
+            objective = float(candidate["objective"])
+            if not np.isfinite(objective):
+                raise ValueError("checkpoint candidate objective must be finite")
+            if not isinstance(candidate.get("replaces_incumbent"), (bool, np.bool_)):
+                raise TypeError(
+                    "checkpoint candidate must declare replaces_incumbent as boolean"
+                )
+            objective_calls = int(candidate.get("objective_function_calls", 1))
+            if objective_calls < 0:
+                raise ValueError("objective_function_calls cannot be negative")
+            n_evals += objective_calls
+            return candidate
+
+        if checkpoint_candidate_callback is not None:
+            initial_candidate = evaluate_checkpoint_candidate(
+                0, "initial", theta, None
+            )
+            if not initial_candidate["replaces_incumbent"]:
+                raise ValueError("the initial checkpoint candidate must be incumbent")
+            best_loss = float(initial_candidate["objective"])
+            best_theta = theta.copy()
+
         # Evaluación inicial — fija el primer batch si loss_fn lo soporta,
         # para que sea consistente con las evaluaciones de la iteración 1.
         if has_batches:
@@ -291,6 +367,36 @@ class QNSPSAEMLFeynman:
         current_loss = loss_fn(theta)
         n_evals += 1
         result.loss_history.append(float(current_loss))
+
+        def block_norms(values: np.ndarray) -> dict[str, float]:
+            if quantum_block_size is None:
+                return {}
+            return {
+                "quantum": float(np.linalg.norm(values[:quantum_block_size])),
+                "classical": float(np.linalg.norm(values[quantum_block_size:])),
+            }
+
+        def block_variances(
+            first: np.ndarray, second: np.ndarray
+        ) -> dict[str, float]:
+            if quantum_block_size is None:
+                return {}
+            blocks = {
+                "quantum": slice(0, quantum_block_size),
+                "classical": slice(quantum_block_size, n),
+            }
+            return {
+                name: float(
+                    np.var(
+                        np.stack((first[indices], second[indices])),
+                        axis=0,
+                        ddof=1,
+                    ).mean()
+                )
+                if len(range(*indices.indices(n)))
+                else 0.0
+                for name, indices in blocks.items()
+            }
 
         for t in range(1, self.cfg.maxiter + 1):
             # FIX v2: nuevo batch FIJO para TODA esta iteración (gradiente
@@ -346,6 +452,7 @@ class QNSPSAEMLFeynman:
             previous_theta = theta.copy()
             theta_new = theta - a_t * natural_grad
             proposed_step_norm = float(np.linalg.norm(theta_new - previous_theta))
+            proposed_step = theta_new - previous_theta
 
             # ── PASO 8: Blocking step (mismo batch que current_loss) ─────
             new_loss = loss_fn(theta_new)
@@ -365,6 +472,57 @@ class QNSPSAEMLFeynman:
             result.gradient_variance_history.append(
                 float(np.var(g_hat))
             )
+            step_record: dict[str, Any] = {
+                "iteration": t,
+                "minibatch_loss": float(current_loss),
+                "step_norm": float(np.linalg.norm(parameter_step)),
+                "proposed_step_norm": proposed_step_norm,
+                "blocking_loss_delta": blocking_loss_delta,
+                "gradient_variance": float(np.var(g_hat)),
+                "update_accepted": bool(update_accepted),
+                "update_rejected": not bool(update_accepted),
+            }
+            if quantum_block_size is not None:
+                step_record["block_telemetry"] = {
+                    "spsa_gradient_norm": block_norms(g_hat),
+                    "second_spsa_gradient_norm": block_norms(g_hat2),
+                    "spsa_gradient_variance": block_variances(g_hat, g_hat2),
+                    "feynman_contribution_norm": block_norms(g_feynman),
+                    "eml_contribution_norm": block_norms(eml_grad),
+                    "combined_gradient_norm": block_norms(g_total),
+                    "preconditioned_gradient_norm": block_norms(natural_grad),
+                    "proposed_step_norm": block_norms(proposed_step),
+                    "applied_step_norm": block_norms(parameter_step),
+                    "parameter_norm": block_norms(theta),
+                    "relative_movement_from_initial": {
+                        "quantum": float(
+                            np.linalg.norm(
+                                theta[:quantum_block_size]
+                                - initial_theta[:quantum_block_size]
+                            )
+                            / max(
+                                np.linalg.norm(
+                                    initial_theta[:quantum_block_size]
+                                ),
+                                np.finfo(float).eps,
+                            )
+                        ),
+                        "classical": float(
+                            np.linalg.norm(
+                                theta[quantum_block_size:]
+                                - initial_theta[quantum_block_size:]
+                            )
+                            / max(
+                                np.linalg.norm(
+                                    initial_theta[quantum_block_size:]
+                                ),
+                                np.finfo(float).eps,
+                            )
+                        ),
+                    },
+                    "update_accepted": bool(update_accepted),
+                    "update_rejected": not bool(update_accepted),
+                }
 
             # FIX v6 — el tracking de "mejor theta" y el criterio de
             # early stopping usan el batch de REFERENCIA fijo (128
@@ -374,32 +532,98 @@ class QNSPSAEMLFeynman:
             # lotería del ruido de muestreo, no un theta genuinamente
             # mejor — eso es justo lo que producía accuracies de
             # validación peores que el azar en runs anteriores.
-            if has_reference:
+            checkpoint_candidate = None
+            if checkpoint_candidate_callback is not None:
+                checkpoint_candidate = evaluate_checkpoint_candidate(
+                    t,
+                    "pre_refit",
+                    theta,
+                    {
+                        "minibatch_loss": float(current_loss),
+                        "update_accepted": bool(update_accepted),
+                        "block_telemetry": step_record.get("block_telemetry"),
+                    },
+                )
+                ref_loss = float(checkpoint_candidate["objective"])
+            elif has_reference:
                 ref_loss = loss_fn.evaluate_reference(theta)
                 n_evals += 1
             else:
                 ref_loss = current_loss
 
-            result.optimizer_step_history.append({
-                "iteration": t,
-                "minibatch_loss": float(current_loss),
-                "training_reference_loss": float(ref_loss),
-                "step_norm": float(np.linalg.norm(parameter_step)),
-                "proposed_step_norm": proposed_step_norm,
-                "blocking_loss_delta": blocking_loss_delta,
-                "gradient_variance": float(np.var(g_hat)),
-                "update_accepted": bool(update_accepted),
-            })
+            step_record["training_reference_loss"] = float(ref_loss)
+            result.optimizer_step_history.append(step_record)
 
-            if ref_loss < best_loss - self.cfg.min_improvement:
+            if checkpoint_candidate is not None:
+                if checkpoint_candidate["replaces_incumbent"]:
+                    best_loss = ref_loss
+                    best_theta = theta.copy()
+                    patience_counter = 0
+                else:
+                    patience_counter += 1
+            elif ref_loss < best_loss - self.cfg.min_improvement:
                 best_loss = ref_loss
                 best_theta = theta.copy()
                 patience_counter = 0
             else:
                 patience_counter += 1
 
+            callback_result = None
             if callback is not None:
-                callback(t, theta, current_loss)
+                callback_result = callback(t, theta, current_loss)
+
+            if (
+                checkpoint_candidate_callback is not None
+                and callback_result is True
+            ):
+                post_refit_candidate = evaluate_checkpoint_candidate(
+                    t,
+                    "post_refit",
+                    theta,
+                    {
+                        "minibatch_loss": float(current_loss),
+                        "update_accepted": bool(update_accepted),
+                        "refit_applied": True,
+                        "block_telemetry": step_record.get("block_telemetry"),
+                    },
+                )
+                post_refit_loss = float(post_refit_candidate["objective"])
+                step_record["post_refit_training_reference_loss"] = post_refit_loss
+                step_record["readout_refit_applied"] = True
+                if quantum_block_size is not None:
+                    step_record["post_refit_parameter_norm"] = block_norms(theta)
+                    step_record["post_refit_relative_movement_from_initial"] = {
+                        "quantum": float(
+                            np.linalg.norm(
+                                theta[:quantum_block_size]
+                                - initial_theta[:quantum_block_size]
+                            )
+                            / max(
+                                np.linalg.norm(
+                                    initial_theta[:quantum_block_size]
+                                ),
+                                np.finfo(float).eps,
+                            )
+                        ),
+                        "classical": float(
+                            np.linalg.norm(
+                                theta[quantum_block_size:]
+                                - initial_theta[quantum_block_size:]
+                            )
+                            / max(
+                                np.linalg.norm(
+                                    initial_theta[quantum_block_size:]
+                                ),
+                                np.finfo(float).eps,
+                            )
+                        ),
+                    }
+                if post_refit_candidate["replaces_incumbent"]:
+                    best_loss = post_refit_loss
+                    best_theta = theta.copy()
+                    patience_counter = 0
+            elif checkpoint_candidate_callback is not None:
+                step_record["readout_refit_applied"] = False
 
             logger.debug(
                 f"  iter={t:3d}  loss={current_loss:.6f}  "

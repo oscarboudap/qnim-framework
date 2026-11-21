@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "experiment_id": "QNIM_QUANTUM_PCA_SCALING_V2",
+  "status": "implementation_frozen_execution_not_authorized",
+  "source_protocol": {
+    "id": "QNIM_QUANTUM_PCA_SCALING_V1",
+    "path": "../qnim_quantum_pca_scaling_v1/protocol.json",
+    "immutable": true
+  },
+  "objective": "Evaluate reliable quantum-centred learning at q16/PCA16 with coherent whole-model checkpoint selection; no quantum-advantage claim.",
+  "dataset": {
+    "dataset_id": "QNIM_Q1_6_DATASET_V2_PCA64",
+    "relative_path": "../qnim_q1_6_dataset_v2_pca64",
+    "dataset_manifest_sha256": "53a153278ce83722a61a02cd8bff6749c599209fc11202b5e64ed5ee23c05bfd",
+    "files": {
+      "X_train_scaled64.npy": "6fb936d7836789e9ca59941e47a2cdff701acd5d057f4258db82b134237e5dad",
+      "X_val_scaled64.npy": "f717042628bd35f7a8dad9457996f0d9b3d9d22a08803319c874390714af2783",
+      "y_train.npy": "9e4cc1a458f2f7825f69718bdd4a78bc5e56acc21d6396b14a2e302a477f01d6",
+      "y_val.npy": "81c6b2e663a9d65c96c699cd88253efb5003b9893ae19d21c7fa2b5d12719ead",
+      "pca_state.npz": "183108741f6b991242621a1d8c05ca481c851da459645c7a99a69433ab7e99ff"
+    },
+    "train_shape": [2600, 64],
+    "validation_shape": [650, 64],
+    "classes": 13,
+    "class_order": "integer class IDs 0 through 12 in the source dataset order",
+    "model_input": "first 16 columns of the stored scaled PCA matrices",
+    "additional_preprocessing": "identity; no PCA or scaler refit",
+    "test_access": false
+  },
+  "training_roles": {
+    "source_split": "original training split only",
+    "seed": 42,
+    "per_class_counts": {
+      "gradient_optimization": 175,
+      "readout_fit": 15,
+      "checkpoint_reference": 10
+    },
+    "total_counts": {
+      "gradient_optimization": 2275,
+      "readout_fit": 195,
+      "checkpoint_reference": 130
+    },
+    "partition": "stratified, pairwise-disjoint, complete partition of all 2600 training examples",
+    "indices_and_sha256": "persist exact int64 dataset-position indices and canonical little-endian SHA-256 hashes",
+    "validation_role": "metrics and declared diagnostic observations only; never used for optimization, refitting, checkpoint selection, or tie breaking"
+  },
+  "architecture": {
+    "qubits": 16,
+    "input_components": 16,
+    "classes": 13,
+    "feature_map": {
+      "class": "ZZFeatureMap",
+      "reps": 2,
+      "entanglement": "linear",
+      "input_transform": "identity"
+    },
+    "ansatz": {
+      "class": "EfficientSU2",
+      "reps": 2,
+      "entanglement": "linear",
+      "rotation_gates": ["ry", "rz"],
+      "trainable_parameters": 96
+    },
+    "readout": {
+      "mode": "marginals_zz_neighbors",
+      "features": "16 P(qubit_i=0) marginals followed by 15 adjacent <Z_i Z_(i+1)> correlations",
+      "feature_count": 31,
+      "classical_head": "one-hidden-layer ReLU MLP, 16 hidden units, 13 softmax outputs",
+      "trainable_parameters": 733,
+      "parameter_vector": "[96 ansatz parameters | complete MLP parameter vector]"
+    }
+  },
+  "optimization": {
+    "optimizer": "existing QNSPSA-EML-Feynman equations, unchanged",
+    "strategy": "joint quantum/classical parameter vector with warm-start and periodic readout refits",
+    "learning_rate": 0.03,
+    "batch_size": 32,
+    "shots": 512,
+    "maximum_iterations": 20,
+    "initialization_seed": 42,
+    "optimizer_seed": 42,
+    "sampler_seed_policy": "StatevectorSampler initialized with seed 42; record backend and actual shots for each measurement group",
+    "readout_fit": {
+      "examples": "all 195 fixed readout-role training examples",
+      "warm_start": true,
+      "refit_every_iterations": 10,
+      "mlp_initialization_seed": 42,
+      "optimizer": "existing deterministic NumPy MLP fitting procedure"
+    },
+    "best_checkpoint": {
+      "training_only": true,
+      "initial_post_warm_start_is_candidate": true,
+      "evaluate": "initial vector; every post-blocking pre-refit vector; each scheduled post-refit vector",
+      "objective": "mean cross-entropy on the fixed 130-example checkpoint-reference subset at 512 shots",
+      "whole_state": "compare and persist the complete [ansatz | MLP] vector",
+      "tie_breaking": "no replacement unless the one-sided upper bound for candidate-minus-incumbent loss is below -0.0005",
+      "validation_metrics_used": false,
+      "parameter_serialization": "persist complete candidate vectors, component hashes, objective, phase, iteration, shots, reference-index hash, seed policy, uncertainty, and incumbent decision"
+    },
+    "finite_shot_comparison": {
+      "estimator": "paired fixed-example candidate-minus-incumbent mean loss difference",
+      "shot_variance": "first-order delta method using the full covariance matrix of all 31 observables derived jointly from each example's bitstring counts",
+      "decision_bound": "one-sided normal upper bound with Bonferroni alpha 0.05 across a maximum of 22 non-initial candidate comparisons",
+      "limitations": [
+        "approximate finite-shot uncertainty conditional on these fixed examples and the local delta approximation",
+        "does not include population sampling, independent run seeds, backend drift, optimizer variability, or model misspecification",
+        "not a claim of statistical significance"
+      ]
+    }
+  },
+  "telemetry": {
+    "record_every_iteration": true,
+    "per_block": [
+      "SPSA gradient norms and two-probe empirical blockwise variance",
+      "Feynman and EML contribution norms",
+      "combined and preconditioned gradient norms",
+      "proposed and applied step norms",
+      "parameter norms and relative movement from initialization",
+      "accepted/rejected status"
+    ],
+    "per_example_probabilities": [
+      "13 probabilities",
+      "true and predicted class",
+      "negative log likelihood",
+      "top-two margin",
+      "predictive entropy",
+      "quantum, classical, and complete parameter hashes"
+    ],
+    "calibration": "multiclass Brier score and top-label ECE with 10 equal-width confidence bins"
+  },
+  "measurement_observations": {
+    "diagnostic_examples": {
+      "training": "the fixed 130 checkpoint-reference examples",
+      "validation": "5 stratified examples per class, selected with seed 42042 from validation only"
+    },
+    "phases": "initial post-warm-start and frozen selected checkpoint; checkpoint-reference counts already collected for every candidate are retained",
+    "fields": [
+      "example ID, split, class, iteration, phase",
+      "quantum/classical/complete parameter hashes",
+      "16 marginals and 15 adjacent ZZ correlations",
+      "standard errors, actual shots, backend, timestamp",
+      "sparse bitstring counts preserving joint-observable covariance"
+    ],
+    "format": "atomic compressed NPZ plus JSON metadata sidecar; separate from probability artifacts",
+    "test_examples": false
+  },
+  "validation_reporting": {
+    "final_checkpoint": "evaluate all 650 validation examples at 512 shots",
+    "metrics": ["accuracy", "balanced accuracy", "macro-F1", "cross-entropy", "confusion matrix", "multiclass Brier score", "top-label ECE"],
+    "reporting_only": true
+  },
+  "checkpoint_integrity_and_recovery": {
+    "atomic_writes": true,
+    "parameter_hash": "SHA-256 of canonical contiguous little-endian float64 bytes",
+    "protocol_hash": "SHA-256 of canonical JSON bytes for protocol.json",
+    "dataset_hashes": "verify before any circuit execution and persist in attempt manifest",
+    "interruption": "preserve the failed attempt and its last atomic checkpoint; do not silently resume optimizer metric/RNG state; a restart creates a new attempt from fixed initialization",
+    "errors": "surface dataset, sampler, serialization, or integrity failures and stop the run"
+  },
+  "resource_accounting": {
+    "measured": ["circuit executions", "actual shots", "examples evaluated", "readout fits", "wall-clock time", "backend job IDs when provided"],
+    "estimated": ["none unless explicitly labeled"],
+    "hardware_execution": false
+  },
+  "scope": {
+    "q20": false,
+    "additional_seeds": false,
+    "ablations": false,
+    "hardware_jobs": false,
+    "training_authorized": false
+  }
+}

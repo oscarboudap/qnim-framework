@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "experiment_id": "QNIM_IBM_QPU_PILOT_V1",
+  "status": "development_only",
+  "submission_enabled": false,
+  "algorithm_identity": {
+    "pretraining": "local QNSPSA-EML-Feynman",
+    "hardware_update": "IBM HardwareSPSAOptimizer (SPSA fine-tuning)",
+    "remote_qnspsa_eml_feynman": false
+  },
+  "dataset": {
+    "dataset_id": "QNIM_Q1_6_DATASET_V2_PCA64",
+    "relative_path": "results/scaling_study/qnim_q1_6_dataset_v2_pca64",
+    "dataset_manifest_sha256": "53a153278ce83722a61a02cd8bff6749c599209fc11202b5e64ed5ee23c05bfd",
+    "file_sha256": {
+      "X_train_scaled64.npy": "6fb936d7836789e9ca59941e47a2cdff701acd5d057f4258db82b134237e5dad",
+      "y_train.npy": "9e4cc1a458f2f7825f69718bdd4a78bc5e56acc21d6396b14a2e302a477f01d6",
+      "X_val_scaled64.npy": "f717042628bd35f7a8dad9457996f0d9b3d9d22a08803319c874390714af2783",
+      "y_val.npy": "81c6b2e663a9d65c96c699cd88253efb5003b9893ae19d21c7fa2b5d12719ead",
+      "pca_state.npz": "183108741f6b991242621a1d8c05ca481c851da459645c7a99a69433ab7e99ff"
+    },
+    "input_files": {
+      "X_train": "X_train_scaled64.npy",
+      "y_train": "y_train.npy",
+      "X_val": "X_val_scaled64.npy",
+      "y_val": "y_val.npy"
+    },
+    "shapes": {
+      "X_train": [2600, 64],
+      "y_train": [2600],
+      "X_val": [650, 64],
+      "y_val": [650]
+    },
+    "pca_state_file": "pca_state.npz"
+  },
+  "model": {
+    "logical_qubits": 8,
+    "input_dimension": 8,
+    "classes": 13,
+    "feature_map_reps": 2,
+    "ansatz_reps": 2,
+    "entanglement": "linear",
+    "readout_hidden_size": 16,
+    "readout_mode": "marginals"
+  },
+  "local_pretraining": {
+    "optimizer": "QNSPSA-EML-Feynman",
+    "max_iterations": 10,
+    "n_feynman_params": 4,
+    "batch_size": 4,
+    "shots": 128,
+    "reference_shots": 512,
+    "readout_refit_every": 10,
+    "seed": 42
+  },
+  "hardware_spsa": {
+    "optimizer": "HardwareSPSAOptimizer",
+    "steps": 5,
+    "batch_size": 4,
+    "shots": 128,
+    "learning_rate": 0.03,
+    "perturbation": 0.05,
+    "seed": 42,
+    "reference_every": 5,
+    "reference_examples": 16,
+    "reference_shots": 512
+  },
+  "validation": {
+    "split": "validation",
+    "examples": 65,
+    "sampling": "stratified, five examples per class",
+    "seed": 43,
+    "shots": 512,
+    "use_zne": false,
+    "zne_scale_factors": [1]
+  },
+  "backend": {
+    "name": null,
+    "instance": null,
+    "physical_layout": null,
+    "layout_policy": "must be an explicitly selected connected ordered layout from the queried backend coupling map"
+  },
+  "randomness": {
+    "local_simulation": "one seeded StatevectorSampler instance with deterministic pseudorandom replay; no claim of mathematical independence",
+    "hardware": "Runtime-managed sampling; the randomness model must be documented before submission, and separate PRNG seeds do not establish mathematical independence",
+    "candidate_incumbent_streams": "not applicable to this pilot; hardware SPSA evaluations are distinct jobs"
+  },
+  "software": {
+    "qiskit": "2.3.1",
+    "qiskit-ibm-runtime": "0.46.1"
+  },
+  "resource_budget": {
+    "max_qpu_jobs": 16,
+    "max_total_qpu_shots": 60000,
+    "max_optimization_steps": 5,
+    "max_validation_examples": 65
+  },
+  "job_recording": {
+    "directory": "results/scaling_study/qnim_ibm_qpu_pilot_v1/jobs",
+    "require_submission_intent_before_sampler_run": true,
+    "block_automatic_resubmission_with_unresolved_record": true
+  }
+}

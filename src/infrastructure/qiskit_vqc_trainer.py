@@ -109,7 +109,7 @@ import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, Optional, Sequence
 
 import numpy as np
 
@@ -369,6 +369,37 @@ def _qubit_marginal_probs(counts: dict, n_qubits: int) -> np.ndarray:
     else:
         probs[:] = 0.5
     return probs
+
+
+def _validation_metrics(
+    y_true: np.ndarray, y_pred: np.ndarray, n_classes: int
+) -> dict[str, object]:
+    truth = np.asarray(y_true, dtype=int)
+    prediction = np.asarray(y_pred, dtype=int)
+    if truth.ndim != 1 or prediction.shape != truth.shape or truth.size == 0:
+        raise ValueError("Validation labels and predictions must be aligned non-empty vectors")
+    if (
+        np.any(truth < 0)
+        or np.any(truth >= n_classes)
+        or np.any(prediction < 0)
+        or np.any(prediction >= n_classes)
+    ):
+        raise ValueError("Validation labels or predictions are outside the class range")
+    matrix = np.zeros((n_classes, n_classes), dtype=int)
+    np.add.at(matrix, (truth, prediction), 1)
+    row_totals = matrix.sum(axis=1)
+    supported = row_totals > 0
+    recalls = np.divide(
+        np.diag(matrix),
+        row_totals,
+        out=np.zeros(n_classes, dtype=float),
+        where=supported,
+    )
+    return {
+        "accuracy": float(np.trace(matrix) / truth.size),
+        "balanced_accuracy": float(recalls[supported].mean()),
+        "confusion_matrix": matrix.tolist(),
+    }
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -911,6 +942,11 @@ def _make_vqc_loss_fn(
     readout_mode: str = "marginals",
     input_preprocessing: str = "chebyshev",
     sampler_backend=None,
+    gradient_indices: Optional[np.ndarray] = None,
+    readout_indices: Optional[np.ndarray] = None,
+    checkpoint_reference_indices: Optional[np.ndarray] = None,
+    readout_fit_seed: int = 0,
+    initial_layout: Optional[Sequence[int]] = None,
 ) -> Callable[[np.ndarray], float]:
     """
     Crea la función de coste para el VQC según el modo.
@@ -963,8 +999,23 @@ def _make_vqc_loss_fn(
         combined_with_meas = combined.copy()
         combined_with_meas.measure_all()
 
-        if ibm_backend is not None:
-            combined_run = _transpile(combined_with_meas, backend=ibm_backend, optimization_level=1)
+        if remote_hardware and initial_layout is None:
+            raise ValueError("Remote hardware execution requires an explicit physical layout")
+        if ibm_backend is not None and remote_hardware:
+            combined_run = _transpile(
+                combined_with_meas,
+                backend=ibm_backend,
+                initial_layout=list(initial_layout),
+                optimization_level=1,
+            )
+            logger.info(
+                f"Feature map + ansatz transpilado para {ibm_backend.name} "
+                f"con layout {list(initial_layout)}"
+            )
+        elif ibm_backend is not None:
+            combined_run = _transpile(
+                combined_with_meas, backend=ibm_backend, optimization_level=1
+            )
             logger.info(
                 f"Feature map + ansatz transpilado para {ibm_backend.name}: "
                 f"{combined_run.num_parameters} parámetros ISA"
@@ -1038,15 +1089,58 @@ def _make_vqc_loss_fn(
             "n_training_examples_evaluated": 0,
             "n_readout_refits": 0,
             "n_readout_initializations": 0,
+            "n_validation_examples_evaluated": 0,
+            "n_checkpoint_reference_examples_evaluated": 0,
+            "n_sampler_run_calls": 0,
+            "n_sampler_jobs_submitted": 0,
+            "n_sampler_jobs_completed": 0,
         }
+
+        def _validated_indices(indices, name: str) -> Optional[np.ndarray]:
+            if indices is None:
+                return None
+            values = np.asarray(indices, dtype=np.int64)
+            if (
+                values.ndim != 1
+                or values.size == 0
+                or np.any(values < 0)
+                or np.any(values >= len(X_cheb))
+                or len(np.unique(values)) != len(values)
+            ):
+                raise ValueError(f"{name} must be unique valid training indices")
+            return values.copy()
+
+        _gradient_idx = _validated_indices(gradient_indices, "gradient_indices")
+        _readout_idx = _validated_indices(readout_indices, "readout_indices")
+        _checkpoint_reference_idx = _validated_indices(
+            checkpoint_reference_indices, "checkpoint_reference_indices"
+        )
+        role_pairs = (
+            (_gradient_idx, _readout_idx),
+            (_gradient_idx, _checkpoint_reference_idx),
+            (_readout_idx, _checkpoint_reference_idx),
+        )
+        if any(
+            left is not None
+            and right is not None
+            and np.intersect1d(left, right).size
+            for left, right in role_pairs
+        ):
+            raise ValueError("V2 training roles must be pairwise disjoint")
 
         def _draw_batch_size() -> int:
             batch = hardware_batch_size if remote_hardware else batch_size_local
-            return min(batch, len(X_cheb))
+            population_size = (
+                len(_gradient_idx) if _gradient_idx is not None else len(X_cheb)
+            )
+            return min(batch, population_size)
 
         def _refresh_batch() -> None:
+            population = (
+                _gradient_idx if _gradient_idx is not None else np.arange(len(X_cheb))
+            )
             _batch_state["idx"] = _batch_rng.choice(
-                len(X_cheb), _draw_batch_size(), replace=False
+                population, _draw_batch_size(), replace=False
             )
             _batch_history.append(_batch_state["idx"].copy())
 
@@ -1074,6 +1168,49 @@ def _make_vqc_loss_fn(
                 "pubs": n_pubs,
                 "qpu_seconds": qpu_seconds,
             }
+
+        def _extract_counts(pub_result, expected_shots: int, pub_index: int) -> dict[str, int]:
+            measurement = pub_result.data.meas
+            num_bits = getattr(measurement, "num_bits", n_qubits)
+            if num_bits is not None and int(num_bits) != n_qubits:
+                raise RuntimeError(
+                    f"Measurement {pub_index} has {num_bits} bits; expected {n_qubits}"
+                )
+            num_shots = getattr(measurement, "num_shots", expected_shots)
+            if num_shots is not None and int(num_shots) != expected_shots:
+                raise RuntimeError(
+                    f"Measurement {pub_index} has {num_shots} shots; "
+                    f"expected {expected_shots}"
+                )
+
+            raw_counts = measurement.get_counts()
+            normalized_counts: dict[str, int] = {}
+            for bitstring, raw_count in raw_counts.items():
+                bits = "".join(str(bitstring).split())
+                if (
+                    not bits
+                    or any(bit not in "01" for bit in bits)
+                    or not isinstance(raw_count, (int, np.integer))
+                    or raw_count <= 0
+                ):
+                    raise RuntimeError(
+                        f"Measurement {pub_index} contains invalid counts"
+                    )
+                if len(bits) != n_qubits:
+                    raise RuntimeError(
+                        f"Measurement {pub_index} has a {len(bits)}-bit count; "
+                        f"expected {n_qubits}"
+                    )
+                normalized_counts[bits] = (
+                    normalized_counts.get(bits, 0) + int(raw_count)
+                )
+            if sum(normalized_counts.values()) != expected_shots:
+                raise RuntimeError(
+                    f"Measurement {pub_index} returned "
+                    f"{sum(normalized_counts.values())} counts; "
+                    f"expected {expected_shots}"
+                )
+            return normalized_counts
 
         def evaluate_batch(
             theta: np.ndarray,
@@ -1103,10 +1240,13 @@ def _make_vqc_loss_fn(
                     (_bind_sample(combined_run, x_params, ansatz_params, xi, theta), [])
                     for xi in X_batch
                 ]
+                _execution_telemetry["n_sampler_run_calls"] += 1
                 job = sampler.run(pubs, shots=_shots)
+                _execution_telemetry["n_sampler_jobs_submitted"] += 1
                 execution = _execution_metadata(job, len(pubs), _shots)
                 _execution_state["last"] = execution
                 batch_result = job.result()
+                _execution_telemetry["n_sampler_jobs_completed"] += 1
                 if len(batch_result) != len(pubs):
                     raise RuntimeError(
                         "Sampler result count does not match submitted circuits"
@@ -1121,7 +1261,7 @@ def _make_vqc_loss_fn(
                 total_loss = 0.0
                 for i, yi in enumerate(y_batch):
                     try:
-                        counts = batch_result[i].data.meas.get_counts()
+                        counts = _extract_counts(batch_result[i], _shots, i)
                         readout_features = _qubit_readout_features(
                             counts, n_qubits, readout_mode
                         )
@@ -1147,6 +1287,108 @@ def _make_vqc_loss_fn(
                 error = RuntimeError(f"Fallo de ejecución del circuito: {e}")
                 error.hardware_execution = execution
                 raise error from e
+
+        def measure_count_rows(
+            theta: np.ndarray,
+            X_batch: np.ndarray,
+            shots_override: int,
+            *,
+            role: str,
+        ) -> list[dict[str, int]]:
+            if shots_override < 2:
+                raise ValueError("measurement observations require at least two shots")
+            if role not in {"checkpoint_reference", "validation"}:
+                raise ValueError(f"unsupported measurement role: {role}")
+            X_batch = np.asarray(X_batch, dtype=np.float64)
+            if X_batch.ndim != 2 or X_batch.shape[1] != n_features:
+                raise ValueError("measurement input has an unexpected feature shape")
+            if not len(X_batch):
+                raise ValueError("measurement input cannot be empty")
+            pubs = [
+                (_bind_sample(combined_run, x_params, ansatz_params, xi, theta), [])
+                for xi in X_batch
+            ]
+            job = None
+            execution = {"job_ids": [], "shots": 0, "pubs": 0, "qpu_seconds": None}
+            try:
+                _execution_telemetry["n_sampler_run_calls"] += 1
+                job = sampler.run(pubs, shots=shots_override)
+                _execution_telemetry["n_sampler_jobs_submitted"] += 1
+                execution = _execution_metadata(job, len(pubs), shots_override)
+                _execution_state["last"] = execution
+                batch_result = job.result()
+                _execution_telemetry["n_sampler_jobs_completed"] += 1
+                if len(batch_result) != len(pubs):
+                    raise RuntimeError(
+                        "Sampler result count does not match observation circuits"
+                    )
+                counts = [
+                    _extract_counts(batch_result[i], shots_override, i)
+                    for i in range(len(batch_result))
+                ]
+                _execution_telemetry["n_circuit_executions"] += len(batch_result)
+                _execution_telemetry["n_shots_total"] += len(batch_result) * shots_override
+                if role == "checkpoint_reference":
+                    _execution_telemetry[
+                        "n_checkpoint_reference_examples_evaluated"
+                    ] += len(batch_result)
+                    _execution_telemetry["n_objective_function_calls"] += 1
+                elif role == "validation":
+                    _execution_telemetry[
+                        "n_validation_examples_evaluated"
+                    ] += len(batch_result)
+                return counts
+            except Exception as exc:
+                logger.exception("Failed to collect measurement observation counts.")
+                if job is not None:
+                    execution = _execution_metadata(job, len(pubs), shots_override)
+                    _execution_state["last"] = execution
+                error = RuntimeError(f"Measurement observation failed: {exc}")
+                error.hardware_execution = execution
+                raise error from exc
+
+        def measure_counts_by_indices(
+            theta: np.ndarray,
+            indices: np.ndarray,
+            shots_override: int,
+        ) -> list[dict[str, int]]:
+            idx = np.asarray(indices, dtype=np.int64)
+            if (
+                idx.ndim != 1
+                or idx.size == 0
+                or np.any(idx < 0)
+                or np.any(idx >= len(X_cheb))
+            ):
+                raise ValueError("measurement indices are invalid")
+            if (
+                _checkpoint_reference_idx is not None
+                and not np.array_equal(idx, _checkpoint_reference_idx)
+            ):
+                raise ValueError(
+                    "checkpoint measurements must use the fixed reference indices"
+                )
+            return measure_count_rows(
+                theta,
+                X_cheb[idx],
+                shots_override,
+                role="checkpoint_reference",
+            )
+
+        def measure_counts_external(
+            theta: np.ndarray,
+            X_eval: np.ndarray,
+            shots_override: int,
+        ) -> list[dict[str, int]]:
+            X_eval_proc = _prepare_feature_matrix(X_eval, n_features)
+            X_eval_cheb = _transform_feature_matrix(
+                X_eval_proc, n_features, input_preprocessing, train_stats
+            )
+            return measure_count_rows(
+                theta,
+                X_eval_cheb,
+                shots_override,
+                role="validation",
+            )
 
         def vqc_loss(theta: np.ndarray) -> float:
             """Cross-entropy media sobre el batch fijo de la iteración actual."""
@@ -1208,8 +1450,12 @@ def _make_vqc_loss_fn(
             )
 
         _reference_size = min(max(128, 10 * n_classes), len(X_cheb))
-        _reference_idx = np.random.default_rng(random_seed + 2024).choice(
-            len(X_cheb), _reference_size, replace=False
+        _reference_idx = (
+            _checkpoint_reference_idx.copy()
+            if _checkpoint_reference_idx is not None
+            else np.random.default_rng(random_seed + 2024).choice(
+                len(X_cheb), _reference_size, replace=False
+            )
         )
 
         _ref_shots = reference_shots if reference_shots is not None else (
@@ -1236,18 +1482,30 @@ def _make_vqc_loss_fn(
                 (W1, b1, W2, b2)
             """
             n_warm = min(max_samples, len(X_cheb))
-            warm_idx = np.random.default_rng(random_seed + 7).choice(
-                len(X_cheb), n_warm, replace=False
-            )
+            if _readout_idx is not None:
+                warm_idx = _readout_idx.copy()
+            else:
+                warm_idx = np.random.default_rng(random_seed + 7).choice(
+                    len(X_cheb), n_warm, replace=False
+                )
+            n_warm = len(warm_idx)
             X_warm = X_cheb[warm_idx]
             y_warm = y_train[warm_idx]
 
             pubs = [
-                (_bind_sample(combined_run, x_params, ansatz_params, xi, ansatz_weights),)
+                (
+                    _bind_sample(
+                        combined_run, x_params, ansatz_params, xi, ansatz_weights
+                    ),
+                    [],
+                )
                 for xi in X_warm
             ]
+            _execution_telemetry["n_sampler_run_calls"] += 1
             job = sampler.run(pubs, shots=shots)
+            _execution_telemetry["n_sampler_jobs_submitted"] += 1
             batch_result = job.result()
+            _execution_telemetry["n_sampler_jobs_completed"] += 1
             if len(batch_result) != len(pubs):
                 raise RuntimeError(
                     "Sampler result count does not match readout-fit circuits"
@@ -1260,13 +1518,20 @@ def _make_vqc_loss_fn(
 
             readout_features_warm = np.zeros((n_warm, readout_feature_count))
             for i in range(n_warm):
-                counts = batch_result[i].data.meas.get_counts()
+                counts = _extract_counts(batch_result[i], shots, i)
                 readout_features_warm[i] = _qubit_readout_features(
                     counts, n_qubits, readout_mode
                 )
 
+            fit_kwargs = (
+                {"seed": readout_fit_seed} if readout_fit_seed != 0 else {}
+            )
             return _fit_readout_mlp_classically(
-                readout_features_warm, y_warm, n_classes, hidden_size=hidden_size
+                readout_features_warm,
+                y_warm,
+                n_classes,
+                hidden_size=hidden_size,
+                **fit_kwargs,
             )
 
         vqc_loss.refresh_batch = _refresh_batch
@@ -1275,6 +1540,8 @@ def _make_vqc_loss_fn(
         vqc_loss.measure_quantum_features = measure_quantum_features
         vqc_loss.measure_quantum_features_exact = measure_quantum_features_exact
         vqc_loss.measure_quantum_observables_exact = measure_quantum_observables_exact
+        vqc_loss.measure_counts_by_indices = measure_counts_by_indices
+        vqc_loss.measure_counts_external = measure_counts_external
         vqc_loss.last_execution = _execution_state
         vqc_loss.warm_start_readout = warm_start_readout
         vqc_loss.execution_telemetry = _execution_telemetry
@@ -1282,6 +1549,7 @@ def _make_vqc_loss_fn(
         vqc_loss.current_batch_indices = lambda: _batch_state["idx"].copy()
         vqc_loss.last_readout_indices = np.array([], dtype=int)
         vqc_loss.n_ansatz_params = n_ansatz_params
+        vqc_loss.reference_indices = _reference_idx.copy()
         vqc_loss.hidden_size = hidden_size
         vqc_loss.readout_feature_count = readout_feature_count
         return vqc_loss
@@ -1378,12 +1646,19 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         reference_every: int = 5,
         reference_indices: Optional[np.ndarray] = None,
         seed: int = 42,
+        physical_layout: Optional[Sequence[int]] = None,
+        job_record_store=None,
+        job_record_metadata: Optional[dict] = None,
     ):
         """Adapt simulator-trained weights with a bounded real-QPU SPSA budget."""
         if self.mode != "ibm":
             raise RuntimeError("El fine-tuning en hardware requiere mode='ibm'")
         if not self.token:
             raise RuntimeError("IBM_QUANTUM_TOKEN no está configurado")
+        if physical_layout is None:
+            raise ValueError("Hardware SPSA requires an explicit connected physical layout")
+        if job_record_store is None or job_record_metadata is None:
+            raise ValueError("Hardware SPSA requires durable job-record metadata")
         X_train = _prepare_feature_matrix(X_train, n_features)
         y_train = np.asarray(y_train, dtype=int)
         if y_train.ndim != 1 or len(y_train) != len(X_train):
@@ -1402,6 +1677,18 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             HardwareSPSAConfig,
             HardwareSPSAOptimizer,
         )
+        from src.infrastructure.qnim_ibm_qpu_pilot import (
+            DurableSampler,
+            PILOT_EXPERIMENT_ID,
+            parameter_sha256 as _pilot_parameter_sha256,
+            validate_connected_layout,
+            validate_pilot_job_context,
+        )
+        validate_pilot_job_context(
+            job_record_store,
+            job_record_metadata,
+            optimization_steps=steps,
+        )
 
         try:
             service = QiskitRuntimeService(
@@ -1413,7 +1700,30 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                     f"Backend {self.backend_name} ofrece {backend.num_qubits} qubits; "
                     f"el circuito requiere {n_qubits}"
                 )
-            sampler = SamplerV2(mode=backend)
+            coupling = getattr(backend, "coupling_map", None)
+            get_edges = getattr(coupling, "get_edges", None)
+            if not callable(get_edges):
+                raise ValueError("Selected backend does not expose a coupling map")
+            connected_layout = validate_connected_layout(
+                physical_layout,
+                get_edges(),
+                logical_qubits=n_qubits,
+                backend_qubits=int(backend.num_qubits),
+            )
+            record_metadata = dict(job_record_metadata)
+            record_metadata.update(
+                {
+                    "backend": self.backend_name,
+                    "physical_layout": list(connected_layout),
+                    "logical_qubits": n_qubits,
+                    "instance": record_metadata.get("instance"),
+                }
+            )
+            sampler = DurableSampler(
+                SamplerV2(mode=backend),
+                job_record_store,
+                record_metadata,
+            )
             loss_fn = _make_vqc_loss_fn(
                 X_train=X_train,
                 y_train=y_train,
@@ -1433,12 +1743,64 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 reference_shots=self.reference_shots,
                 readout_hidden_size=self.readout_hidden_size,
                 readout_mode=self.readout_mode,
+                initial_layout=connected_layout,
             )
             if not hasattr(loss_fn, "evaluate_batch"):
                 raise RuntimeError("La pérdida no admite evaluación de minibatch explícito")
 
-            def evaluate(parameters, indices, evaluation_shots):
+            evaluation_number = 0
+            spsa_step = 0
+            spsa_side = 0
+
+            def evaluate(parameters, indices, evaluation_shots, is_reference=False):
+                nonlocal evaluation_number, spsa_step, spsa_side
+                evaluation_number += 1
+                current_parameter_hash = _pilot_parameter_sha256(parameters)
+                if is_reference:
+                    evaluation_role = "fixed_reference"
+                elif spsa_side == 0:
+                    spsa_step += 1
+                    spsa_side = 1
+                    evaluation_role = "spsa_plus"
+                else:
+                    spsa_side = 0
+                    evaluation_role = "spsa_minus"
+                sampler.set_execution_context(
+                    {
+                        "parameter_hash": current_parameter_hash,
+                        "optimizer_state": {
+                            "optimizer": "HardwareSPSAOptimizer",
+                            "step": spsa_step,
+                            "evaluation_number": evaluation_number,
+                            "parameters_sha256": current_parameter_hash,
+                            "parameters": np.asarray(parameters, dtype=float).tolist(),
+                            "evaluation_role": evaluation_role,
+                            "learning_rate": self.learning_rate,
+                            "perturbation": 0.05,
+                            "alpha": 0.602,
+                            "gamma": 0.101,
+                            "a_k": (
+                                self.learning_rate / (spsa_step ** 0.602)
+                                if spsa_step
+                                else None
+                            ),
+                            "c_k": (
+                                0.05 / (spsa_step ** 0.101)
+                                if spsa_step
+                                else None
+                            ),
+                        },
+                        "sampling_policy": {
+                            "role": evaluation_role,
+                            "sample_indices": np.asarray(indices, dtype=int).tolist(),
+                            "shots_per_circuit": int(evaluation_shots),
+                            "seed": int(seed),
+                        },
+                    }
+                )
                 loss = loss_fn.evaluate_batch(parameters, indices, evaluation_shots)
+                if job_record_metadata.get("experiment_id") == PILOT_EXPERIMENT_ID:
+                    sampler.update_last_record({"evaluation_loss": float(loss)})
                 usage = loss_fn.last_execution.get("last", {})
                 return HardwareEvaluation(
                     loss=float(loss),
@@ -1446,6 +1808,14 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                     shots=int(usage.get("shots", len(indices) * evaluation_shots)),
                     pubs=int(usage.get("pubs", len(indices))),
                     qpu_seconds=usage.get("qpu_seconds"),
+                )
+
+            def evaluate_spsa(parameters, indices, evaluation_shots):
+                return evaluate(parameters, indices, evaluation_shots)
+
+            def evaluate_reference(parameters, indices, evaluation_shots):
+                return evaluate(
+                    parameters, indices, evaluation_shots, is_reference=True
                 )
 
             if reference_indices is None:
@@ -1469,8 +1839,8 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 n_samples=len(X_train),
                 batch_size=batch_size,
                 shots=shots,
-                evaluator=evaluate,
-                reference_evaluator=evaluate if reference_every else None,
+                evaluator=evaluate_spsa,
+                reference_evaluator=evaluate_reference if reference_every else None,
                 reference_indices=reference_indices if reference_every else None,
             )
             return self.last_hardware_spsa
@@ -1919,6 +2289,9 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         n_feynman_params: Optional[int] = None,
         hardware_finetune_steps: Optional[int] = None,
         compute_accuracy_vs_snr: bool = True,
+        physical_layout: Optional[Sequence[int]] = None,
+        job_record_store=None,
+        job_record_metadata: Optional[dict] = None,
     ) -> VQCTrainingResult:
         """Entrena y evalúa el VQC. Retorna VQCTrainingResult completo."""
         try:
@@ -1961,6 +2334,9 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                     steps=finetune_steps,
                     batch_size=self.hardware_batch_size,
                     shots=self.hardware_shots,
+                    physical_layout=physical_layout,
+                    job_record_store=job_record_store,
+                    job_record_metadata=job_record_metadata,
                 )
                 total_time += time.time() - hardware_start
                 final_weights = hardware_result.parameters
@@ -2011,6 +2387,9 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                         n_qubits,
                         n_features,
                         use_zne,
+                        physical_layout=physical_layout,
+                        job_record_store=job_record_store,
+                        job_record_metadata=job_record_metadata,
                     )
                 except Exception as e:
                     logger.exception("Validación IBM falló; se propaga el error en lugar de inventar resultados.")
@@ -2074,36 +2453,123 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
         n_qubits: int,
         n_features: int,
         use_zne: bool,
+        *,
+        physical_layout: Optional[Sequence[int]] = None,
+        job_record_store=None,
+        job_record_metadata: Optional[dict] = None,
+    ) -> tuple[float, float]:
+        return self._evaluate_on_ibm_split(
+            weights=weights,
+            X_train=dataset.X_train,
+            X_eval=dataset.X_val,
+            y_eval=dataset.y_val,
+            n_classes=dataset.n_classes,
+            n_qubits=n_qubits,
+            n_features=n_features,
+            use_zne=use_zne,
+            split_name="validation",
+            physical_layout=physical_layout,
+            job_record_store=job_record_store,
+            job_record_metadata=job_record_metadata,
+        )
+
+    def evaluate_test_on_ibm(
+        self,
+        weights: np.ndarray,
+        dataset,
+        n_qubits: int,
+        n_features: int,
+        *,
+        authorize_test_access: bool = False,
+        use_zne: bool = False,
+        physical_layout: Optional[Sequence[int]] = None,
+        job_record_store=None,
+        job_record_metadata: Optional[dict] = None,
+    ) -> tuple[float, float]:
+        if authorize_test_access is not True:
+            raise PermissionError(
+                "Final test evaluation requires authorize_test_access=True"
+            )
+        return self._evaluate_on_ibm_split(
+            weights=weights,
+            X_train=dataset.X_train,
+            X_eval=dataset.X_test,
+            y_eval=dataset.y_test,
+            n_classes=dataset.n_classes,
+            n_qubits=n_qubits,
+            n_features=n_features,
+            use_zne=use_zne,
+            split_name="final_test",
+            physical_layout=physical_layout,
+            job_record_store=job_record_store,
+            job_record_metadata=job_record_metadata,
+        )
+
+    def _evaluate_on_ibm_split(
+        self,
+        *,
+        weights: np.ndarray,
+        X_train: np.ndarray,
+        X_eval: np.ndarray,
+        y_eval: np.ndarray,
+        n_classes: int,
+        n_qubits: int,
+        n_features: int,
+        use_zne: bool,
+        split_name: str,
+        physical_layout: Optional[Sequence[int]],
+        job_record_store,
+        job_record_metadata: Optional[dict],
     ) -> tuple[float, float]:
         """
-        Validación en hardware IBM real. Decodifica con la capa de
-        lectura MLP entrenable. El ZNE/Richardson se aplica sobre las
-        MARGINALES POR QUBIT (antes de la lectura) -- ver
-        _richardson_extrapolate.
+        Evalúa un split solicitado explícitamente en hardware IBM real.
+        El flujo ordinario solo pasa X_val/y_val; el test tiene un gate
+        independiente en evaluate_test_on_ibm.
         """
         try:
             from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2
             from qiskit import transpile
-            from sklearn.metrics import balanced_accuracy_score
+            from src.infrastructure.qnim_ibm_qpu_pilot import (
+                DurableSampler,
+                PILOT_EXPERIMENT_ID,
+                parameter_sha256,
+                validate_connected_layout,
+                validate_pilot_job_context,
+            )
 
-            if not hasattr(dataset, "X_test") or not hasattr(dataset, "y_test"):
-                raise ValueError("La validación IBM requiere un test independiente X_test/y_test")
-            if dataset.X_test is None or dataset.y_test is None:
-                raise ValueError("La validación IBM requiere un test independiente X_test/y_test")
-            if len(dataset.X_test) != len(dataset.y_test):
-                raise ValueError("X_test e y_test deben tener la misma longitud")
-            idx = _stratified_indices(dataset.y_test, self.n_hw_validation)
+            if physical_layout is None:
+                raise ValueError("IBM evaluation requires an explicit connected physical layout")
+            if job_record_store is None or job_record_metadata is None:
+                raise ValueError("IBM evaluation requires durable job-record metadata")
+            if len(X_eval) != len(y_eval):
+                raise ValueError(f"X_{split_name}/y_{split_name} lengths differ")
+            idx = _stratified_indices(y_eval, self.n_hw_validation)
+            validate_pilot_job_context(
+                job_record_store,
+                job_record_metadata,
+                validation_examples=len(idx),
+            )
 
             service = QiskitRuntimeService(channel="ibm_quantum_platform", token=self.token)
             backend = service.backend(self.backend_name)
             logger.info(f"Conectado a {self.backend_name}")
+            coupling = getattr(backend, "coupling_map", None)
+            get_edges = getattr(coupling, "get_edges", None)
+            if not callable(get_edges):
+                raise ValueError("Selected backend does not expose a coupling map")
+            connected_layout = validate_connected_layout(
+                physical_layout,
+                get_edges(),
+                logical_qubits=n_qubits,
+                backend_qubits=int(backend.num_qubits),
+            )
 
             n_hw = len(idx)
-            X_train_proc = _prepare_feature_matrix(dataset.X_train, n_features)
-            X_test_proc = _prepare_feature_matrix(dataset.X_test[idx], n_features)
+            X_train_proc = _prepare_feature_matrix(X_train, n_features)
+            X_test_proc = _prepare_feature_matrix(X_eval[idx], n_features)
             train_stats = compute_chebyshev_stats(X_train_proc)
             X_hw = chebyshev_preprocess(X_test_proc, stats=train_stats)
-            y_hw = dataset.y_test[idx]
+            y_hw = np.asarray(y_eval)[idx]
 
             combined, x_params, ansatz_params = _build_feature_map_and_ansatz(
                 n_qubits,
@@ -2112,19 +2578,36 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 ansatz_reps=self.ansatz_reps,
                 entanglement=self.entanglement,
             )
-            isa_unitary = transpile(combined, backend=backend, optimization_level=1)
+            isa_unitary = transpile(
+                combined,
+                backend=backend,
+                initial_layout=list(connected_layout),
+                optimization_level=1,
+            )
 
             n_ansatz_params = len(ansatz_params)
             W1, b1, W2, b2 = _split_readout_mlp(
                 weights,
                 n_ansatz_params,
                 _readout_feature_count(n_qubits, self.readout_mode),
-                dataset.n_classes,
+                n_classes,
                 self.readout_hidden_size,
             )
 
             scale_factors = [1, 3, 5] if use_zne else [1]
-            sampler = SamplerV2(mode=backend)
+            record_metadata = dict(job_record_metadata)
+            record_metadata.update(
+                {
+                    "backend": self.backend_name,
+                    "physical_layout": list(connected_layout),
+                    "logical_qubits": n_qubits,
+                }
+            )
+            sampler = DurableSampler(
+                SamplerV2(mode=backend),
+                job_record_store,
+                record_metadata,
+            )
             readout_feature_count = _readout_feature_count(
                 n_qubits, self.readout_mode
             )
@@ -2137,6 +2620,23 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                     folded.measure_all()
                     pubs.append((folded, []))
 
+            sampler.set_execution_context(
+                {
+                    "parameter_hash": parameter_sha256(weights),
+                    "optimizer_state": {
+                        "phase": f"{split_name}_evaluation",
+                        "optimizer": "HardwareSPSAOptimizer"
+                        if self.last_hardware_spsa is not None
+                        else "local_QNSPSA_EML_Feynman",
+                    },
+                    "sampling_policy": {
+                        "split": split_name,
+                        "selected_indices": idx.astype(int).tolist(),
+                        "shots_per_circuit": int(self.shots_validation),
+                        "zne_scale_factors": scale_factors,
+                    },
+                }
+            )
             job = sampler.run(pubs, shots=self.shots_validation)
             logger.info(
                 f"Job ID enviado a {self.backend_name}: {job.job_id()} "
@@ -2165,7 +2665,8 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 for i in range(n_hw)
             ])
             preds_no_zne = np.argmax(class_probs_no_zne, axis=1)
-            acc_no_zne = float(balanced_accuracy_score(y_hw, preds_no_zne))
+            metrics_no_zne = _validation_metrics(y_hw, preds_no_zne, n_classes)
+            acc_no_zne = float(metrics_no_zne["balanced_accuracy"])
             logger.info(
                 f"IBM hardware (escala=1, sin mitigar): preds={list(preds_no_zne)}, "
                 f"y_true={list(y_hw)}, acc={acc_no_zne:.3f}"
@@ -2182,7 +2683,8 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                     for i in range(n_hw)
                 ])
                 preds_zne = np.argmax(class_probs_zne, axis=1)
-                acc_zne = float(balanced_accuracy_score(y_hw, preds_zne))
+                metrics_zne = _validation_metrics(y_hw, preds_zne, n_classes)
+                acc_zne = float(metrics_zne["balanced_accuracy"])
                 logger.info(
                     f"IBM hardware (ZNE real, Richardson sobre escalas "
                     f"{scale_factors}, aplicado a las features medidas "
@@ -2192,12 +2694,26 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
             else:
                 acc_zne = acc_no_zne
                 preds_zne = preds_no_zne
+                metrics_zne = metrics_no_zne
                 logger.info(
                     "ZNE no solicitado (falta --use-zne): accuracy_real_zne "
                     "se reporta igual a accuracy_real_no_zne."
                 )
 
+            if job_record_metadata.get("experiment_id") == PILOT_EXPERIMENT_ID:
+                sampler.update_last_record(
+                    {
+                        "validation_metrics": {
+                            "without_zne": metrics_no_zne,
+                            "with_zne": metrics_zne,
+                        },
+                        "validation_y_true": y_hw.astype(int).tolist(),
+                        "validation_y_pred": preds_no_zne.astype(int).tolist(),
+                        "validation_y_pred_zne": preds_zne.astype(int).tolist(),
+                    }
+                )
             self.last_ibm_validation = {
+                "split": split_name,
                 "y_true": y_hw.astype(int).tolist(),
                 "y_pred": preds_no_zne.astype(int).tolist(),
                 "y_pred_zne": preds_zne.astype(int).tolist(),
@@ -2208,6 +2724,10 @@ class QiskitVQCTrainer(IQuantumMLTrainerPort):
                 "job_ids": [job.job_id()],
                 "balanced_accuracy": acc_no_zne,
                 "balanced_accuracy_zne": acc_zne,
+                "validation_metrics": {
+                    "without_zne": metrics_no_zne,
+                    "with_zne": metrics_zne,
+                },
                 "n_validation_events": n_hw,
             }
 

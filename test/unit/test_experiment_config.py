@@ -207,6 +207,7 @@ def test_snr_sweep_supports_fewer_features_than_qubits(monkeypatch):
     import numpy as np
 
     trainer_module = _load_vqc_trainer_module(monkeypatch)
+
     captured = {}
 
     class FakeCircuit:
@@ -249,14 +250,20 @@ def test_snr_sweep_supports_fewer_features_than_qubits(monkeypatch):
     assert result == {8: 0.5, 12: 0.5, 20: 0.5, 30: 0.5, 50: 0.5}
 
 
-def test_hardware_finetuning_uses_remote_sampler_with_mocked_runtime(monkeypatch):
+def test_hardware_finetuning_uses_remote_sampler_with_mocked_runtime(monkeypatch, tmp_path):
     import sys
     from types import ModuleType, SimpleNamespace
 
     import numpy as np
 
     trainer_module = _load_vqc_trainer_module(monkeypatch)
-    backend = SimpleNamespace(num_qubits=4)
+    from src.infrastructure.qnim_ibm_qpu_pilot import DurableJobRecordStore
+
+    class FakeCouplingMap:
+        def get_edges(self):
+            return [(0, 1), (1, 2), (2, 3)]
+
+    backend = SimpleNamespace(num_qubits=4, coupling_map=FakeCouplingMap())
     captured = {}
 
     class FakeService:
@@ -313,10 +320,28 @@ def test_hardware_finetuning_uses_remote_sampler_with_mocked_runtime(monkeypatch
         batch_size=2,
         shots=10,
         reference_every=0,
+        physical_layout=(0, 1),
+        job_record_store=DurableJobRecordStore(tmp_path / "jobs"),
+        job_record_metadata={
+            "run_id": "test-run",
+            "experiment_id": "TEST_HARDWARE_SPSA",
+            "protocol_hash": "protocol",
+            "dataset_hashes": {"train": "train"},
+            "dataset_provenance": {"strict_physics": True},
+            "pca_hash": "pca",
+            "parameter_hash": "parameters",
+            "logical_qubits": 4,
+            "backend": "mock-backend",
+            "physical_layout": [0, 1],
+            "transpiler_configuration": {"optimization_level": 1},
+            "optimizer_state": {"step": 0},
+            "random_seed": 42,
+            "sampling_policy": {"shots": 10},
+            "calibration_metadata": {"mock": True},
+        },
     )
 
-    assert isinstance(captured["backend_sampler"], FakeSampler)
-    assert captured["backend_sampler"].mode is backend
+    assert captured["backend_sampler"]._sampler.mode is backend
     assert captured["ibm_backend"] is backend
     assert captured["remote_hardware"] is True
     assert result.steps_completed == 1

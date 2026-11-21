@@ -693,6 +693,93 @@ def _classification_metrics(
 
 
 def _result_markdown(result: dict) -> str:
+    required_paths = (
+        "status",
+        "configuration.n_qubits",
+        "configuration.n_pca_components",
+        "input.train_examples",
+        "input.validation_examples",
+        "parameters.quantum_ansatz_count",
+        "parameters.classical_readout_count",
+        "parameters.total_count",
+        "training_protocol.iterations",
+        "training_protocol.shots",
+        "training_protocol.reference_shots",
+        "optimization.termination_reason",
+        "optimizer_telemetry.accepted_updates",
+        "optimizer_telemetry.rejected_updates",
+        "execution_accounting.n_objective_function_calls",
+        "execution_accounting.n_optimizer_objective_function_calls",
+        "execution_accounting.n_circuit_executions",
+        "execution_accounting.n_shots_total",
+        "execution_accounting.n_training_examples_evaluated",
+        "execution_accounting.n_readout_refits",
+        "metrics.training.balanced_accuracy",
+        "metrics.training.global_accuracy",
+        "metrics.training.macro_f1",
+        "metrics.training.cross_entropy",
+        "metrics.validation.balanced_accuracy",
+        "metrics.validation.global_accuracy",
+        "metrics.validation.macro_f1",
+        "metrics.validation.cross_entropy",
+        "training_trace",
+        "optimizer_telemetry.steps",
+    )
+    for path in required_paths:
+        value = result
+        for key in path.split("."):
+            if not isinstance(value, dict) or key not in value:
+                raise ValueError(
+                    f"Completed result is missing required field '{path}'"
+                )
+            value = value[key]
+
+    if result["status"] != "completed":
+        raise ValueError("Result Markdown requires status='completed'")
+    iterations = result["training_protocol"]["iterations"]
+    training_trace = result["training_trace"]
+    optimizer_steps = result["optimizer_telemetry"]["steps"]
+    if not isinstance(training_trace, list) or len(training_trace) != iterations:
+        raise ValueError(
+            "Completed result field 'training_trace' must contain exactly "
+            f"{iterations} optimizer iterations"
+        )
+    if not isinstance(optimizer_steps, list) or len(optimizer_steps) != iterations:
+        raise ValueError(
+            "Completed result field 'optimizer_telemetry.steps' must contain "
+            f"exactly {iterations} optimizer iterations"
+        )
+    for row in training_trace:
+        iteration = row.get("iteration")
+        for path in (
+            "readout_refit.scheduled",
+            "pre_refit.minibatch_training_loss",
+            "pre_refit.diagnostic_training_metrics.balanced_accuracy",
+            "pre_refit.diagnostic_validation_metrics.balanced_accuracy",
+        ):
+            value = row
+            for key in path.split("."):
+                if not isinstance(value, dict) or key not in value:
+                    raise ValueError(
+                        f"Completed result is missing required field "
+                        f"'training_trace[{iteration}].{path}'"
+                    )
+                value = value[key]
+        if row["readout_refit"]["scheduled"]:
+            for path in (
+                "post_refit.minibatch_training_loss",
+                "post_refit.diagnostic_training_metrics.balanced_accuracy",
+                "post_refit.diagnostic_validation_metrics.balanced_accuracy",
+            ):
+                value = row
+                for key in path.split("."):
+                    if not isinstance(value, dict) or key not in value:
+                        raise ValueError(
+                            f"Completed result is missing required field "
+                            f"'training_trace[{iteration}].{path}'"
+                        )
+                    value = value[key]
+
     training = result["metrics"]["training"]
     validation = result["metrics"]["validation"]
     configuration = result["configuration"]
@@ -700,30 +787,30 @@ def _result_markdown(result: dict) -> str:
     accepted = result["optimizer_telemetry"]["accepted_updates"]
     rejected = result["optimizer_telemetry"]["rejected_updates"]
     refit_rows = []
-    for row in result["training_trace"]:
+    for row in training_trace:
         if not row["readout_refit"]["scheduled"]:
             continue
-        pre = row["pre_refit"]
         post = row["post_refit"]
-        if post is None:
-            post_loss = post_train = post_val = "not recorded"
-        else:
-            post_loss = f"{post['minibatch_training_loss']:.6f}"
-            post_train = (
-                f"{post['diagnostic_training_metrics']['balanced_accuracy']:.4f}"
-            )
-            post_val = (
-                f"{post['diagnostic_validation_metrics']['balanced_accuracy']:.4f}"
-            )
+        post_loss = f"{post['minibatch_training_loss']:.6f}"
+        post_train = (
+            f"{post['diagnostic_training_metrics']['balanced_accuracy']:.4f}"
+        )
+        post_val = (
+            f"{post['diagnostic_validation_metrics']['balanced_accuracy']:.4f}"
+        )
         refit_rows.append(
             "| {iteration} | {pre_loss:.6f} | {post_loss} | "
             "{pre_train:.4f} | {post_train} | {pre_val:.4f} | {post_val} |".format(
                 iteration=row["iteration"],
-                pre_loss=pre["minibatch_training_loss"],
+                pre_loss=row["pre_refit"]["minibatch_training_loss"],
                 post_loss=post_loss,
-                pre_train=pre["diagnostic_training_metrics"]["balanced_accuracy"],
+                pre_train=row["pre_refit"]["diagnostic_training_metrics"][
+                    "balanced_accuracy"
+                ],
                 post_train=post_train,
-                pre_val=pre["diagnostic_validation_metrics"]["balanced_accuracy"],
+                pre_val=row["pre_refit"]["diagnostic_validation_metrics"][
+                    "balanced_accuracy"
+                ],
                 post_val=post_val,
             )
         )
@@ -732,10 +819,10 @@ def _result_markdown(result: dict) -> str:
 
 - Status: **{result['status']}**
 - PCA components / qubits: {configuration['n_pca_components']} / {configuration['n_qubits']}
-- Train / validation examples: {result['data']['train_examples']} / {result['data']['validation_examples']}
+- Train / validation examples: {result['input']['train_examples']} / {result['input']['validation_examples']}
 - Trainable parameters: quantum {result['parameters']['quantum_ansatz_count']}, classical readout {result['parameters']['classical_readout_count']}, total {result['parameters']['total_count']}.
 - Simulator: local Aer `matrix_product_state`; shots per circuit: {result['training_protocol']['shots']} (reference evaluations explicitly use {result['training_protocol']['reference_shots']}).
-- Iterations / termination: {result['optimization']['iterations']} / `{result['optimization']['termination_reason']}`.
+- Iterations / termination: {iterations} / `{result['optimization']['termination_reason']}`.
 - Accepted / rejected QNSPSA updates: {accepted} / {rejected}.
 - Objective-function calls: {accounting['n_objective_function_calls']} total; {accounting['n_optimizer_objective_function_calls']} from QNSPSA.
 - Circuit executions / shots: {accounting['n_circuit_executions']} / {accounting['n_shots_total']} (measured from completed sampler PUB results).
@@ -1354,7 +1441,7 @@ def _run_single_configuration_locked(
                 "experiment_id": EXPERIMENT_ID,
                 "qubits": qubits,
                 "seed": seed,
-                "iteration": result["optimization"]["iterations"],
+                "iteration": result["training_protocol"]["iterations"],
                 "trace": result["training_trace"],
                 "result_sha256": _sha256_file(attempt_result_path),
                 "result_markdown_sha256": _sha256_file(

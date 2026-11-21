@@ -1,0 +1,52 @@
+{
+  "class_order": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+  ],
+  "created_at_utc": "2026-11-20T18:02:05.247797+00:00",
+  "dataset_hashes": {
+    "X_train_scaled64.npy": "6fb936d7836789e9ca59941e47a2cdff701acd5d057f4258db82b134237e5dad",
+    "X_val_scaled64.npy": "f717042628bd35f7a8dad9457996f0d9b3d9d22a08803319c874390714af2783",
+    "dataset_manifest.json": "53a153278ce83722a61a02cd8bff6749c599209fc11202b5e64ed5ee23c05bfd",
+    "pca_state.npz": "183108741f6b991242621a1d8c05ca481c851da459645c7a99a69433ab7e99ff",
+    "y_train.npy": "9e4cc1a458f2f7825f69718bdd4a78bc5e56acc21d6396b14a2e302a477f01d6",
+    "y_val.npy": "81c6b2e663a9d65c96c699cd88253efb5003b9893ae19d21c7fa2b5d12719ead"
+  },
+  "dataset_regenerated": false,
+  "protocol_id": "QNIM_QUANTUM_PCA_SCALING_V2",
+  "protocol_sha256": "3ab6351ba932957a055eb401f4b597dfd88d5366c30722fd116fb983f4111ed6",
+  "sampler_jobs_submitted": false,
+  "status": "dry_run_passed",
+  "test_accessed": false,
+  "training_executed": false,
+  "training_role_sha256": {
+    "gradient": "e3578cb9b97d90b0e2392f724cb21930b3f0f686de318b3f70de06a87456d686",
+    "readout": "c4825749d1ed7ba9c0d3ce143305def5aaacf987c5ea615a07623695b23007a6",
+    "reference": "503e476866030059a9e78f82f620fe17a0e5292a123a26558f147a8635ea9c36"
+  },
+  "training_role_sizes": {
+    "gradient": 2275,
+    "readout": 195,
+    "reference": 130
+  },
+  "training_shape": [
+    2600,
+    64
+  ],
+  "validation_diagnostic_indices_sha256": "45d56bbe16662752d6a35b2af1c5b9f79000a59a218558bd2e514a4c95c97843",
+  "validation_shape": [
+    650,
+    64
+  ]
+}

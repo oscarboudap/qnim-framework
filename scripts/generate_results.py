@@ -160,30 +160,21 @@ def main():
         y_train = np.load(data_dir / "y_train.npy")
         X_val   = np.load(data_dir / "X_val.npy")
         y_val   = np.load(data_dir / "y_val.npy")
-        test_x_path = data_dir / "X_test.npy"
-        test_y_path = data_dir / "y_test.npy"
-        if test_x_path.exists() != test_y_path.exists():
-            raise ValueError("El dataset debe incluir ambos archivos X_test.npy e y_test.npy")
-        X_test = np.load(test_x_path) if test_x_path.exists() else None
-        y_test = np.load(test_y_path) if test_y_path.exists() else None
-        feature_arrays = [X_train, X_val] + ([X_test] if X_test is not None else [])
+        # This CLI reports validation only; keep the final test sealed.
+        X_test = y_test = None
+        feature_arrays = [X_train, X_val]
         if any(X.shape[1] < args.pca_components for X in feature_arrays):
             raise ValueError(
                 f"El dataset debe tener al menos {args.pca_components} features"
             )
         X_train = X_train[:, :args.pca_components]
         X_val = X_val[:, :args.pca_components]
-        if X_test is not None:
-            X_test = X_test[:, :args.pca_components]
         n_classes = len(np.unique(y_train))
         if args.max_classes:
             mask_tr = y_train < args.max_classes
             mask_va = y_val   < args.max_classes
             X_train, y_train = X_train[mask_tr], y_train[mask_tr]
             X_val,   y_val   = X_val[mask_va],   y_val[mask_va]
-            if X_test is not None:
-                mask_test = y_test < args.max_classes
-                X_test, y_test = X_test[mask_test], y_test[mask_test]
             n_classes = args.max_classes
         THEORY_CLASSES = [
             "GR","standard-siren","qnm-21","qnm-33","pn-deformation",

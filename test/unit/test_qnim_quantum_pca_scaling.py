@@ -73,12 +73,12 @@ def _fake_result(qubits=16):
             "n_qubits": qubits,
             "n_pca_components": qubits,
         },
-        "data": {"train_examples": 2600, "validation_examples": 650},
+        "input": {"train_examples": 2600, "validation_examples": 650},
         "metrics": {"training": metrics, "validation": metrics},
         "optimizer_telemetry": {
             "accepted_updates": 1,
             "rejected_updates": 0,
-            "steps": [],
+            "steps": [{"iteration": 1}],
         },
         "parameters": {
             "quantum_ansatz_count": ansatz_count,
@@ -86,11 +86,28 @@ def _fake_result(qubits=16):
             "total_count": total_count,
         },
         "optimization": {
-            "iterations": 1,
             "termination_reason": "max_iterations_reached",
         },
-        "training_protocol": {"shots": 512, "reference_shots": 512},
-        "training_trace": [],
+        "training_protocol": {
+            "iterations": 1,
+            "shots": 512,
+            "reference_shots": 512,
+        },
+        "training_trace": [
+            {
+                "iteration": 1,
+                "readout_refit": {"scheduled": False},
+                "pre_refit": {
+                    "minibatch_training_loss": 2.5,
+                    "diagnostic_training_metrics": {
+                        "balanced_accuracy": 0.1,
+                    },
+                    "diagnostic_validation_metrics": {
+                        "balanced_accuracy": 0.1,
+                    },
+                },
+            }
+        ],
         "execution_accounting": {
             "status": "measured",
             "n_objective_function_calls": 1,
@@ -103,6 +120,26 @@ def _fake_result(qubits=16):
             "n_readout_initializations": 1,
         },
     }
+
+
+def test_result_markdown_uses_emitted_schema_and_training_protocol_iteration():
+    result = _fake_result()
+    markdown = scaling._result_markdown(result)
+
+    assert "Train / validation examples: 2600 / 650" in markdown
+    assert "Iterations / termination: 1 / `max_iterations_reached`" in markdown
+    assert "Validation | 0.1000 | 0.1000 | 0.1000 | 2.5000" in markdown
+
+
+def test_result_markdown_reports_missing_training_data_descriptively():
+    result = _fake_result()
+    del result["input"]["train_examples"]
+
+    with pytest.raises(
+        ValueError,
+        match=r"Completed result is missing required field 'input\.train_examples'",
+    ):
+        scaling._result_markdown(result)
 
 
 def test_dry_run_never_calls_training_and_keeps_configuration_pending(
@@ -172,6 +209,17 @@ def test_mocked_training_records_checkpoint_and_completed_result_is_immutable(
     assert calls == ["called"]
     assert manifest["configurations"]["16"]["status"] == "completed"
     assert checkpoint["status"] == "completed"
+    saved_result = json.loads(result_path.read_text(encoding="utf-8"))
+    assert checkpoint["iteration"] == saved_result["training_protocol"]["iterations"]
+    result_markdown = (tmp_path / "q16" / "result.md").read_text(
+        encoding="utf-8"
+    )
+    assert (
+        f"Iterations / termination: "
+        f"{saved_result['training_protocol']['iterations']} / "
+        f"`{saved_result['optimization']['termination_reason']}`"
+    ) in result_markdown
+    assert "Train / validation examples: 2600 / 650" in result_markdown
     assert hashlib.sha256(result_path.read_bytes()).hexdigest() == original_hash
     with pytest.raises(FileExistsError, match="create a new output directory"):
         scaling.run_single_configuration(
